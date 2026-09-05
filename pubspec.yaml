@@ -1,0 +1,20 @@
+name: tideline_workspace
+description: Tideline - a personal tracking app, and the shared packages it stands on.
+publish_to: none
+
+environment:
+  sdk: ^3.12.0
+
+# Native Dart pub workspace. `flutter pub get` here resolves every package below
+# against one shared lockfile.
+#
+# The `vitals_*` packages are shared portfolio infrastructure and also live in
+# the LockIn repo. They were split by copy rather than by a git dependency, so
+# a change to either copy has to be carried across by hand. See NOTES.md.
+workspace:
+  - packages/vitals_core
+  - packages/vitals_ui
+  - packages/vitals_archive
+  - packages/patterns_core
+  - packages/patterns_data
+  - apps/patterns

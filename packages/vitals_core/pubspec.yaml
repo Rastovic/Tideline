@@ -1,0 +1,15 @@
+name: vitals_core
+description: Clock, result types, day-key maths and id generation shared by every Vitals app.
+version: 0.1.0
+publish_to: none
+resolution: workspace
+
+environment:
+  sdk: ^3.12.0
+
+dependencies:
+  uuid: ^4.5.1
+
+dev_dependencies:
+  test: ^1.25.0
+  lints: ^5.0.0

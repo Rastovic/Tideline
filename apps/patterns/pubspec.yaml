@@ -1,0 +1,32 @@
+name: patterns
+description: See what your life actually does.
+publish_to: none
+version: 0.1.0+1
+resolution: workspace
+
+environment:
+  sdk: ^3.12.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+  drift: ^2.34.3
+  drift_flutter: ^0.3.1
+  # Pure Dart resize and JPEG encode. Done in an isolate at capture, because
+  # storage is decided once and cannot be reduced later without a migration.
+  image: ^4.3.0
+  image_picker: ^1.1.2
+  path_provider: ^2.1.5
+  patterns_core: ^0.1.0
+  patterns_data: ^0.1.0
+  shared_preferences: ^2.3.3
+  vitals_core: ^0.1.0
+  vitals_ui: ^0.1.0
+
+dev_dependencies:
+  flutter_lints: ^5.0.0
+  flutter_test:
+    sdk: flutter
+
+flutter:
+  uses-material-design: true

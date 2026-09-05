@@ -1,0 +1,29 @@
+name: patterns_data
+description: Patterns' drift schema. Portable by construction, per DATA-PORTABILITY.md.
+version: 0.1.0
+publish_to: none
+resolution: workspace
+
+environment:
+  sdk: ^3.12.0
+
+dependencies:
+  drift: ^2.34.3
+  patterns_core: ^0.1.0
+  vitals_archive: ^0.1.0
+  vitals_core: ^0.1.0
+
+dev_dependencies:
+  # Only so the backup test can rebuild an archive with a byte changed and
+  # the checksum left stale. Deterministic, unlike flipping a random byte in a
+  # compressed stream and hoping it lands somewhere that matters.
+  archive: ^4.0.9
+  build_runner: ^2.4.13
+  # Pinned below 2.34.1 for the same reason tally_data pins it: from 2.34.1
+  # drift_dev needs analyzer ^13, and the Flutter SDK caps this workspace below
+  # that. One shared resolution, so one package's build-time dependency can
+  # break every other package's tests.
+  drift_dev: '>=2.33.0 <2.34.1'
+  lints: ^5.0.0
+  sqlite3: ^3.4.0
+  test: ^1.25.0

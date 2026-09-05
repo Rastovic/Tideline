@@ -1,0 +1,30 @@
+# Signing material. Never commit these.
+*.jks
+*.keystore
+*.p12
+*.pem
+key.properties
+.env
+GoogleService-Info.plist
+google-services.json
+
+# Dart / Flutter
+.dart_tool/
+.packages
+build/
+*.iml
+.flutter-plugins
+.flutter-plugins-dependencies
+
+# The workspace lockfile IS committed - one resolution for every package.
+# Per-package lockfiles are not.
+packages/*/pubspec.lock
+apps/*/pubspec.lock
+
+# Tooling
+.idea/
+.vscode/
+.DS_Store
+
+# Golden test failures
+**/failures/

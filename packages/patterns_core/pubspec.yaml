@@ -1,0 +1,15 @@
+name: patterns_core
+description: The Patterns metric engine. Pure Dart, no Flutter, no plugins, no platform.
+version: 0.1.0
+publish_to: none
+resolution: workspace
+
+environment:
+  sdk: ^3.12.0
+
+dependencies:
+  vitals_core: ^0.1.0
+
+dev_dependencies:
+  test: ^1.25.0
+  lints: ^5.0.0

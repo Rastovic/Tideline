@@ -374,3 +374,58 @@ as well, and the thing under test is the resize, not where it ran.
 
 Next: the metric editor, so new markers stop needing a code change.
 
+
+## Patterns: the metric editor, and three refusals (2026-09-06)
+
+New markers no longer need a build. `MetricEditorScreen` is the type system's
+UI - name, section, kind, the kind-specific fields, the day rule, the display
+style, the colour - plus `MetricsScreen`, the list it is reached from, which
+shows archived markers because home deliberately hides them and archiving a
+finished supplement must not be indistinguishable from losing it.
+
+**The screen turned out to be mostly assembly, and that is the type system
+paying off.** `DayAggregation.allowedFor`, `DisplayStyle.allowedFor`,
+`Metric.create` and `validateMetric` were written in 4a with this screen in
+mind, so the editor offers exactly the combinations the summary layer can
+read and cannot configure a marker into a state something downstream would
+have to guess its way out of. Picking `Kolicina` swaps the day rule to `Zbir`
+and the drawing to `Stupci` without the form asking.
+
+**What is new is `validateMetricChange`, and all three of its refusals are the
+same bug**: a reading on disk meaning something other than what it meant when
+it was written.
+
+- **Retyping a marker that holds readings.** Refused with the count and the
+  alternative. The kinds that would reinterpret the history are not even
+  offered, so the refusal happens before the tap rather than after it. The two
+  widenings that cannot lose meaning - count to amount, scale to count - stay
+  allowed, which is `canRetype` from 4a doing its job.
+- **Narrowing a scale under a reading that exists.** A 1-10 marker answered 2
+  cannot become 4-10; the reading would sit outside its own bounds and no
+  chart could draw it honestly.
+- **Removing an option that has been picked.** Archive it instead: the id stays
+  on the marker so every reading that chose it still resolves. An option added
+  by mistake a minute ago has no history and can go outright, which is why
+  `factsFor` reports `usedOptionIds` rather than just a count.
+
+**A gap in `MetricRepository.save` only appeared once something could remove an
+option.** Options were written with `insertOnConflictUpdate` and never removed,
+so an option the editor dropped came straight back on the next read. It now
+tombstones the rows that are no longer on the marker - a soft delete, per
+`DATA-PORTABILITY.md` rule 3, so a future sync can carry the removal.
+
+**The test that failed for the right reason: the error banner is at the top of
+a long form and Save is in the app bar.** Refusing an edit made at the bottom
+of the screen looked exactly like the button doing nothing. The form now
+animates back to the banner, and the test asserts it by *not* scrolling.
+
+Also learned, and it will happen again: `ListView(children:)` only builds the
+children near the viewport, so `find.text` cannot see a field below the fold.
+`scrollUntilVisible` scrolls one way only - walking back up needs a drag first,
+or the finder never resolves and the failure is a bare `StateError`.
+
+Still absent from this screen, deliberately: a goal, a target, a direction, a
+streak. A test asserts none of those words can appear on it, because a target
+field is how grading gets added to a recording app by accident.
+
+Next: the evening reminder, then the report builder.

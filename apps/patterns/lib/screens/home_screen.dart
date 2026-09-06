@@ -6,6 +6,7 @@ import '../data/patterns_controller.dart';
 import '../data/photo_picker.dart';
 import 'day_detail_screen.dart';
 import 'log_sheet.dart';
+import 'metrics_screen.dart';
 
 /// The home screen: what I track, and whether it is logged today.
 ///
@@ -87,17 +88,34 @@ class _HomeScreenState extends State<HomeScreen> {
                       _humanDate(controller.today),
                       style: theme.typography.displayL,
                     ),
-                    IconButton(
-                      tooltip: 'Detalji dana',
-                      icon: const Icon(Icons.today_outlined),
-                      onPressed: () => Navigator.of(context).push(
-                        MaterialPageRoute<void>(
-                          builder: (_) => DayDetailScreen(
-                            controller: controller,
-                            dayKey: controller.today,
+                    Row(
+                      children: [
+                        IconButton(
+                          tooltip: 'Detalji dana',
+                          icon: const Icon(Icons.today_outlined),
+                          onPressed: () => Navigator.of(context).push(
+                            MaterialPageRoute<void>(
+                              builder: (_) => DayDetailScreen(
+                                controller: controller,
+                                dayKey: controller.today,
+                              ),
+                            ),
                           ),
                         ),
-                      ),
+                        // Deliberately not the long-press on a marker row:
+                        // that gesture is spoken for by the marker's report,
+                        // and squatting on it now means moving it later.
+                        IconButton(
+                          tooltip: 'Markeri',
+                          icon: const Icon(Icons.tune),
+                          onPressed: () => Navigator.of(context).push(
+                            MaterialPageRoute<void>(
+                              builder: (_) =>
+                                  MetricsScreen(controller: controller),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),

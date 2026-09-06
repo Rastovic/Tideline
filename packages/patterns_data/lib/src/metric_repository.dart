@@ -108,6 +108,25 @@ final class MetricRepository {
               ),
             );
       }
+
+      // An option the editor dropped is gone from the marker, so its row has to
+      // go too - otherwise the next read hands it straight back and removing an
+      // option looks broken. A tombstone rather than a delete, per
+      // `DATA-PORTABILITY.md` rule 3, so a sync can carry the removal.
+      //
+      // Only ever reached for an option nothing ever picked: an option with
+      // history is refused by `validateMetricChange` and archived instead, and
+      // an archived option is still in `metric.options` above.
+      final keptIds = metric.options.map((o) => o.id).toList();
+      await (_db.update(_db.metricOptions)
+            ..where((o) =>
+                o.metricId.equals(metric.id) &
+                o.deletedAt.isNull() &
+                o.id.isNotIn(keptIds)))
+          .write(MetricOptionsCompanion(
+        deletedAt: Value(millis),
+        updatedAt: Value(millis),
+      ));
     });
   }
 

@@ -250,4 +250,123 @@ void main() {
     expect(cycleDayFor('2026-08-19', periods), 19);
     expect(periods.last.lengthDays, 5);
   });
+
+  group('what the editor needs to know before it saves', () {
+    test('an untouched marker reports nothing recorded', () async {
+      final all = await metrics.all();
+      final marker = all.firstWhere((m) => m.kind == MetricKind.scale);
+
+      final facts = await readings.factsFor(marker.id, kind: marker.kind);
+
+      expect(facts.hasReadings, isFalse);
+      expect(facts.count, 0);
+    });
+
+    test('the extremes come back so a scale cannot be narrowed under them',
+        () async {
+      final all = await metrics.all();
+      final marker = all.firstWhere((m) => m.kind == MetricKind.scale);
+      for (final value in [2, 9, 5]) {
+        await readings.log(
+          metricId: marker.id,
+          value: NumberValue(value, kind: MetricKind.scale),
+          at: now,
+          utcOffsetMinutes: 120,
+        );
+      }
+
+      final facts = await readings.factsFor(marker.id, kind: marker.kind);
+
+      expect(facts.count, 3);
+      expect(facts.lowestNumber, 2);
+      expect(facts.highestNumber, 9);
+    });
+
+    test('a deleted reading stops counting against an edit', () async {
+      final all = await metrics.all();
+      final marker = all.firstWhere((m) => m.kind == MetricKind.scale);
+      final only = await readings.log(
+        metricId: marker.id,
+        value: const NumberValue(2, kind: MetricKind.scale),
+        at: now,
+        utcOffsetMinutes: 120,
+      );
+      await readings.softDelete(only.id, now: now);
+
+      final facts = await readings.factsFor(marker.id, kind: marker.kind);
+
+      expect(facts.hasReadings, isFalse);
+      expect(facts.lowestNumber, isNull);
+    });
+
+    test('every option ever picked is reported, so it can be archived '
+        'rather than removed', () async {
+      final all = await metrics.all();
+      final tags = all.firstWhere((m) => m.kind == MetricKind.tags);
+      final picked = tags.liveOptions.take(2).map((o) => o.id).toList();
+      await readings.log(
+        metricId: tags.id,
+        value: TagsValue(picked),
+        at: now,
+        utcOffsetMinutes: 120,
+      );
+
+      final facts = await readings.factsFor(tags.id, kind: tags.kind);
+
+      expect(facts.usedOptionIds, picked.toSet());
+    });
+  });
+
+  group('editing a marker', () {
+    test('an option the editor dropped does not come back', () async {
+      // Without the tombstone in save() the row survives and the next read
+      // hands it straight back, which looks like the delete never happened.
+      final all = await metrics.all();
+      final tags = all.firstWhere((m) => m.kind == MetricKind.tags);
+      final kept = tags.options.take(2).toList();
+
+      await metrics.save(tags.copyWith(options: kept), now: now);
+      final reread = await metrics.byId(tags.id);
+
+      expect(reread!.options, hasLength(2));
+      expect(reread.options.map((o) => o.id), kept.map((o) => o.id));
+    });
+
+    test('an archived option stays, because readings still point at it',
+        () async {
+      final all = await metrics.all();
+      final tags = all.firstWhere((m) => m.kind == MetricKind.tags);
+      final options = [
+        for (final o in tags.options)
+          o.id == tags.options.first.id ? o.copyWith(archived: true) : o,
+      ];
+
+      await metrics.save(tags.copyWith(options: options), now: now);
+      final reread = await metrics.byId(tags.id);
+
+      expect(reread!.options, hasLength(tags.options.length));
+      expect(reread.liveOptions, hasLength(tags.options.length - 1));
+    });
+
+    test('a marker created through the editor reads back whole', () async {
+      final made = Metric.create(
+        id: '018f2c00-bbbb-7000-8000-000000000009',
+        name: 'kosa',
+        domain: MetricDomain.body,
+        kind: MetricKind.photo,
+        createdAt: now,
+        colorHex: '#17A2A2',
+      );
+
+      await metrics.save(made, now: now);
+      final reread = await metrics.byId(made.id);
+
+      expect(reread!.name, 'kosa');
+      expect(reread.kind, MetricKind.photo);
+      expect(reread.domain, MetricDomain.body);
+      expect(reread.colorHex, '#17A2A2');
+      expect(reread.aggregation, DayAggregation.none);
+      expect(reread.displayStyle, isNull);
+    });
+  });
 }

@@ -183,6 +183,51 @@ final class ObservationRepository {
     };
   }
 
+  /// What one marker already holds, for the editor's data-loss guards.
+  ///
+  /// Read before an edit is saved, and only then: narrowing a scale or removing
+  /// an option is safe on a marker answered twice and destroys meaning on one
+  /// answered for a year, and nothing else in the app needs to know which.
+  ///
+  /// The count is of rows, so a reading this build cannot decode still counts -
+  /// an unreadable row is history too, and the guard has to be pessimistic
+  /// about it. The extremes and the picked options come only from rows that did
+  /// decode, since an undecodable one cannot argue either way.
+  Future<MetricReadingFacts> factsFor(
+    String metricId, {
+    required MetricKind kind,
+  }) async {
+    final rows = await (_db.select(_db.observations)
+          ..where((o) => o.metricId.equals(metricId) & o.deletedAt.isNull()))
+        .get();
+    if (rows.isEmpty) return MetricReadingFacts.none;
+
+    num? lowest;
+    num? highest;
+    final used = <String>{};
+    for (final row in rows) {
+      final value = decodeValue(kind, jsonDecode(row.valueJson));
+      switch (value) {
+        case NumberValue(:final number):
+          if (lowest == null || number < lowest) lowest = number;
+          if (highest == null || number > highest) highest = number;
+        case ChoiceValue(:final optionId):
+          used.add(optionId);
+        case TagsValue(:final optionIds):
+          used.addAll(optionIds);
+        default:
+          break;
+      }
+    }
+
+    return MetricReadingFacts(
+      count: rows.length,
+      lowestNumber: lowest,
+      highestNumber: highest,
+      usedOptionIds: used,
+    );
+  }
+
   /// The days a boolean marker was recorded true, for the cycle module and for
   /// a background band.
   Future<List<String>> trueDays(String metricId) async {

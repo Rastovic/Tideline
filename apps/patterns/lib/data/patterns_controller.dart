@@ -105,6 +105,54 @@ final class PatternsController extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Every marker including the archived ones, for the marker editor.
+  ///
+  /// The home list drops archived markers; the editor must not, or a finished
+  /// course of a supplement becomes unreachable the moment it is archived.
+  List<Metric> get allMarkers => List.unmodifiable(_all);
+
+  /// The next free position in a section, so a new marker lands at the bottom
+  /// of its own list rather than in the middle of another one.
+  int nextSortOrder(MetricDomain domain) {
+    var highest = -1;
+    for (final metric in _all) {
+      if (metric.domain != domain) continue;
+      if (metric.sortOrder > highest) highest = metric.sortOrder;
+    }
+    return highest + 1;
+  }
+
+  /// What is already recorded against a marker, for the editor's guards.
+  Future<MetricReadingFacts> factsFor(Metric metric) =>
+      observations.factsFor(metric.id, kind: metric.kind);
+
+  /// Writes a marker, new or edited.
+  ///
+  /// Validation is the caller's job and happens in the editor, where the
+  /// failures can be shown against the fields that caused them.
+  Future<void> saveMetric(Metric metric) async {
+    await metrics.save(metric, now: DateTime.now().toUtc());
+    await refresh();
+  }
+
+  /// Takes a marker off the home list and keeps every reading it holds.
+  Future<void> archiveMarker(String metricId) async {
+    await metrics.archive(metricId, now: DateTime.now().toUtc());
+    await refresh();
+  }
+
+  Future<void> unarchiveMarker(String metricId) async {
+    await metrics.unarchive(metricId, now: DateTime.now().toUtc());
+    await refresh();
+  }
+
+  /// Soft-deletes a marker. **Its readings stay on disk**, so deleting one by
+  /// accident does not take a year of numbers with it.
+  Future<void> deleteMarker(String metricId) async {
+    await metrics.softDelete(metricId, now: DateTime.now().toUtc());
+    await refresh();
+  }
+
   /// Writes the starting markers on a fresh install.
   Future<void> seedIfNeeded() async {
     await metrics.seedIfEmpty(now: DateTime.now().toUtc());

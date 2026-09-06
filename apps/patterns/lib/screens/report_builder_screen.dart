@@ -183,6 +183,11 @@ class _ReportBuilderScreenState extends State<ReportBuilderScreen> {
                   onSelected: (_) =>
                       setState(() => _axis = ReportAxis.cycleDay),
                 ),
+                ChoiceChip(
+                  label: const Text('Mreza'),
+                  selected: _axis == ReportAxis.grid,
+                  onSelected: (_) => setState(() => _axis = ReportAxis.grid),
+                ),
               ],
             ),
             const SizedBox(height: VitalsSpacing.xl),

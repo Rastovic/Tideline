@@ -3,6 +3,7 @@ import 'package:patterns_core/patterns_core.dart';
 import 'package:vitals_ui/vitals_ui.dart';
 
 import '../data/patterns_controller.dart';
+import 'day_grid_chart.dart';
 import 'report_builder_screen.dart';
 import 'report_chart.dart';
 
@@ -140,6 +141,11 @@ class _ReportViewScreenState extends State<ReportViewScreen> {
             selected: _definition.axis == ReportAxis.cycleDay,
             onSelected: (_) => _setAxis(ReportAxis.cycleDay),
           ),
+          ChoiceChip(
+            label: const Text('Mreza'),
+            selected: _definition.axis == ReportAxis.grid,
+            onSelected: (_) => _setAxis(ReportAxis.grid),
+          ),
         ],
       );
 }
@@ -178,7 +184,12 @@ class _RowBlock extends StatelessWidget {
           ],
         ),
         const SizedBox(height: VitalsSpacing.sm),
-        ReportRowChart(row: row, color: color),
+        // Same cells either way - the grid is a layout, not a different
+        // reading of the data.
+        if (report.definition.axis == ReportAxis.grid)
+          DayGridChart(row: row, dayKeys: report.dayKeys, color: color)
+        else
+          ReportRowChart(row: row, color: color),
         const SizedBox(height: VitalsSpacing.xs),
         Text(
           _facts(row),

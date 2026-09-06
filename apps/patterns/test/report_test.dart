@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:patterns/data/patterns_controller.dart';
 import 'package:patterns/screens/report_builder_screen.dart';
+import 'package:patterns/screens/day_grid_chart.dart';
 import 'package:patterns/screens/report_chart.dart';
 import 'package:patterns/screens/report_view_screen.dart';
 import 'package:patterns/screens/reports_screen.dart';
@@ -303,6 +304,87 @@ void main() {
           .firstWhere((m) => m.kind == MetricKind.text);
       expect(find.text(diary.name), findsNothing);
       controller.dispose();
+    });
+  });
+
+  group('the day grid', () {
+    testWidgets('is a layout of the same cells, not a different reading',
+        (tester) async {
+      final controller = await freshController();
+      final mood = controller.allMarkers
+          .firstWhere((m) => m.kind == MetricKind.scale);
+      await controller.log(
+        mood.id,
+        const NumberValue(6, kind: MetricKind.scale),
+      );
+
+      await tester.pumpWidget(wrap(ReportViewScreen(
+        controller: controller,
+        definition: definitionFor(
+          [ReportSeries(metricId: mood.id)],
+          axis: ReportAxis.grid,
+        ),
+      )));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(DayGridChart), findsOneWidget);
+      expect(find.byType(ReportRowChart), findsNothing);
+      // The facts line is unchanged: the grid answers a different question
+      // about the same numbers, so it must not report different ones.
+      expect(find.textContaining('1/30 dana'), findsOneWidget);
+      controller.dispose();
+    });
+
+    testWidgets('labels every weekday, because two of them share an initial',
+        (tester) async {
+      final controller = await freshController();
+      final mood = controller.allMarkers
+          .firstWhere((m) => m.kind == MetricKind.scale);
+
+      await tester.pumpWidget(wrap(ReportViewScreen(
+        controller: controller,
+        definition: definitionFor(
+          [ReportSeries(metricId: mood.id)],
+          axis: ReportAxis.grid,
+        ),
+      )));
+      await tester.pumpAndSettle();
+
+      for (final label in DayGridChart.weekdayLabels) {
+        expect(find.text(label), findsOneWidget, reason: label);
+      }
+      controller.dispose();
+    });
+
+    testWidgets('switching to the grid keeps one report, not two',
+        (tester) async {
+      final controller = await freshController();
+      final mood = controller.allMarkers
+          .firstWhere((m) => m.kind == MetricKind.scale);
+      final definition = definitionFor([ReportSeries(metricId: mood.id)]);
+      await controller.saveReport(definition);
+
+      await tester.pumpWidget(wrap(ReportViewScreen(
+        controller: controller,
+        definition: definition,
+      )));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Mreza'));
+      await tester.pumpAndSettle();
+
+      final saved = await controller.savedReports();
+      expect(saved, hasLength(1));
+      expect(saved.single.axis, ReportAxis.grid);
+      expect(find.byType(DayGridChart), findsOneWidget);
+      controller.dispose();
+    });
+
+    test('a grid report round trips through storage', () async {
+      // `axis` is a wire string, so adding a third value needed no migration -
+      // and an older build reads an unknown axis as null and skips the report
+      // rather than crashing on it.
+      expect(ReportAxis.fromWire('grid'), ReportAxis.grid);
+      expect(ReportAxis.fromWire('byMoonPhase'), isNull);
     });
   });
 }

@@ -14,7 +14,20 @@ import 'observation.dart';
 /// appetite can be read against the cycle **without being owned by it**.
 enum ReportAxis {
   date('date'),
-  cycleDay('cycleDay');
+  cycleDay('cycleDay'),
+
+  /// The same dated days, laid out seven wide.
+  ///
+  /// A different question rather than a different picture, which is why it is
+  /// saved with the report: a linear row answers "how did this move", and a
+  /// grid answers **"does this repeat weekly"** - in seven columns a run of low
+  /// Sundays is a visible column, and in a scroll it is smeared across the
+  /// whole strip.
+  ///
+  /// The cells are identical to [date]; only the layout differs. Everything
+  /// that builds a report treats the two the same, and the grid lives entirely
+  /// in the painter.
+  grid('grid');
 
   const ReportAxis(this.wireName);
 

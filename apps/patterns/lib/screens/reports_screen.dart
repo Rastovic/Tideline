@@ -152,8 +152,11 @@ class _ReportsScreenState extends State<ReportsScreen> {
         },
       FixedPeriod(:final from, :final to) => '$from - $to',
     };
-    final axis =
-        report.axis == ReportAxis.cycleDay ? ' · po danu ciklusa' : '';
+    final axis = switch (report.axis) {
+      ReportAxis.cycleDay => ' · po danu ciklusa',
+      ReportAxis.grid => ' · mreza',
+      ReportAxis.date => '',
+    };
     return '$rows markera · $period$axis';
   }
 }

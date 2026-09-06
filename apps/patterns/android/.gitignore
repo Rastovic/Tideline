@@ -12,3 +12,9 @@ GeneratedPluginRegistrant.java
 key.properties
 **/*.keystore
 **/*.jks
+
+# Signing material. The keystore lives outside the repo; this file only points
+# at it. A lost keystore is an app that can never be updated again.
+key.properties
+**/*.keystore
+**/*.jks

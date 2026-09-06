@@ -1,0 +1,17 @@
+# Copy to key.properties (gitignored) and fill in.
+#
+# The keystore itself lives OUTSIDE the repo - a keystore in a git history is a
+# keystore anyone who ever clones the repo has. Without this file the release
+# build falls back to the debug key and is not uploadable, which is the correct
+# failure rather than a silent one.
+#
+# Create one with:
+#   keytool -genkey -v -keystore ~/tideline-upload.jks \
+#     -keyalg RSA -keysize 2048 -validity 10000 -alias upload
+#
+# Back the .jks up somewhere that is not this phone and not this laptop. A lost
+# keystore is an app that can never be updated again.
+storeFile=/Users/you/tideline-upload.jks
+storePassword=
+keyAlias=upload
+keyPassword=

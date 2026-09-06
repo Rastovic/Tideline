@@ -616,3 +616,59 @@ permission to grant and none to explain - and the three notification receivers
 are still in place.
 
 Next: a signed release build on her phone, then the day grid as a report view.
+
+## Patterns: the app gets its real name, a signing key, and a day grid (2026-09-07, later)
+
+Three things, and the first two were done now precisely because they are cheap
+today and expensive in three months. 312 tests, analyzer clean, both debug and
+release APKs build.
+
+**`com.jr.patterns` became `com.rastovic.tideline`, and the launcher says
+`Tideline`.** The brand was settled in August and the code was the last place
+still saying `patterns` - the Dart package keeps that name, which is right,
+since `Patterns` was always meant to survive as the in-app word. **An
+application id cannot be changed after the app holds readings**: a different id
+is a different app, so it would mean uninstall, reinstall, restore from archive.
+Today there is nothing to lose, which is the only reason this was a five-minute
+job.
+
+**Release signing, in the same shape lockIn uses.** `android/key.properties` is
+gitignored and points at a keystore that lives outside the repo; when it is
+absent the release build falls back to the debug key. That fallback is the
+point rather than a convenience: **a missing secret must not silently produce
+an artifact that looks shippable**, and it also means the build works on a
+machine that has never been given the key. `key.properties.example` carries the
+`keytool` line and the warning that matters - a lost keystore is an app that can
+never be updated again, so the `.jks` belongs somewhere that is neither this
+laptop nor this phone.
+
+Verified by building the release APK and reading the merged manifest:
+`package="com.rastovic.tideline"`, `android:label="Tideline"`. It is 61.9 MB,
+which is four ABIs of sqlite3 and the image codecs in one file;
+`--split-per-abi` cuts that when it starts to matter, and for a sideloaded
+personal build it does not yet.
+
+**The day grid is a third axis rather than a display style, and that turned out
+to be the honest model.** `ReportAxis.grid` sits beside `date` and `cycleDay`
+because it answers a different *question* - a strip answers "how did this move",
+a grid answers **"does this repeat weekly"**, and it can only answer that
+because every Monday is in the same column. In a scrolling row the weekday is
+smeared across the strip and the pattern people most want to find is invisible.
+Being part of the question is also why it is saved with the report.
+
+The cells are identical to the date axis; `buildReport` needed no change at all,
+since it only ever branched on `cycleDay`. **The grid lives entirely in the
+painter**, which is what "a layout, not a different reading" means in practice -
+and a test asserts the facts line under a grid reports the same numbers as under
+a strip.
+
+`axis` is a wire string, so a third value needed no migration, and an older
+build reads an unknown axis as null and skips that report rather than crashing
+on it. Two small things the grid had to get right: a padding slot before the
+first weekday draws **nothing at all**, not even an empty outline, or the period
+would appear to start on a Monday; and the weekday headers are three letters,
+because two of the seven share an initial in this language and two more share a
+second.
+
+Next: a date-range picker for a fixed period, then row reordering, then the
+printable doctor page.

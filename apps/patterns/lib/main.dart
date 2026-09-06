@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:vitals_notify/vitals_notify.dart';
 
 import 'app/patterns_app.dart';
 import 'data/app_database.dart';
+import 'data/evening_reminder.dart';
 import 'data/patterns_controller.dart';
 
 Future<void> main() async {
@@ -20,5 +22,19 @@ Future<void> main() async {
   // a marker removed on purpose does not reappear after an update.
   await controller.seedIfNeeded();
 
-  runApp(PatternsApp(controller: controller));
+  // Re-armed on every launch rather than trusted to have survived. Android
+  // drops pending alarms on a reboot and on an app update, and the second is
+  // the one that would quietly break this for the person who least expects it.
+  // A fixed notification id makes the call idempotent.
+  final settings = await ReminderSettings.load();
+  final reminder = EveningReminder(LocalNotifier());
+  await reminder.apply(settings);
+
+  runApp(
+    PatternsApp(
+      controller: controller,
+      reminder: reminder,
+      settings: settings,
+    ),
+  );
 }

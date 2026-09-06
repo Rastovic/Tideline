@@ -1,0 +1,21 @@
+name: vitals_notify
+description: Local notifications, and the policy that decides what is worth sending.
+version: 0.1.0
+publish_to: none
+resolution: workspace
+
+environment:
+  sdk: ^3.12.0
+  flutter: ">=3.44.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_local_notifications: ^19.4.2
+  timezone: ^0.10.1
+  vitals_core: ^0.1.0
+
+dev_dependencies:
+  flutter_lints: ^5.0.0
+  flutter_test:
+    sdk: flutter

@@ -21,6 +21,7 @@ dependencies:
   patterns_data: ^0.1.0
   shared_preferences: ^2.3.3
   vitals_core: ^0.1.0
+  vitals_notify: ^0.1.0
   vitals_ui: ^0.1.0
 
 dev_dependencies:

@@ -2,11 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:patterns_core/patterns_core.dart';
 import 'package:vitals_ui/vitals_ui.dart';
 
+import '../data/app_database.dart';
+import '../data/evening_reminder.dart';
 import '../data/patterns_controller.dart';
 import '../data/photo_picker.dart';
 import 'day_detail_screen.dart';
 import 'log_sheet.dart';
 import 'metrics_screen.dart';
+import 'settings_screen.dart';
 
 /// The home screen: what I track, and whether it is logged today.
 ///
@@ -18,6 +21,8 @@ class HomeScreen extends StatefulWidget {
   const HomeScreen({
     required this.controller,
     this.picker = const PhotoPicker(),
+    this.reminder,
+    this.initialSettings = ReminderSettings.off,
     super.key,
   });
 
@@ -26,12 +31,21 @@ class HomeScreen extends StatefulWidget {
   /// Injected so a widget test can hand back bytes without a camera.
   final PhotoPicker picker;
 
+  /// Null on a surface with no notifications, the same way [PhotoStore] is
+  /// null where the photo directory could not be opened. The settings entry
+  /// point is hidden rather than opening a screen whose switch cannot work.
+  final EveningReminder? reminder;
+
+  final ReminderSettings initialSettings;
+
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
 class _HomeScreenState extends State<HomeScreen> {
   PatternsController get controller => widget.controller;
+
+  late ReminderSettings _settings = widget.initialSettings;
 
   static const _sectionTitles = {
     MetricDomain.mind: 'UM',
@@ -115,6 +129,21 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                           ),
                         ),
+                        if (widget.reminder case final reminder?)
+                          IconButton(
+                            tooltip: 'Podesavanja',
+                            icon: const Icon(Icons.settings_outlined),
+                            onPressed: () => Navigator.of(context).push(
+                              MaterialPageRoute<void>(
+                                builder: (_) => SettingsScreen(
+                                  reminder: reminder,
+                                  settings: _settings,
+                                  onChanged: (next) =>
+                                      setState(() => _settings = next),
+                                ),
+                              ),
+                            ),
+                          ),
                       ],
                     ),
                   ],

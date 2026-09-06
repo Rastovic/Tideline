@@ -429,3 +429,68 @@ streak. A test asserts none of those words can appear on it, because a target
 field is how grading gets added to a recording app by accident.
 
 Next: the evening reminder, then the report builder.
+
+## Patterns: the evening reminder, and a package that had to come back (2026-09-06)
+
+One reminder, end of day, at a time she sets, off by default. `ReminderSettings`
+in prefs, `EveningReminder` over the shared `Notifier`, a settings screen behind
+a gear on home. 265 tests across the repo, analyzer clean, debug APK builds.
+
+**`vitals_notify` was not in this repo, because the split sent it to lockIn
+only.** That was the right call in September - patterns had no notifications -
+and it was wrong three weeks later. It is now copied back, so the package exists
+in both repos exactly as `vitals_core` and `vitals_archive` do. First real
+instance of the cost the split was accepted for.
+
+**The shared package needed a new call, and both copies got it in the same
+sitting.** `Notifier.scheduleDaily` - `zonedSchedule` with
+`matchDateTimeComponents: DateTimeComponents.time`, so **the clock time is what
+repeats, not the interval**: a 21:00 reminder stays at 21:00 through a DST
+change instead of sliding to 20:00. Kept separate from `schedule` rather than
+added as a flag, because the two fail differently - a one-shot that never fires
+is a missed alarm, a repeat that never fires is a feature that quietly stopped
+working and is noticed weeks later. Mirrored into lockIn's copy immediately and
+`diff -rq` confirms the two `lib` trees are identical again. Doing it later is
+how the copies diverge.
+
+**The reminder cannot grade the day, structurally.** `apply` takes the settings
+and the clock and nothing else - it has no controller, no counts, no access to
+whether anything was logged. The wording is a constant with a test asserting it
+contains no "propust", "nisi", "niz", "%" or "bravo", so a later helpful version
+has to argue with a test rather than with a comment.
+
+**One fixed notification id.** Without it every visit to Settings leaves another
+alarm behind and the phone goes off twice; with it, `apply` is idempotent and is
+called on every launch as well as on every change.
+
+**A refused permission leaves the switch off, never on-but-silent.** An app that
+says a reminder is set when the OS will never deliver it is lying, and the
+discovery comes weeks later. The screen says so in one sentence and adds that
+everything else works normally. Permission is asked for after the switch is
+flipped, never on launch.
+
+**`nextReminderAt` treats "exactly now" as passed.** Otherwise setting the
+reminder to the current minute fires it instantly, which reads as the app
+shouting at you for opening Settings.
+
+Tapping the notification needs no routing code, and that it needs none is the
+point: the app opens on the marker list, which is already the entry screen. No
+summary and no recap in between, as `MY-SETUP.md` asks.
+
+**Two Android things, both learned in lockIn and both invisible to tests.**
+`flutter_local_notifications` declares only permissions in its own manifest -
+the three `com.dexterous.*` receivers have to be declared by the app, or
+`zonedSchedule` sets an alarm that fires into nothing while `show` keeps
+working. And it needs `isCoreLibraryDesugaringEnabled` plus the
+`desugar_jdk_libs` dependency, which fails the build loudly rather than
+silently, so that one at least announces itself.
+
+**Checked the way lockIn eventually had to check it: by grepping the merged
+manifest of the built APK**, not by trusting the source. All three receivers and
+all three permissions are in
+`build/app/intermediates/merged_manifests/debug/.../AndroidManifest.xml`. Every
+test in lockIn passed while that alarm never rang, because every test mocked the
+notifier and correctly asserted a nudge was scheduled - the scheduling was never
+the problem.
+
+Next: the report builder.

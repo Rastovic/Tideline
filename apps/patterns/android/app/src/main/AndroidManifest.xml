@@ -1,4 +1,24 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- POST_NOTIFICATIONS is for the one evening reminder and nothing else.
+         It is requested after the switch in Settings is flipped, never on
+         launch: an app that opens by asking to notify you is an app whose
+         notifications get turned off at OS level in the first week.
+
+         RECEIVE_BOOT_COMPLETED is required by flutter_local_notifications to
+         re-arm the scheduled alarm the OS dropped on a reboot or an app
+         update. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+
+    <!-- The reminder is a time of day, not a countdown, so an inexact alarm
+         deferred by a few minutes is perfectly fine. This is declared anyway
+         because it is what the shared notifier asks Android for before falling
+         back, and the fallback is the honest default here rather than a
+         degradation. SCHEDULE_EXACT_ALARM rather than USE_EXACT_ALARM, which
+         is reserved for apps whose whole purpose is alarms. -->
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+
     <application
         android:label="patterns"
         android:name="${applicationName}"
@@ -25,6 +45,38 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
+        <!-- flutter_local_notifications declares only permissions in its own
+             manifest: **the receivers that deliver a scheduled notification
+             have to be declared here, by the app.** Without them the alarm is
+             set and fires into nothing, so `show` works, `zonedSchedule`
+             silently does not, and the reminder never arrives. lockIn shipped
+             that bug and it survived every test, because every test mocked the
+             notifier and correctly asserted a nudge was scheduled - the
+             scheduling was never the problem. -->
+        <receiver
+            android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationReceiver"
+            android:exported="false" />
+
+        <!-- Re-arms the reminder the OS dropped. Both a reboot and an app
+             update clear pending alarms. The app also re-applies on every
+             launch, so this is the belt and that is the braces: without it the
+             reminder is missing until the app is next opened, which for a
+             reminder to open the app is exactly the wrong way round. -->
+        <receiver
+            android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationBootReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+                <action android:name="android.intent.action.QUICKBOOT_POWERON" />
+                <action android:name="com.htc.intent.action.QUICKBOOT_POWERON" />
+            </intent-filter>
+        </receiver>
+
+        <receiver
+            android:name="com.dexterous.flutterlocalnotifications.ActionBroadcastReceiver"
+            android:exported="false" />
+
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
         <meta-data

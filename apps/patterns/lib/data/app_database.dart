@@ -51,3 +51,52 @@ final class DayBoundary {
     await prefs.setInt(_key, hour);
   }
 }
+
+/// The one reminder: whether it is on, and at what minute of the day.
+///
+/// **One, at the end of the day, at a time I set.** Not three check-ins, not a
+/// morning ping, not a preset chosen in onboarding. Everything else in the app
+/// is quick-log, and the reminder is a convenience rather than the way the app
+/// works - which is why turning it off changes nothing else.
+final class ReminderSettings {
+  const ReminderSettings({required this.enabled, required this.minute});
+
+  /// Off until asked for. A tracker that starts by notifying you is a tracker
+  /// whose notifications get switched off at OS level within a week, and that
+  /// costs the reminder you would have wanted.
+  static const ReminderSettings off =
+      ReminderSettings(enabled: false, minute: defaultMinute);
+
+  /// 21:00, as minutes from midnight. Only a starting point for the picker.
+  static const int defaultMinute = 21 * 60;
+
+  final bool enabled;
+
+  /// Minutes from local midnight.
+  final int minute;
+
+  int get hour => minute ~/ 60;
+  int get minuteOfHour => minute % 60;
+
+  ReminderSettings copyWith({bool? enabled, int? minute}) => ReminderSettings(
+        enabled: enabled ?? this.enabled,
+        minute: minute ?? this.minute,
+      );
+
+  static const _enabledKey = 'patterns.reminder.enabled';
+  static const _minuteKey = 'patterns.reminder.minute';
+
+  static Future<ReminderSettings> load() async {
+    final prefs = await SharedPreferences.getInstance();
+    return ReminderSettings(
+      enabled: prefs.getBool(_enabledKey) ?? false,
+      minute: prefs.getInt(_minuteKey) ?? defaultMinute,
+    );
+  }
+
+  Future<void> save() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_enabledKey, enabled);
+    await prefs.setInt(_minuteKey, minute);
+  }
+}

@@ -15,6 +15,7 @@ workspace:
   - packages/vitals_core
   - packages/vitals_ui
   - packages/vitals_archive
+  - packages/vitals_notify
   - packages/patterns_core
   - packages/patterns_data
   - apps/patterns

@@ -670,5 +670,18 @@ would appear to start on a Monday; and the weekday headers are three letters,
 because two of the seven share an initial in this language and two more share a
 second.
 
+**The key exists as of 2026-09-07 and the release APK is signed with it**, not
+with the debug key - checked with `apksigner verify --print-certs` and compared
+against the debug certificate, because the build succeeds either way and that
+comparison is the only thing that distinguishes them.
+
+    CN=Jelena Rastovic, OU=Unknown, O=Unknown, L=Podgorica, ST=Unknown, C=ME
+    SHA-256 c1ba0fdc62eb83b26b3bdb7448fbec569ede545c528f3fdf90f6691a11900c56
+
+The keystore lives in `~/Documents/apps/keys/`, beside lockIn's, which is
+outside every repo. It was created `-rw-r--r--` and tightened to `600` - the
+default is world-readable, and on a shared or managed machine that is the whole
+protection gone.
+
 Next: a date-range picker for a fixed period, then row reordering, then the
 printable doctor page.

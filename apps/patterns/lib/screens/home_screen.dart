@@ -152,6 +152,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 builder: (_) => SettingsScreen(
                                   reminder: reminder,
                                   settings: _settings,
+                                  controller: controller,
                                   onChanged: (next) =>
                                       setState(() => _settings = next),
                                 ),

@@ -6,7 +6,11 @@ plugins {
 
 android {
     namespace = "com.jr.patterns"
-    compileSdk = flutter.compileSdkVersion
+    // Pinned rather than following flutter.compileSdkVersion: file_picker
+    // pulls in flutter_plugin_android_lifecycle, which requires API 36 to
+    // compile against. Compiling against a newer SDK does not change which
+    // devices the app runs on - minSdk governs that - so nobody is dropped.
+    compileSdk = 36
     ndkVersion = flutter.ndkVersion
 
     compileOptions {

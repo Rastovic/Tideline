@@ -3,7 +3,10 @@ import 'package:vitals_notify/vitals_notify.dart';
 import 'package:vitals_ui/vitals_ui.dart';
 
 import '../data/app_database.dart';
+import '../data/archive_transfer.dart';
 import '../data/evening_reminder.dart';
+import '../data/patterns_controller.dart';
+import 'backup_screen.dart';
 
 /// Settings, which for now is the one reminder.
 ///
@@ -19,12 +22,20 @@ class SettingsScreen extends StatefulWidget {
   const SettingsScreen({
     required this.reminder,
     required this.settings,
+    this.controller,
+    this.transfer = const PlatformArchiveTransfer(),
     this.onChanged,
     super.key,
   });
 
   final EveningReminder reminder;
   final ReminderSettings settings;
+
+  /// Null on a surface with no database behind it. The archive entry point is
+  /// hidden rather than opening a screen whose buttons cannot work.
+  final PatternsController? controller;
+
+  final ArchiveTransfer transfer;
 
   /// Lets the app hold the current settings without this screen owning them.
   final ValueChanged<ReminderSettings>? onChanged;
@@ -139,6 +150,35 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 color: theme.colors.inkMuted,
               ),
             ),
+            if (widget.controller case final controller?) ...[
+              const SizedBox(height: VitalsSpacing.huge),
+              Text(
+                'ARHIVA',
+                style: theme.typography.label.copyWith(
+                  color: theme.colors.inkFaint,
+                  letterSpacing: 1.2,
+                ),
+              ),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                title: Text('Backup i vracanje',
+                    style: theme.typography.body),
+                subtitle: Text(
+                  'Jedan fajl sa svime, fotografije unutra',
+                  style: theme.typography.caption
+                      .copyWith(color: theme.colors.inkFaint),
+                ),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => BackupScreen(
+                      controller: controller,
+                      transfer: widget.transfer,
+                    ),
+                  ),
+                ),
+              ),
+            ],
             if (_blockedByOs) ...[
               const SizedBox(height: VitalsSpacing.lg),
               Container(

@@ -61,7 +61,7 @@ final class ArchiveManifest {
         manifest: null,
         error: const ArchiveError(
           ArchiveRejection.malformed,
-          'This file is not a lockIn backup.',
+          'This file is not a backup from this app.',
         ),
       );
     }
@@ -70,7 +70,7 @@ final class ArchiveManifest {
         manifest: null,
         error: const ArchiveError(
           ArchiveRejection.malformed,
-          'This file is not a lockIn backup.',
+          'This file is not a backup from this app.',
         ),
       );
     }
@@ -139,7 +139,7 @@ final class ArchiveManifest {
     if (!format.startsWith('app-archive/')) {
       return const ArchiveError(
         ArchiveRejection.malformed,
-        'This file is not a lockIn backup.',
+        'This file is not a backup from this app.',
       );
     }
     if (schemaVersion > appSchemaVersion) {

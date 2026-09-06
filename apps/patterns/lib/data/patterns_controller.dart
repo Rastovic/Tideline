@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:vitals_archive/vitals_archive.dart';
 import 'package:patterns_core/patterns_core.dart';
 import 'package:patterns_data/patterns_data.dart';
 import 'package:vitals_core/vitals_core.dart';
@@ -43,7 +44,9 @@ final class PatternsController extends ChangeNotifier {
           dayBoundaryHour: dayBoundaryHour,
         ),
         photos = PhotoRepository(db, installId: installId),
-        reports = ReportRepository(db, installId: installId);
+        reports = ReportRepository(db, installId: installId),
+        backup = PatternsBackup(db),
+        _installId = installId;
 
   final PatternsDatabase _db;
   final int _dayBoundaryHour;
@@ -56,6 +59,11 @@ final class PatternsController extends ChangeNotifier {
   final ObservationRepository observations;
   final PhotoRepository photos;
   final ReportRepository reports;
+  final PatternsBackup backup;
+
+  /// Stamped into every archive manifest, so a restore can tell whose phone
+  /// wrote it.
+  final String _installId;
 
   PhotoStore? get photoStore => _photoStore;
 
@@ -105,6 +113,65 @@ final class PatternsController extends ChangeNotifier {
     _todayCounts = await observations.countsOnDay(_today);
     _loading = false;
     notifyListeners();
+  }
+
+  /// Builds the archive, photos inside it.
+  ///
+  /// Returns the bytes rather than writing them: the caller shows the size and
+  /// the photo count first, because `MY-SETUP.md` asks the export to state what
+  /// it is before it is written, and a backup you cannot size is one you cannot
+  /// trust to be complete.
+  ///
+  /// A photo whose file has vanished is counted and skipped rather than failing
+  /// the export. The file is already lost; refusing to back up everything else
+  /// would only make that worse.
+  Future<({Uint8List bytes, int photosIncluded, int photosMissing})>
+      exportArchive({required String appVersion}) async {
+    final now = DateTime.now();
+    return backup.export(
+      appVersion: appVersion,
+      installId: _installId,
+      exportedAtMillis: now.toUtc().millisecondsSinceEpoch,
+      timezone: now.timeZoneName,
+      dayBoundaryHour: _dayBoundaryHour,
+      readPhoto: (fileName) async => _photoStore?.read(fileName),
+    );
+  }
+
+  /// Reads an archive without writing anything.
+  ///
+  /// **The dry run exists so a restore is never a surprise.** Nothing on this
+  /// path can touch the database, which is why it is separate from
+  /// [restoreArchive] rather than a flag on it.
+  ({ImportPreview? preview, ArchiveError? error}) previewArchive(
+    Uint8List bytes,
+  ) {
+    final read = const ArchiveReader().read(
+      bytes,
+      appSchemaVersion: PatternsDatabase.currentSchemaVersion,
+    );
+    if (read.error != null) return (preview: null, error: read.error);
+    return (
+      preview: const ImportPlanner().preview(read.contents!),
+      error: null,
+    );
+  }
+
+  /// Writes an archive in, atomically, replacing what is here.
+  ///
+  /// Only ever called after a preview and an explicit confirmation. Everything
+  /// lands in one transaction, so a crash or a low-memory kill mid-restore
+  /// leaves the existing data exactly as it was.
+  Future<({RestoreReport? report, ArchiveError? error})> restoreArchive(
+    Uint8List bytes,
+  ) async {
+    final result = await backup.import(
+      bytes,
+      writePhoto: (fileName, photoBytes) async =>
+          _photoStore?.write(fileName, photoBytes),
+    );
+    await refresh();
+    return result;
   }
 
   /// Saved reports, newest question first.

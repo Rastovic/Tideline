@@ -142,12 +142,17 @@ final class ArchiveReader {
     // archive. Without this, a user who picked a photo by mistake would be
     // told their backup was missing its manifest, which reads as data loss
     // rather than as the wrong file.
+    //
+    // The message names no app. This package is shared by every app in the
+    // portfolio and it used to say "not a lockIn backup", which was wrong in
+    // any of the others the moment they copied it. Callers that want to name
+    // themselves have `ArchiveRejection` to switch on.
     if (byName.isEmpty) {
       return (
         contents: null,
         error: const ArchiveError(
           ArchiveRejection.malformed,
-          'This file is not a lockIn backup.',
+          'This file is not a backup from this app.',
         ),
       );
     }

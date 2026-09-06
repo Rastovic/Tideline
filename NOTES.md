@@ -559,3 +559,60 @@ Not built, in the order they will be missed: the day grid as a report view, a
 date-range picker for a fixed period (a saved one still round-trips, only the
 builder does not offer one yet), reordering rows inside a report, and the
 printable doctor page.
+
+## Patterns: backup and restore, and the one screen where a bug costs data (2026-09-07)
+
+The engine and its 46 tests had been sitting in `patterns_data` since August
+with **no way to reach them from the app**. Now there is: an Arhiva screen
+behind Settings that exports the whole database with the photos inside it, and
+restores one after showing what is in it. 308 tests, analyzer clean, debug APK
+builds.
+
+**The plan's one surviving kill criterion is a restore data-loss bug that is
+not fully understood - and it could not even be looked for until the whole path
+ran in a test.** `ArchiveTransfer` is an interface over `file_picker` and
+`share_plus` for exactly that reason, the same seam `PhotoPicker` already uses.
+The round-trip test now exports through the screen, logs a second reading, and
+restores: the second reading is gone, which is what the confirmation promised.
+
+**Three sentences the screen has to say, and each one is a test.** The export
+states its size and photo count *before* it goes anywhere, because size is the
+number that says whether the photos are really in there. The restore states
+what is in the file and that it replaces everything, *before* it writes a byte -
+and the confirmation is not dismissible by tapping away, since it is the last
+point before a year of history goes. Afterwards it says with a count what did
+not come back: the rows are kept, so a day still shows that a photo existed and
+the caption survives, and only the image is missing.
+
+**A widget test found a real UI bug rather than a test problem.** `_busy` drove
+a `CircularProgressIndicator`, and it stayed true while the confirmation dialog
+was up - so `pumpAndSettle` never settled, because a spinner always schedules a
+frame. The honest reading is that the spinner was wrong: it said the app was
+working when the app was waiting on her. `_busy` is now true only while
+something is actually being built or written.
+
+**Two defects in the shared `vitals_archive`, found by using it from a second
+app.** The rejection message for an unreadable file was hard-coded to `'This
+file is not a lockIn backup.'` - in a package copied into every app in the
+portfolio, so it was wrong in Tideline the moment it arrived, and four call
+sites said it. It now names no app; a caller that wants to name itself has
+`ArchiveRejection` to switch on. Both copies fixed in the same sitting,
+`diff -rq` clean.
+
+The second is not a bug but the same shape: the package writes English, and
+this app is in Serbian. `_refusal` switches on the reason rather than passing
+`error.message` through, so a person worried about their data does not get one
+English paragraph in the middle of a Serbian screen.
+
+**Two Android build fixes, both already paid for in lockIn.** `file_picker`
+pulls in `flutter_plugin_android_lifecycle`, which insists on API 36: the app's
+`compileSdk` is pinned to 36, and a `subprojects` block raises it for the
+plugins too, since the plugin modules publish their own and are behind. Neither
+changes which devices the app runs on - `minSdk` governs that and is untouched.
+
+Checked the merged manifest of the built APK again: **no new permissions.**
+Sharing rather than saving to a fixed folder is what buys that - no storage
+permission to grant and none to explain - and the three notification receivers
+are still in place.
+
+Next: a signed release build on her phone, then the day grid as a report view.

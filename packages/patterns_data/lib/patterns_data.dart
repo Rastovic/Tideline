@@ -10,4 +10,5 @@ export 'src/database.dart';
 export 'src/metric_repository.dart';
 export 'src/observation_repository.dart';
 export 'src/photo_repository.dart';
+export 'src/report_repository.dart';
 export 'src/tables.dart';

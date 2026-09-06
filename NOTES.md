@@ -494,3 +494,68 @@ notifier and correctly asserted a nudge was scheduled - the scheduling was never
 the problem.
 
 Next: the report builder.
+
+## Patterns: the report builder (2026-09-06, last)
+
+Pick markers and a period, get stacked rows on one shared date axis, each drawn
+the way that marker deserves. Saved, named, re-openable, and re-sortable by
+cycle day. 299 tests across the repo, analyzer clean, debug APK builds.
+
+**The engine was already there.** `summariseDays`, `statsFor`, `median` and
+`circularMeanMinutes` were written in 4a; this chunk added `report.dart` on top
+and the whole data layer of reports is 250 lines of pure Dart. Deferring the
+report builder until last cost nothing, which was the bet.
+
+**A saved report stores the question, never the answer.** No aggregate column,
+no cached median, no rendered row - a test asserts the real schema has no
+column named `typical`, `median`, `value`, `cached` or `result`. Opening a
+report rebuilds it from the readings, so changing a marker's day rule from
+"typical" to "peak" re-reads history rather than leaving an old number frozen
+in a saved report forever.
+
+**Nothing interpolates, and that decides which shapes exist.** An unlogged day
+is a cell with a null value all the way to the painter. Bars skip it - a
+zero-height bar and an unlogged day would look identical and are not the same
+fact. Squares draw an empty outline rather than a pale fill, because a light
+square reads as a low value and an unlogged day is not a low day. The presence
+strip has three states, not two: on, recorded-as-off, and never answered.
+`_BrokenLinePainter` only joins *consecutive* logged days and drops a lone dot
+where a logged day sits between two gaps - which is what makes a line allowed
+at all. The old ban was aimed at interpolation, not at the shape.
+
+**Two y axes are unbuildable rather than forbidden.** A `ReportRow` holds one
+metric and one list of cells; there is nowhere to put a second series. The one
+overlay is a boolean drawn as a pale band behind another row, safe precisely
+because a band has no scale of its own to stretch until it agrees. The builder
+will not offer a band behind a band.
+
+**A rating is drawn against its declared bounds, not against what was
+recorded.** A month where nothing went below 4 must not redraw 4 as the floor,
+or every month looks equally bad. Everything else scales from zero to what is
+there, since a dose has no declared ceiling.
+
+**The cycle axis folds cycles onto each other, and the fold rule is always the
+median** whatever the marker's own day rule says. Summing a dose across six
+cycles produces a number that means nothing, and a peak across six cycles is
+one bad Tuesday reported as a pattern. A cycle day with no dated day behind it
+stays unlogged rather than borrowing from its neighbours.
+
+⚠️ **One interpretation taken rather than asked about.** `MY-SETUP.md` lists
+"per-week typical" among the facts per row without defining it. Implemented as
+the median of the weekly figure, where the week is summed for a marker whose
+day rule is sum and taken as a median otherwise - five 3 g days are a 9 g week,
+five ratings of 3 are a rating of 3. Weeks run in sevens from the start of the
+period rather than from Monday, since shifting the edge to the nearest Monday
+silently reports days nobody asked about. Null under seven days, because a
+typical week computed from four days carries a week's authority on four days'
+evidence.
+
+**Schema v2**, purely additive: `SavedReports`, named `SavedReportRow` because
+drift generates a data class per table and `Report` is already the built object
+in core. Third time that collision has cost something - after `Treat` and
+`Meta` - and the rule holds: a persistence row is not a domain object.
+
+Not built, in the order they will be missed: the day grid as a report view, a
+date-range picker for a fixed period (a saved one still round-trips, only the
+builder does not offer one yet), reordering rows inside a report, and the
+printable doctor page.

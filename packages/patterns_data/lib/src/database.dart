@@ -20,6 +20,7 @@ part 'database.g.dart';
     MetricOptions,
     Observations,
     Photos,
+    SavedReports,
     Settings,
     AppMeta,
   ],
@@ -28,7 +29,7 @@ class PatternsDatabase extends _$PatternsDatabase {
   PatternsDatabase(super.e);
 
   /// Bumped for every schema change, and written into every archive manifest.
-  static const currentSchemaVersion = 1;
+  static const currentSchemaVersion = 2;
 
   @override
   int get schemaVersion => currentSchemaVersion;
@@ -43,6 +44,10 @@ class PatternsDatabase extends _$PatternsDatabase {
           // Migration steps land here as the schema grows. Each one must be
           // additive or explicitly lossy with a note, because this chain also
           // carries a two-year-old backup forward on restore.
+          //
+          // v1 -> v2: saved reports. Purely additive - a v1 archive restores
+          // with no reports, which is exactly what a v1 phone had.
+          if (from < 2) await m.createTable(savedReports);
           await _createIndexes();
         },
         beforeOpen: (details) async {

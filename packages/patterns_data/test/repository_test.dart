@@ -369,4 +369,104 @@ void main() {
       expect(reread.displayStyle, isNull);
     });
   });
+
+  group('saved reports', () {
+    late ReportRepository reports;
+    setUp(() => reports = ReportRepository(db, installId: install));
+
+    ReportDefinition definition({
+      String id = '018f2c00-cccc-7000-8000-000000000001',
+      String name = 'kreatin i nadutost',
+      ReportAxis axis = ReportAxis.date,
+    }) =>
+        ReportDefinition(
+          id: id,
+          name: name,
+          series: const [
+            ReportSeries(metricId: 'm1', displayStyle: DisplayStyle.squares),
+            ReportSeries(metricId: 'm2', bandBehindMetricId: 'm1'),
+          ],
+          period: const LastDays(30),
+          axis: axis,
+          createdAt: now,
+        );
+
+    test('a report round trips whole, series and all', () async {
+      await reports.save(definition(), now: now);
+      final read = await reports.byId(definition().id);
+
+      expect(read!.name, 'kreatin i nadutost');
+      expect(read.period.wire, 'last:30');
+      expect(read.axis, ReportAxis.date);
+      expect(read.series, hasLength(2));
+      expect(read.series.first.displayStyle, DisplayStyle.squares);
+      expect(read.series.last.bandBehindMetricId, 'm1');
+    });
+
+    test('a fixed period survives too', () async {
+      final fixed = ReportDefinition(
+        id: '018f2c00-cccc-7000-8000-000000000002',
+        name: 'avgust',
+        series: const [ReportSeries(metricId: 'm1')],
+        period: const FixedPeriod(from: '2026-08-01', to: '2026-08-31'),
+        createdAt: now,
+      );
+      await reports.save(fixed, now: now);
+
+      final read = await reports.byId(fixed.id);
+      expect(read!.period.wire, '2026-08-01..2026-08-31');
+    });
+
+    test('it stores the question and never the answer', () async {
+      // No aggregate, no cached row. Asserted over the real schema so a
+      // well-meaning "cache the medians" column has to argue with a test.
+      final columns = {for (final c in db.savedReports.$columns) c.name};
+      for (final banned in ['typical', 'median', 'value', 'cached', 'result']) {
+        expect(columns, isNot(contains(banned)), reason: banned);
+      }
+    });
+
+    test('deleting a report touches no reading', () async {
+      final all = await metrics.all();
+      final marker = all.firstWhere((m) => m.kind == MetricKind.scale);
+      await readings.log(
+        metricId: marker.id,
+        value: const NumberValue(5, kind: MetricKind.scale),
+        at: now,
+        utcOffsetMinutes: 120,
+      );
+      await reports.save(definition(), now: now);
+
+      await reports.softDelete(definition().id, now: now);
+
+      expect(await reports.all(), isEmpty);
+      final left = await readings.range(
+        metricIds: [marker.id],
+        from: '2026-01-01',
+        to: '2026-12-31',
+        kinds: await kinds(),
+      );
+      expect(left, hasLength(1));
+    });
+
+    test('a row this build cannot read costs itself, not the list', () async {
+      await reports.save(definition(), now: now);
+      await db.into(db.savedReports).insert(
+            SavedReportsCompanion.insert(
+              id: '018f2c00-cccc-7000-8000-000000000009',
+              updatedAt: now.millisecondsSinceEpoch,
+              installId: install,
+              name: 'iz buducnosti',
+              seriesJson: '[]',
+              period: 'last:30',
+              axis: 'byMoonPhase',
+              createdAt: now.millisecondsSinceEpoch,
+            ),
+          );
+
+      final all = await reports.all();
+      expect(all, hasLength(1));
+      expect(all.single.name, 'kreatin i nadutost');
+    });
+  });
 }

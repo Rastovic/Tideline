@@ -9,6 +9,7 @@ import '../data/photo_picker.dart';
 import 'day_detail_screen.dart';
 import 'log_sheet.dart';
 import 'metrics_screen.dart';
+import 'reports_screen.dart';
 import 'settings_screen.dart';
 
 /// The home screen: what I track, and whether it is logged today.
@@ -119,6 +120,19 @@ class _HomeScreenState extends State<HomeScreen> {
                         // Deliberately not the long-press on a marker row:
                         // that gesture is spoken for by the marker's report,
                         // and squatting on it now means moving it later.
+                        // MY-SETUP puts saved reports behind one shortcut,
+                        // not on the home list: home answers "what did I log
+                        // today", and a chart there would start grading it.
+                        IconButton(
+                          tooltip: 'Izvjestaji',
+                          icon: const Icon(Icons.stacked_bar_chart),
+                          onPressed: () => Navigator.of(context).push(
+                            MaterialPageRoute<void>(
+                              builder: (_) =>
+                                  ReportsScreen(controller: controller),
+                            ),
+                          ),
+                        ),
                         IconButton(
                           tooltip: 'Markeri',
                           icon: const Icon(Icons.tune),

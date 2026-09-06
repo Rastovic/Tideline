@@ -166,3 +166,38 @@ class AppMeta extends Table with PortableTable {
   @override
   Set<Column> get primaryKey => {id};
 }
+
+/// A saved report: which markers, over what stretch, drawn how.
+///
+/// **It stores the question, never the answer.** No aggregate, no cached row,
+/// no rendered image - a report is rebuilt from the readings every time it is
+/// opened, so changing a marker's day rule re-reads history rather than
+/// leaving a saved report showing the old numbers forever.
+///
+/// Named `SavedReportRow` rather than `Report`, which is the built object in
+/// `patterns_core`. Same rule as `AppMeta`: drift generates a data class per
+/// table, and a persistence row is not a domain object.
+@DataClassName('SavedReportRow')
+class SavedReports extends Table with PortableTable {
+  TextColumn get name => text().withLength(min: 1, max: 120)();
+
+  /// The series, as JSON: marker id, display override, and which row a boolean
+  /// band rides behind. JSON rather than a second table because a series has no
+  /// identity of its own - it exists only inside its report, and is always read
+  /// and written whole.
+  TextColumn get seriesJson => text()();
+
+  /// `last:30` or `2026-08-01..2026-08-31`. A rolling window and a fixed
+  /// stretch in one column, both round-tripped by `ReportPeriod`.
+  TextColumn get period => text()();
+
+  /// `date` or `cycleDay`, as a string. Never an ordinal.
+  TextColumn get axis => text()();
+
+  IntColumn get sortOrder => integer().withDefault(const Constant(0))();
+
+  IntColumn get createdAt => integer()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}

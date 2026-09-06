@@ -42,7 +42,8 @@ final class PatternsController extends ChangeNotifier {
           installId: installId,
           dayBoundaryHour: dayBoundaryHour,
         ),
-        photos = PhotoRepository(db, installId: installId);
+        photos = PhotoRepository(db, installId: installId),
+        reports = ReportRepository(db, installId: installId);
 
   final PatternsDatabase _db;
   final int _dayBoundaryHour;
@@ -54,6 +55,7 @@ final class PatternsController extends ChangeNotifier {
   final MetricRepository metrics;
   final ObservationRepository observations;
   final PhotoRepository photos;
+  final ReportRepository reports;
 
   PhotoStore? get photoStore => _photoStore;
 
@@ -103,6 +105,62 @@ final class PatternsController extends ChangeNotifier {
     _todayCounts = await observations.countsOnDay(_today);
     _loading = false;
     notifyListeners();
+  }
+
+  /// Saved reports, newest question first.
+  Future<List<ReportDefinition>> savedReports() => reports.all();
+
+  Future<void> saveReport(ReportDefinition definition) async {
+    await reports.save(definition, now: DateTime.now().toUtc());
+    notifyListeners();
+  }
+
+  /// Soft-deletes a report. **No reading is touched**, because a report is a
+  /// lens over flat data rather than something the readings hang off.
+  Future<void> deleteReport(String id) async {
+    await reports.softDelete(id, now: DateTime.now().toUtc());
+    notifyListeners();
+  }
+
+  /// Rebuilds a report from the readings, every time.
+  ///
+  /// Nothing is cached. Changing a marker's day rule from "typical" to "peak"
+  /// re-reads history rather than leaving a saved report showing yesterday's
+  /// numbers, which is the whole reason the stored row holds the question and
+  /// not the answer.
+  Future<Report> buildSavedReport(ReportDefinition definition) async {
+    final (from, to) = definition.period.resolve(_today);
+    final all = await metrics.all();
+    final wanted = definition.metricIds.toSet();
+    final readings = await observations.range(
+      metricIds: wanted,
+      from: from,
+      to: to,
+      kinds: {for (final m in all) m.id: m.kind},
+    );
+
+    return buildReport(
+      definition,
+      metrics: all,
+      observations: readings,
+      today: _today,
+      cyclePeriods: await cyclePeriods(),
+    );
+  }
+
+  /// The recorded periods, derived from the two cycle markers.
+  ///
+  /// Counting, never predicting: an unanchored stretch produces no cycle day
+  /// rather than a guessed one, and there is no function anywhere that
+  /// estimates a next period.
+  Future<List<CyclePeriod>> cyclePeriods() async {
+    final startId = seedIds['period-start'];
+    final endId = seedIds['period-end'];
+    if (startId == null || endId == null) return const [];
+    return buildPeriods(
+      startDayKeys: await observations.trueDays(startId),
+      endDayKeys: await observations.trueDays(endId),
+    );
   }
 
   /// Every marker including the archived ones, for the marker editor.

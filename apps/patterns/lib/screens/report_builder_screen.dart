@@ -47,9 +47,10 @@ class _ReportBuilderScreenState extends State<ReportBuilderScreen> {
 
   bool get _isNew => widget.definition == null;
 
-  /// The windows worth having on a phone. A fixed stretch is reachable from a
-  /// saved report that already carries one; offering a date-range picker here
-  /// would be the most-used screen serving the least-used case.
+  /// The windows worth having on a phone, and the reason they come first: a
+  /// rolling window still means the same thing next month, so it is what a
+  /// saved report usually wants. A fixed stretch is one tap further along, for
+  /// the fortnight worth looking at again.
   static const _windows = [7, 30, 90, 365];
 
   @override
@@ -80,6 +81,44 @@ class _ReportBuilderScreenState extends State<ReportBuilderScreen> {
   /// band. A band behind a band would be two overlays in one frame, which is
   /// the thing the single-overlay rule exists to prevent.
   List<ReportSeries> get _rows => [for (final s in _series) if (!s.isBand) s];
+
+  /// Picks a fixed stretch, which does not move.
+  ///
+  /// **Nothing after today is offered.** A report is a record, so a range
+  /// reaching into next week is a range that is mostly empty by construction -
+  /// and empty cells in a report are supposed to mean "not logged", not "not
+  /// happened yet".
+  Future<void> _pickRange() async {
+    final today = DateTime.now();
+    final last = DateTime(today.year, today.month, today.day);
+    final current = _period;
+    final initial = current is FixedPeriod
+        ? DateTimeRange(
+            start: parseDayKey(current.from)?.toLocal() ?? last,
+            end: parseDayKey(current.to)?.toLocal() ?? last,
+          )
+        : null;
+
+    final picked = await showDateRangePicker(
+      context: context,
+      // Five years back is not a guess about her history; it is far enough that
+      // the bound never gets in the way, and a bound is needed because the
+      // picker will happily scroll to 1970.
+      firstDate: DateTime(last.year - 5),
+      lastDate: last,
+      initialDateRange: initial,
+      helpText: 'Raspon datuma',
+      saveText: 'Uzmi',
+    );
+    if (picked == null) return;
+
+    setState(() {
+      _period = FixedPeriod(
+        from: formatDayKey(picked.start.year, picked.start.month, picked.start.day),
+        to: formatDayKey(picked.end.year, picked.end.month, picked.end.day),
+      );
+    });
+  }
 
   Future<void> _save() async {
     if (_name.text.trim().isEmpty) {
@@ -159,12 +198,14 @@ class _ReportBuilderScreenState extends State<ReportBuilderScreen> {
                     onSelected: (_) =>
                         setState(() => _period = LastDays(days)),
                   ),
-                if (_period case final FixedPeriod fixed)
-                  ChoiceChip(
-                    label: Text('${fixed.from} - ${fixed.to}'),
-                    selected: true,
-                    onSelected: (_) {},
-                  ),
+                ChoiceChip(
+                  label: Text(switch (_period) {
+                    final FixedPeriod fixed => _rangeLabel(fixed),
+                    _ => 'Raspon datuma',
+                  }),
+                  selected: _period is FixedPeriod,
+                  onSelected: (_) => _pickRange(),
+                ),
               ],
             ),
             const SizedBox(height: VitalsSpacing.xl),
@@ -261,6 +302,22 @@ class _ReportBuilderScreenState extends State<ReportBuilderScreen> {
           ),
         ),
       );
+
+  /// `1.8. - 31.8.`, with the year only when it is not this one.
+  ///
+  /// A chip is a few characters wide and two ISO dates do not fit. The year is
+  /// the part that can be dropped without ambiguity for the range someone is
+  /// most likely looking at, and kept for the one they are not.
+  static String _rangeLabel(FixedPeriod period) {
+    final from = parseDayKey(period.from);
+    final to = parseDayKey(period.to);
+    if (from == null || to == null) return '${period.from} - ${period.to}';
+    final thisYear = DateTime.now().year;
+    final showYear = from.year != thisYear || to.year != thisYear;
+    String one(DateTime d) =>
+        showYear ? '${d.day}.${d.month}.${d.year}.' : '${d.day}.${d.month}.';
+    return '${one(from)} - ${one(to)}';
+  }
 
   static String _windowLabel(int days) => switch (days) {
         7 => '7 dana',

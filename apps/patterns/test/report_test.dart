@@ -387,4 +387,100 @@ void main() {
       expect(ReportAxis.fromWire('byMoonPhase'), isNull);
     });
   });
+
+  group('a fixed date range', () {
+    testWidgets('is picked from the builder and saved as a fixed period',
+        (tester) async {
+      final controller = await freshController();
+      await tester.pumpWidget(
+        wrap(ReportBuilderScreen(controller: controller)),
+      );
+      await tester.pumpAndSettle();
+      await tester.enterText(find.widgetWithText(TextField, 'Ime'), 'avgust');
+
+      // The range first, then the marker: `scrollUntilVisible` only walks one
+      // way, and Period sits above Markeri on this form.
+      await scrollTo(tester, find.text('Raspon datuma'));
+      await tester.tap(find.text('Raspon datuma'));
+      await tester.pumpAndSettle();
+
+      // The picker opens on today, which is the only date guaranteed to be on
+      // screen and inside the bounds.
+      final today = DateTime.now();
+      await tester.tap(find.text('${today.day}').last);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('${today.day}').last);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Uzmi'));
+      await tester.pumpAndSettle();
+
+      await scrollTo(tester, find.text('nadutost'));
+      await tester.tap(find.text('nadutost'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Sacuvaj'));
+      await tester.pumpAndSettle();
+
+      final saved = await controller.savedReports();
+      expect(saved.single.period, isA<FixedPeriod>());
+      final period = saved.single.period as FixedPeriod;
+      expect(period.from, period.to, reason: 'one day picked twice');
+      expect(period.from, contains('-'));
+      controller.dispose();
+    });
+
+    testWidgets('backing out of the picker leaves the period alone',
+        (tester) async {
+      final controller = await freshController();
+      await tester.pumpWidget(
+        wrap(ReportBuilderScreen(controller: controller)),
+      );
+      await tester.pumpAndSettle();
+
+      await scrollTo(tester, find.text('Raspon datuma'));
+      await tester.tap(find.text('Raspon datuma'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byIcon(Icons.close));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Raspon datuma'), findsOneWidget);
+      expect(find.text('mjesec'), findsOneWidget);
+      controller.dispose();
+    });
+
+    testWidgets('an existing fixed period shows on the chip and reopens',
+        (tester) async {
+      // Reachable rather than stuck: before this, a saved fixed period drew a
+      // chip that could be looked at and not changed.
+      final controller = await freshController();
+      final mood = controller.allMarkers
+          .firstWhere((m) => m.kind == MetricKind.scale);
+      final year = DateTime.now().year;
+      final definition = ReportDefinition(
+        id: '018f2c00-cccc-7000-8000-000000000007',
+        name: 'avgust',
+        series: [ReportSeries(metricId: mood.id)],
+        period: FixedPeriod(from: '$year-08-01', to: '$year-08-31'),
+        createdAt: DateTime.utc(2026, 9, 1),
+      );
+
+      await tester.pumpWidget(wrap(ReportBuilderScreen(
+        controller: controller,
+        definition: definition,
+      )));
+      await tester.pumpAndSettle();
+
+      // The year is dropped when it is this one: a chip is a few characters
+      // wide and two ISO dates do not fit.
+      expect(find.text('1.8. - 31.8.'), findsOneWidget);
+      controller.dispose();
+    });
+
+    test('a fixed period does not move, and a rolling one does', () {
+      const fixed = FixedPeriod(from: '2026-08-01', to: '2026-08-31');
+      expect(fixed.resolve('2026-09-07'), ('2026-08-01', '2026-08-31'));
+      expect(fixed.resolve('2027-01-01'), ('2026-08-01', '2026-08-31'));
+      expect(const LastDays(7).resolve('2027-01-01'),
+          ('2026-12-26', '2027-01-01'));
+    });
+  });
 }

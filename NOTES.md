@@ -685,3 +685,35 @@ protection gone.
 
 Next: a date-range picker for a fixed period, then row reordering, then the
 printable doctor page.
+
+## Patterns: a fixed date range in the builder (2026-09-07, last)
+
+A saved report could already hold a fixed period and round-trip it, but the
+builder never offered one - and the chip that showed an existing range had an
+empty `onSelected`, so a fixed period was **reachable and unchangeable**. It is
+now a chip that opens `showDateRangePicker` and shows the range it picked.
+316 tests, analyzer clean, debug APK builds.
+
+**Nothing after today is offered.** A report is a record, so a range reaching
+into next week is empty by construction - and an empty cell in a report means
+"not logged", which is not what "has not happened yet" means. `lastDate` is
+today. `firstDate` is five years back: not a guess about her history, just far
+enough that the bound never gets in the way, and a bound is needed because the
+picker will otherwise happily scroll to 1970.
+
+**The chip drops the year when it is this one.** `1.8. - 31.8.` fits; two ISO
+dates do not. The year is the part that can go without ambiguity for the range
+someone is most likely looking at, and it comes back for the one they are not.
+
+Rolling windows still come first in the row, and that ordering is the argument:
+a rolling window still means the same thing next month, which is what a *saved*
+report usually wants. A fixed stretch is one tap further along, for the
+fortnight worth looking at again.
+
+Two things the tests found, both about the test rather than the code:
+`scrollUntilVisible` only walks one direction, so a test that scrolls down to
+the marker list can never scroll back up to the period chips - the taps have to
+happen in screen order. And driving `showDateRangePicker` means tapping a day
+number twice, once for each end of the range, before its own save button.
+
+Next: reordering rows inside a report, then the printable doctor page.

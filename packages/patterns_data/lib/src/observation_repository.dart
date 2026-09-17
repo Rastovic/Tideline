@@ -23,7 +23,10 @@ final class ObservationRepository {
   final String installId;
 
   /// The local hour a new day starts. 04:00 by default, user-configurable.
-  final int dayBoundaryHour;
+  ///
+  /// Changeable, and only ever read at write time: a reading keeps the day it
+  /// was filed under, so moving the boundary re-files nothing already logged.
+  int dayBoundaryHour;
 
   /// Records one reading and returns it.
   ///

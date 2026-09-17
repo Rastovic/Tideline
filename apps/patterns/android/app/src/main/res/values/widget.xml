@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="widget_surface">#F4F6FC</color>
+    <color name="widget_slot">#E3E9F8</color>
+    <color name="widget_ink">#0E1116</color>
+    <color name="widget_ink_muted">#5C6370</color>
+
+    <style name="WidgetSlot">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">0dp</item>
+        <item name="android:layout_weight">1</item>
+        <item name="android:layout_marginTop">4dp</item>
+        <item name="android:background">@drawable/widget_slot</item>
+        <item name="android:gravity">center_vertical</item>
+        <item name="android:paddingStart">12dp</item>
+        <item name="android:paddingEnd">12dp</item>
+        <item name="android:maxLines">1</item>
+        <item name="android:ellipsize">end</item>
+        <item name="android:textColor">@color/widget_ink</item>
+        <item name="android:textSize">14sp</item>
+    </style>
+</resources>

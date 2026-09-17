@@ -3,8 +3,10 @@ import 'package:vitals_notify/vitals_notify.dart';
 
 import 'app/patterns_app.dart';
 import 'data/app_database.dart';
+import 'data/app_lock.dart';
 import 'data/evening_reminder.dart';
 import 'data/patterns_controller.dart';
+import 'data/quick_log_widget.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -30,9 +32,16 @@ Future<void> main() async {
   final reminder = EveningReminder(LocalNotifier());
   await reminder.apply(settings);
 
+  // Loaded before the first frame, so the app never flashes its content
+  // before the lock covers it.
+  final lock = AppLock();
+  await lock.load();
+
   runApp(
     PatternsApp(
       controller: controller,
+      lock: lock,
+      quickLog: const PlatformQuickLogWidget(),
       reminder: reminder,
       settings: settings,
     ),

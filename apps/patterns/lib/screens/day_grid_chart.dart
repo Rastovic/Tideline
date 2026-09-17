@@ -3,6 +3,8 @@ import 'package:patterns_core/patterns_core.dart';
 import 'package:vitals_core/vitals_core.dart';
 import 'package:vitals_ui/vitals_ui.dart';
 
+import 'chart_semantics.dart';
+
 /// One marker laid out seven wide, one square per day.
 ///
 /// **A different question from the linear row, not a prettier version of it.**
@@ -94,6 +96,16 @@ class DayGridChart extends StatelessWidget {
                 height: weeks * side,
                 child: CustomPaint(
                   size: Size.infinite,
+                  foregroundPainter: CellSemanticsPainter(
+                    metric: row.metric,
+                    cells: cells,
+                    rectFor: (index, size) => Rect.fromLTWH(
+                      (index % 7) * side,
+                      (index ~/ 7) * side,
+                      side,
+                      side,
+                    ),
+                  ),
                   painter: _GridPainter(
                     cells: cells,
                     metric: row.metric,

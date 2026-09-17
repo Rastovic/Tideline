@@ -1,11 +1,15 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:patterns_core/patterns_core.dart';
 import 'package:vitals_ui/vitals_ui.dart';
 
 import '../data/app_database.dart';
+import '../data/app_lock.dart';
 import '../data/evening_reminder.dart';
 import '../data/patterns_controller.dart';
 import '../data/photo_picker.dart';
+import '../data/quick_log_widget.dart';
 import 'day_detail_screen.dart';
 import 'log_sheet.dart';
 import 'metric_labels.dart';
@@ -28,8 +32,15 @@ class HomeScreen extends StatefulWidget {
     this.picker = const PhotoPicker(),
     this.reminder,
     this.initialSettings = ReminderSettings.off,
+    this.lock,
+    this.quickLog,
     super.key,
   });
+
+  final AppLock? lock;
+
+  /// The home screen widget. Null where there is none, as in most tests.
+  final QuickLogWidget? quickLog;
 
   final PatternsController controller;
 
@@ -50,16 +61,48 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   PatternsController get controller => widget.controller;
 
+  StreamSubscription<String>? _widgetTaps;
+  String _publishedToWidget = '';
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    final quickLog = widget.quickLog;
+    if (quickLog != null) {
+      controller.addListener(_publishWidget);
+      _widgetTaps = quickLog.taps.listen(_logById);
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        _publishWidget();
+        if (await quickLog.launchedFor() case final id?) _logById(id);
+      });
+    }
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    controller.removeListener(_publishWidget);
+    _widgetTaps?.cancel();
     super.dispose();
+  }
+
+  /// Sends the widget its markers, only when the names or order changed.
+  Future<void> _publishWidget() async {
+    final quickLog = widget.quickLog;
+    if (quickLog == null || controller.isLoading) return;
+    final markers = await WidgetMarkers.load(controller.homeOrder);
+    final signature = markers.map((m) => '${m.id}=${m.name}').join('|');
+    if (signature == _publishedToWidget) return;
+    _publishedToWidget = signature;
+    await quickLog.publish(markers);
+  }
+
+  /// A widget tap: straight to that marker's log sheet.
+  void _logById(String id) {
+    final metric = controller.byId(id);
+    if (!mounted || metric == null || !metric.isActive) return;
+    _log(metric);
   }
 
   /// Re-reads the day on every return to the app.
@@ -113,7 +156,14 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   }
 
   Future<void> _capture(String? metricId, PhotoSource source) async {
-    final bytes = await widget.picker.pick(source);
+    final ghost =
+        metricId == null ? null : await controller.ghostPathFor(metricId);
+    if (!mounted) return;
+    final bytes = await widget.picker.pick(
+      source,
+      context: context,
+      ghostPath: ghost,
+    );
     if (bytes == null) return;
     await controller.capturePhoto(bytes, metricId: metricId);
   }
@@ -207,6 +257,12 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                                   reminder: reminder,
                                   settings: _settings,
                                   controller: controller,
+                                  lock: widget.lock,
+                                  quickLog: widget.quickLog,
+                                  onWidgetMarkersChanged: () {
+                                    _publishedToWidget = '';
+                                    _publishWidget();
+                                  },
                                   onChanged: (next) =>
                                       setState(() => _settings = next),
                                 ),

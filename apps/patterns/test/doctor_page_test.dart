@@ -8,6 +8,7 @@ import 'package:patterns/data/archive_transfer.dart';
 import 'package:patterns/data/doctor_pdf.dart';
 import 'package:patterns/data/patterns_controller.dart';
 import 'package:patterns/screens/doctor_page_screen.dart';
+import 'package:patterns/screens/export_screen.dart';
 import 'package:patterns_core/patterns_core.dart';
 import 'package:patterns_data/patterns_data.dart';
 import 'package:pdf/widgets.dart' as pw;
@@ -178,6 +179,80 @@ void main() {
       )));
       await tester.pumpAndSettle();
       expect(find.text('dnevnik'), findsNothing);
+      controller.dispose();
+    });
+  });
+  group('the export screen', () {
+    Widget wrap(Widget child) => MaterialApp(
+          theme: VitalsTheme.light(accent: AppAccent.patternsCobalt),
+          home: child,
+        );
+
+    testWidgets('says what is held back, then shares text without it',
+        (tester) async {
+      final controller = await freshController();
+      await controller.log(
+          seedIds['mood']!, const NumberValue(6, kind: MetricKind.scale));
+      await controller.log(
+          seedIds['diary']!, const TextValue('tajna', isPrivate: true));
+      await controller.log(seedIds['diary']!, const TextValue('obicno'));
+      final transfer = FakeTransfer();
+
+      await tester.pumpWidget(wrap(
+        ExportScreen(controller: controller, transfer: transfer),
+      ));
+      await tester.pumpAndSettle();
+
+      // Lazily built, so scroll it into existence, then fully on screen.
+      await tester.scrollUntilVisible(
+        find.text('Podijeli fajl'),
+        200,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.ensureVisible(find.text('Podijeli fajl'));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('Privatni unosi dnevnika izostavljeni: 1.'),
+          findsOneWidget);
+      expect(find.textContaining('Dnevnik nije izabran, izostavljeno: 1.'),
+          findsOneWidget);
+
+      await tester.tap(find.text('Podijeli fajl'));
+      await tester.pumpAndSettle();
+
+      final text = utf8.decode(transfer.sent!);
+      expect(transfer.sentName, endsWith('.md'));
+      expect(text, contains('raspolozenje'));
+      expect(text, isNot(contains('tajna')));
+      expect(text, isNot(contains('obicno')));
+      controller.dispose();
+    });
+
+    testWidgets('CSV is one tap away and is plain CSV', (tester) async {
+      final controller = await freshController();
+      await controller.log(
+          seedIds['mood']!, const NumberValue(6, kind: MetricKind.scale));
+      final transfer = FakeTransfer();
+      await tester.pumpWidget(wrap(
+        ExportScreen(controller: controller, transfer: transfer),
+      ));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Tabela (CSV)'));
+      await tester.pumpAndSettle();
+      // Lazily built, so scroll it into existence, then fully on screen.
+      await tester.scrollUntilVisible(
+        find.text('Podijeli fajl'),
+        200,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.ensureVisible(find.text('Podijeli fajl'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Podijeli fajl'));
+      await tester.pumpAndSettle();
+
+      expect(transfer.sentName, endsWith('.csv'));
+      expect(utf8.decode(transfer.sent!),
+          startsWith('date,time,marker,kind,value,unit,entered_late'));
       controller.dispose();
     });
   });

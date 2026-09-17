@@ -4,6 +4,7 @@ import 'package:vitals_ui/vitals_ui.dart';
 
 import '../data/patterns_controller.dart';
 import 'doctor_page_screen.dart';
+import 'export_screen.dart';
 import 'report_builder_screen.dart';
 import 'report_view_screen.dart';
 
@@ -93,6 +94,15 @@ class _ReportsScreenState extends State<ReportsScreen> {
       appBar: AppBar(
         title: const Text('Izvjestaji'),
         actions: [
+          IconButton(
+            tooltip: 'Izvoz',
+            icon: const Icon(Icons.ios_share),
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => ExportScreen(controller: widget.controller),
+              ),
+            ),
+          ),
           IconButton(
             tooltip: 'Stranica za doktora',
             icon: const Icon(Icons.print_outlined),

@@ -3,9 +3,11 @@ import 'package:vitals_notify/vitals_notify.dart';
 import 'package:vitals_ui/vitals_ui.dart';
 
 import '../data/app_database.dart';
+import '../data/app_lock.dart';
 import '../data/archive_transfer.dart';
 import '../data/evening_reminder.dart';
 import '../data/patterns_controller.dart';
+import '../data/quick_log_widget.dart';
 import 'backup_screen.dart';
 
 /// Settings, which for now is the one reminder.
@@ -25,8 +27,19 @@ class SettingsScreen extends StatefulWidget {
     this.controller,
     this.transfer = const PlatformArchiveTransfer(),
     this.onChanged,
+    this.lock,
+    this.quickLog,
+    this.onWidgetMarkersChanged,
     super.key,
   });
+
+  /// Null hides the widget section.
+  final QuickLogWidget? quickLog;
+
+  final VoidCallback? onWidgetMarkersChanged;
+
+  /// Null hides the lock section, as on a surface with no lock wired.
+  final AppLock? lock;
 
   final EveningReminder reminder;
   final ReminderSettings settings;
@@ -50,6 +63,36 @@ class _SettingsScreenState extends State<SettingsScreen> {
   /// Asked once per visit, so a rebuild from the reminder switch does not
   /// query the database again.
   Future<int>? _photoBytes;
+
+  /// The widget's markers, in order. Null until loaded.
+  List<String>? _widgetIds;
+
+  @override
+  void initState() {
+    super.initState();
+    final controller = widget.controller;
+    if (widget.quickLog != null && controller != null) {
+      WidgetMarkers.load(controller.homeOrder).then((markers) {
+        if (mounted) {
+          setState(() => _widgetIds = [for (final m in markers) m.id]);
+        }
+      });
+    }
+  }
+
+  Future<void> _toggleWidgetMarker(String id) async {
+    final ids = [...?_widgetIds];
+    if (ids.contains(id)) {
+      ids.remove(id);
+    } else if (ids.length < quickLogSlots) {
+      ids.add(id);
+    } else {
+      return;
+    }
+    setState(() => _widgetIds = ids);
+    await WidgetMarkers.save(ids);
+    widget.onWidgetMarkersChanged?.call();
+  }
 
   /// Set when the OS refused. Shown as a plain sentence rather than a repeated
   /// prompt, because asking twice does nothing on Android after a hard denial.
@@ -154,7 +197,105 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 color: theme.colors.inkMuted,
               ),
             ),
+            if (widget.lock case final lock?) ...[
+              const SizedBox(height: VitalsSpacing.huge),
+              Text(
+                'ZAKLJUCAVANJE',
+                style: theme.typography.label.copyWith(
+                  color: theme.colors.inkFaint,
+                  letterSpacing: 1.2,
+                ),
+              ),
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                value: lock.enabled && lock.available,
+                onChanged: lock.available
+                    ? (on) async {
+                        await lock.setEnabled(on);
+                        if (mounted) setState(() {});
+                      }
+                    : null,
+                title: Text('Otisak ili PIN telefona',
+                    style: theme.typography.body),
+                subtitle: Text(
+                  lock.available
+                      ? 'Pri otvaranju i nakon minute van aplikacije. '
+                          'Za iskljucivanje treba otkljucati.'
+                      : 'Telefon nema zakljucan ekran, pa aplikacija ne moze '
+                          'biti zakljucana.',
+                  style: theme.typography.caption
+                      .copyWith(color: theme.colors.inkFaint),
+                ),
+              ),
+            ],
+            if ((widget.controller, _widgetIds)
+                case (final controller?, final ids?)) ...[
+              const SizedBox(height: VitalsSpacing.huge),
+              Text(
+                'WIDGET NA POCETNOM EKRANU',
+                style: theme.typography.label.copyWith(
+                  color: theme.colors.inkFaint,
+                  letterSpacing: 1.2,
+                ),
+              ),
+              const SizedBox(height: VitalsSpacing.sm),
+              Text(
+                'Do $quickLogSlots markera. Widget prikazuje samo imena, '
+                'nikad vrijednosti ni da li je nesto upisano.',
+                style: theme.typography.caption
+                    .copyWith(color: theme.colors.inkMuted),
+              ),
+              for (final metric in controller.homeOrder)
+                CheckboxListTile(
+                  contentPadding: EdgeInsets.zero,
+                  controlAffinity: ListTileControlAffinity.leading,
+                  value: ids.contains(metric.id),
+                  onChanged: ids.contains(metric.id) ||
+                          ids.length < quickLogSlots
+                      ? (_) => _toggleWidgetMarker(metric.id)
+                      : null,
+                  title: Text(metric.name, style: theme.typography.body),
+                  secondary: ids.contains(metric.id)
+                      ? Text('${ids.indexOf(metric.id) + 1}.',
+                          style: theme.typography.caption)
+                      : null,
+                ),
+            ],
             if (widget.controller case final controller?) ...[
+              const SizedBox(height: VitalsSpacing.huge),
+              Text(
+                'DAN',
+                style: theme.typography.label.copyWith(
+                  color: theme.colors.inkFaint,
+                  letterSpacing: 1.2,
+                ),
+              ),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                title: Text('Novi dan pocinje u', style: theme.typography.body),
+                subtitle: Text(
+                  'Unos u 01:30 pripada danu koji se upravo zavrsio. '
+                  'Promjena vazi za nove unose; stari ostaju gdje su.',
+                  style: theme.typography.caption
+                      .copyWith(color: theme.colors.inkFaint),
+                ),
+                trailing: DropdownButton<int>(
+                  value: controller.dayBoundaryHour,
+                  items: [
+                    for (var hour = 0; hour <= 6; hour++)
+                      DropdownMenuItem(
+                        value: hour,
+                        child: Text('${hour.toString().padLeft(2, '0')}:00'),
+                      ),
+                  ],
+                  onChanged: (hour) async {
+                    if (hour == null) return;
+                    await DayBoundary.save(hour);
+                    await controller.setDayBoundaryHour(hour);
+                    if (mounted) setState(() {});
+                  },
+                ),
+              ),
               const SizedBox(height: VitalsSpacing.huge),
               Text(
                 'ARHIVA',

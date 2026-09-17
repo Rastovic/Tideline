@@ -1,6 +1,9 @@
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:patterns/data/app_database.dart';
+import 'package:patterns/data/evening_reminder.dart';
 import 'package:patterns/data/patterns_controller.dart';
 import 'package:patterns/screens/day_detail_screen.dart';
 import 'package:patterns/screens/home_screen.dart';
@@ -8,9 +11,12 @@ import 'package:patterns/screens/log_sheet.dart';
 import 'package:patterns/screens/photo_timeline_screen.dart';
 import 'package:patterns/screens/report_chart.dart';
 import 'package:patterns/screens/report_view_screen.dart';
+import 'package:patterns/screens/settings_screen.dart';
 import 'package:patterns_core/patterns_core.dart';
 import 'package:patterns_data/patterns_data.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:vitals_core/vitals_core.dart';
+import 'package:vitals_notify/vitals_notify.dart';
 import 'package:vitals_ui/vitals_ui.dart';
 
 const install = '018f2c00-aaaa-7000-8000-000000000001';
@@ -278,6 +284,84 @@ void main() {
     await tester.pumpAndSettle();
     expect(notified, greaterThan(0));
     controller.dispose();
+  });
+
+  group('the day boundary', () {
+    test('moving it files new readings differently and leaves old ones alone',
+        () async {
+      final controller = await freshController();
+      final mood = seedIds['mood']!;
+      final halfPastOne = DateTime(2026, 9, 10, 1, 30);
+
+      await controller.log(
+          mood, const NumberValue(5, kind: MetricKind.scale), now: halfPastOne);
+      expect(await controller.readingsOn('2026-09-09'), hasLength(1));
+
+      await controller.setDayBoundaryHour(0);
+      await controller.log(
+          mood, const NumberValue(6, kind: MetricKind.scale), now: halfPastOne);
+
+      expect(await controller.readingsOn('2026-09-10'), hasLength(1));
+      // The first reading keeps the day it was filed under.
+      expect(await controller.readingsOn('2026-09-09'), hasLength(1));
+      controller.dispose();
+    });
+
+    testWidgets('is set in Settings and remembered', (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      final controller = await freshController();
+      await tester.pumpWidget(wrap(SettingsScreen(
+        reminder: EveningReminder(RecordingNotifier()),
+        settings: ReminderSettings.off,
+        controller: controller,
+      )));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('04:00'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('02:00').last);
+      await tester.pumpAndSettle();
+
+      expect(controller.dayBoundaryHour, 2);
+      expect(await DayBoundary.load(), 2);
+      controller.dispose();
+    });
+  });
+
+  testWidgets('a screen reader hears every day of a report, logged or not',
+      (tester) async {
+    final handle = tester.ensureSemantics();
+    final controller = await freshController();
+    final mood = controller.byId(seedIds['mood']!)!;
+    await controller.log(mood.id, const NumberValue(7, kind: MetricKind.scale));
+
+    await tester.pumpWidget(wrap(ReportViewScreen.forMarker(
+      controller: controller,
+      metric: mood,
+    )));
+    await tester.pumpAndSettle();
+
+    final labels = <String>[];
+    void walk(SemanticsNode node) {
+      if (node.label.isNotEmpty) labels.add(node.label);
+      node.visitChildren((child) {
+        walk(child);
+        return true;
+      });
+    }
+
+    walk(tester.getSemantics(find.byType(ReportViewScreen)));
+
+    final yesterday = addDays(controller.today, -1);
+    expect(labels, contains('${humanDateFor(controller.today)}: 7'));
+    expect(labels, contains('${humanDateFor(yesterday)}: nije upisano'));
+    // One node per day of the window, in order.
+    expect(
+      labels.where((l) => l.contains(': 7') || l.contains('nije upisano')),
+      hasLength(30),
+    );
+    controller.dispose();
+    handle.dispose();
   });
 }
 

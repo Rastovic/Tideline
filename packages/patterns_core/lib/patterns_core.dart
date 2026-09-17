@@ -20,6 +20,7 @@ export 'src/cycle.dart';
 export 'src/day_summary.dart';
 export 'src/display.dart';
 export 'src/doctor_page.dart';
+export 'src/export.dart';
 export 'src/metric.dart';
 export 'src/metric_change.dart';
 export 'src/metric_kind.dart';

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:patterns_core/patterns_core.dart';
 import 'package:vitals_ui/vitals_ui.dart';
 
+import 'chart_semantics.dart';
+
 /// One marker's row, drawn.
 ///
 /// **No painter in this file ever fills a gap.** An unlogged day is an empty
@@ -58,6 +60,14 @@ class ReportRowChart extends StatelessWidget {
       height: _height,
       child: CustomPaint(
         size: Size.infinite,
+        foregroundPainter: CellSemanticsPainter(
+          metric: row.metric,
+          cells: row.cells,
+          rectFor: (index, size) {
+            final width = size.width / row.cells.length;
+            return Rect.fromLTWH(index * width, 0, width, size.height);
+          },
+        ),
         painter: switch (style) {
           DisplayStyle.squares => _SquaresPainter(
               row: row,

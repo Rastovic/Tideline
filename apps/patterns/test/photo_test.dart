@@ -22,7 +22,12 @@ class FakePicker extends PhotoPicker {
   final Uint8List? bytes;
 
   @override
-  Future<Uint8List?> pick(PhotoSource source) async => bytes;
+  Future<Uint8List?> pick(
+    PhotoSource source, {
+    required BuildContext context,
+    String? ghostPath,
+  }) async =>
+      bytes;
 }
 
 /// A photo bigger than the storage rule allows, so the resize is observable.
@@ -30,6 +35,24 @@ Uint8List bigPhoto() {
   final image = img.Image(width: 2400, height: 1600);
   img.fill(image, color: img.ColorRgb8(120, 140, 200));
   return img.encodeJpg(image, quality: 95);
+}
+
+/// Remembers which previous photo the camera was asked to show.
+class RecordingPicker extends PhotoPicker {
+  RecordingPicker(this.bytes);
+
+  final Uint8List bytes;
+  final ghosts = <String?>[];
+
+  @override
+  Future<Uint8List?> pick(
+    PhotoSource source, {
+    required BuildContext context,
+    String? ghostPath,
+  }) async {
+    ghosts.add(ghostPath);
+    return bytes;
+  }
 }
 
 void main() {
@@ -199,5 +222,53 @@ void main() {
 
     expect(find.text('koza'), findsOneWidget);
     expect(find.byType(Image), findsNothing);
+  });
+  group('the ghost at capture', () {
+    test('is the marker\'s most recent photo, and its file exists', () async {
+      final metric = Metric.create(
+        id: '018f2c00-dddd-7000-8000-000000000002',
+        name: 'kosa',
+        domain: MetricDomain.body,
+        kind: MetricKind.photo,
+        createdAt: DateTime.utc(2026),
+      );
+      await controller.saveMetric(metric);
+      expect(await controller.ghostPathFor(metric.id), isNull);
+
+      await controller.capturePhoto(bigPhoto(), metricId: metric.id);
+      final second =
+          await controller.capturePhoto(bigPhoto(), metricId: metric.id);
+
+      final ghost = await controller.ghostPathFor(metric.id);
+      expect(ghost, controller.photoStore!.pathFor(second!.fileName));
+      expect(File(ghost!).existsSync(), isTrue);
+    });
+
+    testWidgets('a photo of the day on its own has nothing to line up with',
+        (tester) async {
+      final picker = RecordingPicker(bigPhoto());
+      await tester.pumpWidget(MaterialApp(
+        theme: VitalsTheme.light(accent: AppAccent.patternsCobalt),
+        home: DayDetailScreen(
+          controller: controller,
+          dayKey: controller.today,
+          picker: picker,
+        ),
+      ));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byTooltip('Dodaj unos'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Fotografija dana'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Slikaj'));
+      await tester.pumpAndSettle();
+      for (var i = 0; i < 8; i++) {
+        await tester.runAsync(
+          () => Future<void>.delayed(const Duration(milliseconds: 100)),
+        );
+        await tester.pump();
+      }
+      expect(picker.ghosts, [null]);
+    });
   });
 }

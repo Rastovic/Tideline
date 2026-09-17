@@ -134,7 +134,13 @@ class _DayDetailScreenState extends State<DayDetailScreen> {
       metric: metric,
       onCapture: metric.kind == MetricKind.photo
           ? (source) async {
-              final bytes = await widget.picker.pick(source);
+              final ghost = await widget.controller.ghostPathFor(metric.id);
+              if (!mounted) return;
+              final bytes = await widget.picker.pick(
+                source,
+                context: context,
+                ghostPath: ghost,
+              );
               if (bytes == null) return;
               await widget.controller.capturePhoto(
                 bytes,
@@ -156,7 +162,7 @@ class _DayDetailScreenState extends State<DayDetailScreen> {
   /// it into a marker would make the marker list a filing system instead of a
   /// list of what is being tracked.
   Future<void> _addFreePhoto(PhotoSource source) async {
-    final bytes = await widget.picker.pick(source);
+    final bytes = await widget.picker.pick(source, context: context);
     if (bytes == null) return;
     await widget.controller.capturePhoto(bytes, dayKey: _dayKey);
     _reload();

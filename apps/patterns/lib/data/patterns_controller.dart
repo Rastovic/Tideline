@@ -69,7 +69,9 @@ final class PatternsController extends ChangeNotifier {
         _installId = installId;
 
   final PatternsDatabase _db;
-  final int _dayBoundaryHour;
+  int _dayBoundaryHour;
+
+  int get dayBoundaryHour => _dayBoundaryHour;
 
   /// Null in tests and on a device where the directory could not be opened.
   /// Every photo path checks it rather than assuming.
@@ -110,6 +112,13 @@ final class PatternsController extends ChangeNotifier {
     return grouped;
   }
 
+  /// Active markers in the order the home list shows them.
+  List<Metric> get homeOrder => [
+        for (final domain in MetricDomain.values)
+          for (final status in sections[domain] ?? const <MarkerStatus>[])
+            status.metric,
+      ];
+
   Map<String, MetricKind> get kinds => {
         for (final metric in _all) metric.id: metric.kind,
       };
@@ -119,6 +128,18 @@ final class PatternsController extends ChangeNotifier {
       if (metric.id == id) return metric;
     }
     return null;
+  }
+
+  /// Moves the hour a new day starts, for readings from now on.
+  ///
+  /// **Nothing already logged moves.** Every reading stores the day it was
+  /// filed under, because that is the day the person meant when filing it; a
+  /// setting changed in October must not quietly re-date March.
+  Future<void> setDayBoundaryHour(int hour) async {
+    if (hour < 0 || hour > 23) return;
+    _dayBoundaryHour = hour;
+    observations.dayBoundaryHour = hour;
+    await refresh();
   }
 
   /// Loads markers and today's counts. Called on start and after every write.
@@ -232,6 +253,32 @@ final class PatternsController extends ChangeNotifier {
       observations: readings,
       today: _today,
       cyclePeriods: await cyclePeriods(),
+    );
+  }
+
+  /// Readings of [metricIds] from [from] to [to], flattened for a file.
+  Future<ExportData> exportData(
+    List<String> metricIds, {
+    required String from,
+    required String to,
+    bool includeDiary = false,
+  }) async {
+    final all = await metrics.all();
+    final byId = {for (final m in all) m.id: m};
+    return buildExport(
+      metrics: [
+        for (final id in metricIds)
+          if (byId[id] case final metric? when !metric.isDeleted) metric,
+      ],
+      observations: await observations.range(
+        metricIds: metricIds,
+        from: from,
+        to: to,
+        kinds: {for (final m in all) m.id: m.kind},
+      ),
+      from: from,
+      to: to,
+      includeDiary: includeDiary,
     );
   }
 
@@ -440,6 +487,14 @@ final class PatternsController extends ChangeNotifier {
 
   /// What every photo occupies on disk, for the size shown in Settings.
   Future<int> photoBytes() => photos.totalBytes();
+
+  /// The file of this marker's most recent photo, for the ghost at capture.
+  /// Null when there is none, or when its file did not survive a restore.
+  Future<String?> ghostPathFor(String metricId) async {
+    final previous = await photos.mostRecentFor(metricId);
+    if (previous == null) return null;
+    return _photoStore?.pathFor(previous.fileName);
+  }
 
   /// Every photo of one day, marker photos and free ones alike.
   Future<List<StoredPhoto>> photosOn(String dayKey) => photos.onDay(dayKey);

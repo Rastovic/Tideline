@@ -79,6 +79,70 @@ List<int> cycleLengths(List<CyclePeriod> periods) {
   ];
 }
 
+/// Where the cycle stands today, as counted facts and nothing else.
+///
+/// **Every field is something that was recorded.** There is no expected next
+/// date, no "late", no window, and no field that could be mistaken for one.
+final class CycleStatus {
+  const CycleStatus({
+    this.day,
+    this.lastStart,
+    this.bleedingDays,
+    this.bleedingNow = false,
+    this.recentLengths = const [],
+  });
+
+  /// Today's cycle day, or null when there is nothing to count from - no
+  /// start recorded, or the last one further back than [maxCountedCycleDay].
+  final int? day;
+
+  final String? lastStart;
+
+  /// Days of bleeding in the most recent period: the recorded length once it
+  /// has an end, otherwise the days counted so far.
+  final int? bleedingDays;
+
+  /// The most recent period has a start and no end yet.
+  final bool bleedingNow;
+
+  /// Completed cycle lengths, start to start, most recent last. The current
+  /// stretch is never in here: it has no next start, and guessing where it
+  /// ends is the one thing this module refuses to do.
+  final List<int> recentLengths;
+
+  bool get isAnchored => day != null;
+}
+
+/// Reads [periods] as they stand on [today].
+CycleStatus cycleStatusOn(
+  String today,
+  List<CyclePeriod> periods, {
+  int maxDay = maxCountedCycleDay,
+  int keepLengths = 3,
+}) {
+  final past = [
+    for (final period in periods)
+      if (period.startDayKey.compareTo(today) <= 0) period,
+  ]..sort((a, b) => a.startDayKey.compareTo(b.startDayKey));
+  if (past.isEmpty) return const CycleStatus();
+
+  final last = past.last;
+  final ended = last.endDayKey;
+  final lengths = cycleLengths(periods);
+
+  return CycleStatus(
+    day: cycleDayFor(today, periods, maxDay: maxDay),
+    lastStart: last.startDayKey,
+    bleedingDays: ended == null
+        ? daysBetween(last.startDayKey, today) + 1
+        : last.lengthDays,
+    bleedingNow: ended == null,
+    recentLengths: lengths.length <= keepLengths
+        ? lengths
+        : lengths.sublist(lengths.length - keepLengths),
+  );
+}
+
 /// Buckets day keys by their cycle day, for a report sorted by cycle day rather
 /// than by date.
 ///

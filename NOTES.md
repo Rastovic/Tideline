@@ -743,3 +743,37 @@ viewport, and an earlier home test needed a `scrollUntilVisible`.
 
 **`ReorderableListView.onReorder` is deprecated** in this Flutter; the builder
 uses `onReorderItem`, which already corrects the index for the removed row.
+
+
+## Two languages, and the cycle card (2026-09-18)
+
+**One strings file, both languages, `_t('English', 'Srpski')`.** No ARB, no
+codegen, no per-language file: a string added in English is visibly missing its
+Serbian twin on the same line of the same diff, which is the failure this
+project actually has - not a translator workflow.
+
+**Names are data.** Markers, options, captions and diary text are never
+translated. Only words the app composes are. The seeded markers are English
+now; an install made before this keeps the Serbian names it already has, and
+the editor renames any of them.
+
+**The engine needed its own language too**, because an export heading and a
+refusal are composed there: `TextLanguage` in `patterns_core`, passed into the
+AI export, the CSV values, `validateMetric` and `validateMetricChange`.
+
+**Things outside a widget tree each needed a route for the words**: the evening
+reminder takes a language on `apply` (and Settings re-applies it on a change,
+so an alarm already scheduled is re-worded), the biometric prompt takes its
+reason as a parameter, the doctor PDF takes an `AppStrings`, and the home
+widget gets its one sentence published as widget data rather than from Android
+resources - the language is an app setting, not a system locale.
+
+**`const InputDecoration` is the thing that breaks** when a literal becomes
+`context.s.something`: the analyzer points at the decoration, not the string.
+
+**The cycle card replaces its own marker rows.** `period start` answered with
+"It did not" was never an answer, and two rows said nothing about where the
+cycle stood. `cycleStatusOn` returns only counted facts, and the card renders
+nulls as "No cycle day" with the reason - nothing recorded, or the last start
+past the 60-day limit. Completed cycle lengths only: the open stretch has no
+next start, and that is exactly the number a prediction would invent.

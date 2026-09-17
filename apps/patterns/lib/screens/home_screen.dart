@@ -13,6 +13,7 @@ import '../data/quick_log_widget.dart';
 import 'day_detail_screen.dart';
 import 'log_sheet.dart';
 import 'metric_labels.dart';
+import 'cycle_card.dart';
 import 'metrics_screen.dart';
 import 'photo_timeline_screen.dart';
 import 'report_view_screen.dart';
@@ -62,6 +63,10 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   PatternsController get controller => widget.controller;
 
+  /// Refreshed on every write, because a period logged from the card moves
+  /// the day the card itself shows.
+  CycleStatus? _cycle;
+
   StreamSubscription<String>? _widgetTaps;
   String _publishedToWidget = '';
 
@@ -69,6 +74,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    controller.addListener(_loadCycle);
+    _loadCycle();
     final quickLog = widget.quickLog;
     if (quickLog != null) {
       controller.addListener(_publishWidget);
@@ -83,6 +90,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    controller.removeListener(_loadCycle);
     controller.removeListener(_publishWidget);
     _widgetTaps?.cancel();
     super.dispose();
@@ -97,6 +105,11 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     if (signature == _publishedToWidget) return;
     _publishedToWidget = signature;
     await quickLog.publish(markers, emptyText: _widgetEmptyText);
+  }
+
+  Future<void> _loadCycle() async {
+    final status = await controller.cycleStatus();
+    if (mounted) setState(() => _cycle = status);
   }
 
   /// Kept from the last build, because publishing happens outside one.
@@ -293,6 +306,18 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                         ),
                       ),
                     ),
+                    if (domain == MetricDomain.cycle)
+                      CycleCard(
+                        status: _cycle,
+                        today: controller.today,
+                        onLog: (start, dayKey) async {
+                          await controller.logPeriod(
+                            start: start,
+                            dayKey: dayKey,
+                          );
+                        },
+                      )
+                    else
                     for (final status in sections[domain]!)
                       _MarkerRow(
                         status: status,

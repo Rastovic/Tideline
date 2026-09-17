@@ -459,4 +459,28 @@ final class AppStrings {
   String get restoreOption => _t('Restore option', 'Vrati opciju');
   String get archiveOption => _t('Archive option', 'Arhiviraj opciju');
   String get removeOption => _t('Remove option', 'Ukloni opciju');
+
+  // --- Cycle -------------------------------------------------------
+
+  String cycleDayNumber(int day) => _t('Day $day', 'Dan $day');
+  String get cycleNotAnchored => _t('No cycle day', 'Nema dana ciklusa');
+  String get cycleNothingRecorded => _t(
+      'Nothing recorded yet. The first start is what everything else counts '
+          'from.',
+      'Jos nista nije upisano. Prvi pocetak je ono od cega se sve broji.');
+  String get cycleTooFarBack => _t(
+      'The last start is too far back to count from.',
+      'Posljednji pocetak je predaleko da bi se brojalo od njega.');
+  String cycleStartedOn(String date) => _t('started $date', 'pocelo $date');
+  String cycleBleedingDays(int days) =>
+      _t('$days days of bleeding', '$days dana krvarenja');
+  String cycleBleedingSoFar(int days) =>
+      _t('bleeding, day $days', 'krvarenje, $days. dan');
+  String cycleLengthsLine(String lengths) =>
+      _t('Cycles: $lengths', 'Ciklusi: $lengths');
+  String get periodStarted => _t('Period started', 'Menstruacija pocela');
+  String get periodEnded => _t('Period ended', 'Menstruacija stala');
+  String get today => _t('Today', 'Danas');
+  String get yesterday => _t('Yesterday', 'Juce');
+  String get pickADate => _t('Pick a date', 'Odaberi datum');
 }

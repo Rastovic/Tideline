@@ -405,6 +405,20 @@ final class PatternsController extends ChangeNotifier {
     }
   }
 
+  /// Where the cycle stands today: counted facts, never an expected date.
+  Future<CycleStatus> cycleStatus() async =>
+      cycleStatusOn(_today, await cyclePeriods());
+
+  /// Records a period start or end on [dayKey].
+  ///
+  /// Only ever `true`: "no period today" is not an answer anyone gives, and a
+  /// false reading would sit in the history looking like a recorded fact.
+  Future<void> logPeriod({required bool start, required String dayKey}) async {
+    final id = seedIds[start ? 'period-start' : 'period-end'];
+    if (id == null || byId(id) == null) return;
+    await logOn(dayKey, id, const BooleanValue(true));
+  }
+
   /// Which cycle day [dayKey] was, or null where it cannot be counted.
   Future<int?> cycleDayOn(String dayKey) async =>
       cycleDayFor(dayKey, await cyclePeriods());

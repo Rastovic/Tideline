@@ -108,4 +108,53 @@ void main() {
       expect(offenders, isEmpty);
     });
   });
+  group('where the cycle stands today', () {
+    final periods = buildPeriods(
+      startDayKeys: const ['2026-07-04', '2026-08-02', '2026-09-01'],
+      endDayKeys: const ['2026-07-08', '2026-08-06'],
+    );
+
+    test('counts the day, the bleeding so far, and completed cycles', () {
+      final status = cycleStatusOn('2026-09-03', periods);
+      expect(status.day, 3);
+      expect(status.lastStart, '2026-09-01');
+      // Still going: counted so far, not a length it does not have yet.
+      expect(status.bleedingNow, isTrue);
+      expect(status.bleedingDays, 3);
+      // 4 July to 2 August is 29, 2 August to 1 September is 30. The current
+      // stretch has no next start and is not a length.
+      expect(status.recentLengths, [29, 30]);
+    });
+
+    test('a finished period reports its recorded length', () {
+      final status = cycleStatusOn('2026-08-20', periods);
+      expect(status.lastStart, '2026-08-02');
+      expect(status.bleedingNow, isFalse);
+      expect(status.bleedingDays, 5);
+      expect(status.day, 19);
+    });
+
+    test('nothing recorded is not anchored, and says so with nulls', () {
+      const status = CycleStatus();
+      expect(status.isAnchored, isFalse);
+      expect(cycleStatusOn('2026-09-03', const []).day, isNull);
+    });
+
+    test('a start too far back stops counting rather than guessing', () {
+      final stale = buildPeriods(
+        startDayKeys: const ['2026-01-01'],
+        endDayKeys: const ['2026-01-05'],
+      );
+      final status = cycleStatusOn('2026-09-03', stale);
+      expect(status.isAnchored, isFalse);
+      // The facts it does have are still reported.
+      expect(status.lastStart, '2026-01-01');
+      expect(status.bleedingDays, 5);
+    });
+
+    test('a start recorded for a future day is not today\'s anchor', () {
+      final status = cycleStatusOn('2026-08-30', periods);
+      expect(status.lastStart, '2026-08-02');
+    });
+  });
 }

@@ -3,6 +3,7 @@ import 'package:patterns_core/patterns_core.dart';
 import 'package:vitals_ui/vitals_ui.dart';
 
 import '../data/photo_picker.dart';
+import '../l10n/app_language.dart';
 
 /// The entry sheet for one marker.
 ///
@@ -189,24 +190,24 @@ class _LogSheetState extends State<_LogSheet> {
     if (capture == null) {
       return [
         Text(
-          'Slikanje nije dostupno ovdje.',
+          context.s.captureUnavailable,
           style: theme.typography.body.copyWith(color: theme.colors.inkMuted),
         ),
       ];
     }
     return [
-      _primary('Slikaj', () {
+      _primary(context.s.takePhoto, () {
         Navigator.of(context).pop();
         capture(PhotoSource.camera);
       }),
       const SizedBox(height: VitalsSpacing.md),
-      _secondary('Iz galerije', () {
+      _secondary(context.s.fromGallery, () {
         Navigator.of(context).pop();
         capture(PhotoSource.gallery);
       }),
       const SizedBox(height: VitalsSpacing.lg),
       Text(
-        'Fotografije ostaju u aplikaciji, nikad u galeriji.',
+        context.s.photosStayInApp,
         style: theme.typography.caption.copyWith(color: theme.colors.inkFaint),
       ),
     ];
@@ -241,7 +242,7 @@ class _LogSheetState extends State<_LogSheet> {
         ],
       ),
       const SizedBox(height: VitalsSpacing.xl),
-      _primary('Zabiljezi', () {
+      _primary(context.s.log, () {
         _submit(NumberValue(_number.round(), kind: metric.kind));
       }),
     ];
@@ -273,7 +274,7 @@ class _LogSheetState extends State<_LogSheet> {
       ),
       const SizedBox(height: VitalsSpacing.xl),
       _primary(
-        'Zabiljezi',
+        context.s.log,
         switch (_typedAmount) {
           final amount? => () =>
               _submit(NumberValue(amount, kind: metric.kind)),
@@ -287,13 +288,13 @@ class _LogSheetState extends State<_LogSheet> {
         Row(
           children: [
             Expanded(
-              child: _secondary('Nije bilo', () {
+              child: _secondary(context.s.didNotHappen, () {
                 _submit(const BooleanValue(false));
               }),
             ),
             const SizedBox(width: VitalsSpacing.md),
             Expanded(
-              child: _primary('Bilo je', () {
+              child: _primary(context.s.happened, () {
                 _submit(const BooleanValue(true));
               }),
             ),
@@ -328,14 +329,14 @@ class _LogSheetState extends State<_LogSheet> {
         // "None of these" is a recorded answer, not an empty form. Without it
         // there is no difference between a day with no sadness and a day never
         // filled in, and every later number is computed over the second kind.
-        _secondary('Nista od ovoga', () => _submit(TagsValue(const []))),
+        _secondary(context.s.noneOfTheseButton, () => _submit(TagsValue(const []))),
         const SizedBox(height: VitalsSpacing.md),
       ],
       // Nothing picked is not an answer here. "None of these" has its own
       // button, and letting an empty tap record it would put that answer on
       // days nobody gave it.
       _primary(
-        'Zabiljezi',
+        context.s.log,
         _picked.isEmpty
             ? null
             : () => _submit(
@@ -355,8 +356,8 @@ class _LogSheetState extends State<_LogSheet> {
           minLines: 4,
           style: theme.typography.body,
           onChanged: (_) => setState(() {}),
-          decoration: const InputDecoration(
-            hintText: 'Kako je bilo, i zbog cega',
+          decoration: InputDecoration(
+            hintText: context.s.diaryHint,
           ),
         ),
         // Off unless turned on for this entry. Private keeps it out of search
@@ -369,16 +370,16 @@ class _LogSheetState extends State<_LogSheet> {
             contentPadding: EdgeInsets.zero,
             value: _private,
             onChanged: (on) => setState(() => _private = on),
-            title: Text('Privatno', style: theme.typography.body),
+            title: Text(context.s.private, style: theme.typography.body),
             subtitle: Text(
-              'Ne pojavljuje se u pretrazi ni na stranici za doktora',
+              context.s.privateExplained,
               style: theme.typography.caption,
             ),
           ),
         ),
         const SizedBox(height: VitalsSpacing.lg),
         _primary(
-          'Sacuvaj',
+          context.s.save,
           _text.text.trim().isEmpty
               ? null
               : () => _submit(TextValue(_text.text.trim(), isPrivate: _private)),
@@ -403,7 +404,7 @@ class _LogSheetState extends State<_LogSheet> {
           ),
         ),
         const SizedBox(height: VitalsSpacing.xl),
-        _primary('Zabiljezi', () {
+        _primary(context.s.log, () {
           _submit(TimeOfDayValue(_time.hour * 60 + _time.minute));
         }),
       ];

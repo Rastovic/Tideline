@@ -1,6 +1,7 @@
 import 'package:vitals_core/vitals_core.dart';
 
 import 'aggregation.dart';
+import 'language.dart';
 import 'display.dart';
 import 'metric.dart';
 import 'metric_kind.dart';
@@ -35,18 +36,26 @@ final class ValidationFailure {
 ///
 /// Returns every problem at once rather than the first, because fixing a form
 /// one error at a time is how a person gives up on a form.
-List<ValidationFailure> validateMetric(Metric metric) {
+List<ValidationFailure> validateMetric(
+  Metric metric, [
+  TextLanguage language = TextLanguage.en,
+]) {
+  String t(String en, String sr) => language.pick(en, sr);
   final problems = <ValidationFailure>[];
 
   if (metric.name.trim().isEmpty) {
-    problems.add(const ValidationFailure('name', 'Give it a name.'));
+    problems.add(ValidationFailure('name', t('Give it a name.', 'Daj mu ime.')));
   }
 
   if (!DayAggregation.allowedFor(metric.kind).contains(metric.aggregation)) {
     problems.add(ValidationFailure(
       'aggregation',
-      'A ${metric.kind.wireName} marker cannot summarise a day by '
-          '${metric.aggregation.wireName}.',
+      t(
+        'A ${metric.kind.wireName} marker cannot summarise a day by '
+            '${metric.aggregation.wireName}.',
+        'Marker tipa ${metric.kind.wireName} ne moze sazeti dan po pravilu '
+            '${metric.aggregation.wireName}.',
+      ),
     ));
   }
 
@@ -54,56 +63,63 @@ List<ValidationFailure> validateMetric(Metric metric) {
   final style = metric.displayStyle;
   if (style == null) {
     if (allowedStyles.isNotEmpty) {
-      problems.add(const ValidationFailure(
+      problems.add(ValidationFailure(
         'displayStyle',
-        'Choose how this marker is drawn.',
+        t('Choose how this marker is drawn.', 'Izaberi kako se marker crta.'),
       ));
     }
   } else if (!allowedStyles.contains(style)) {
     problems.add(ValidationFailure(
       'displayStyle',
-      'A ${metric.kind.wireName} marker cannot be drawn as '
-          '${style.wireName}.',
+      t(
+        'A ${metric.kind.wireName} marker cannot be drawn as '
+            '${style.wireName}.',
+        'Marker tipa ${metric.kind.wireName} ne moze se crtati kao '
+            '${style.wireName}.',
+      ),
     ));
   }
 
   switch (metric.kind) {
     case MetricKind.scale:
       if (metric.scaleMax - metric.scaleMin < 1) {
-        problems.add(const ValidationFailure(
+        problems.add(ValidationFailure(
           'scale',
-          'The top of the scale has to be above the bottom.',
+          t('The top of the scale has to be above the bottom.',
+              'Gornja granica mora biti iznad donje.'),
         ));
       }
       if ((metric.lowLabel ?? '').trim().isEmpty ||
           (metric.highLabel ?? '').trim().isEmpty) {
         // Unlabelled ends are the reason old ratings become unreadable: a 3
         // means nothing in March unless you wrote down what 1 and 10 were.
-        problems.add(const ValidationFailure(
+        problems.add(ValidationFailure(
           'labels',
-          'Say what the low end and the high end mean.',
+          t('Say what the low end and the high end mean.',
+              'Napisi sta znace najniza i najvisa vrijednost.'),
         ));
       }
     case MetricKind.amount:
       if ((metric.unit ?? '').trim().isEmpty) {
-        problems.add(const ValidationFailure(
+        problems.add(ValidationFailure(
           'unit',
-          'An amount needs a unit - g, ml, kg.',
+          t('An amount needs a unit - g, ml, kg.',
+              'Kolicina treba jedinicu - g, ml, kg.'),
         ));
       }
     case MetricKind.choice:
     case MetricKind.tags:
       if (metric.liveOptions.length < 2) {
-        problems.add(const ValidationFailure(
+        problems.add(ValidationFailure(
           'options',
-          'Add at least two options.',
+          t('Add at least two options.', 'Dodaj bar dvije opcije.'),
         ));
       }
       final ids = metric.options.map((o) => o.id).toList();
       if (ids.toSet().length != ids.length) {
-        problems.add(const ValidationFailure(
+        problems.add(ValidationFailure(
           'options',
-          'Two options share an id.',
+          t('Two options share an id.', 'Dvije opcije dijele isti id.'),
         ));
       }
     case MetricKind.percent:

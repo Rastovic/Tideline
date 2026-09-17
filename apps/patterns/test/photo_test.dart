@@ -159,15 +159,15 @@ void main() {
     ));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byTooltip('Dodaj unos'));
+    await tester.tap(find.byTooltip('Add entry'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Fotografija dana'));
+    await tester.tap(find.text('Photo of the day'));
     await tester.pumpAndSettle();
 
     // The tap has to happen against the fake clock, and the file write that
     // follows it has to happen against the real one. Pumping inside runAsync
     // is forbidden, so the two are interleaved rather than nested.
-    await tester.tap(find.text('Iz galerije'));
+    await tester.tap(find.text('From gallery'));
     // pumpAndSettle, not pump: the sheet's dismissal animation has to finish
     // before showModalBottomSheet's future resolves and the picker is called.
     await tester.pumpAndSettle();
@@ -256,11 +256,11 @@ void main() {
         ),
       ));
       await tester.pumpAndSettle();
-      await tester.tap(find.byTooltip('Dodaj unos'));
+      await tester.tap(find.byTooltip('Add entry'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Fotografija dana'));
+      await tester.tap(find.text('Photo of the day'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Slikaj'));
+      await tester.tap(find.text('Take photo'));
       await tester.pumpAndSettle();
       for (var i = 0; i < 8; i++) {
         await tester.runAsync(

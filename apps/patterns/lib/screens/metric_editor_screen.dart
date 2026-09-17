@@ -4,7 +4,7 @@ import 'package:vitals_core/vitals_core.dart';
 import 'package:vitals_ui/vitals_ui.dart';
 
 import '../data/patterns_controller.dart';
-import 'metric_labels.dart';
+import '../l10n/app_language.dart';
 
 /// The type system's UI, and the reason a new marker no longer needs a build.
 ///
@@ -147,11 +147,12 @@ class _MetricEditorScreenState extends State<MetricEditorScreen> {
     final candidate = _asMetric();
     final before = widget.metric;
     final problems = before == null
-        ? validateMetric(candidate)
+        ? validateMetric(candidate, context.s.language.text)
         : validateMetricChange(
             before,
             candidate,
             facts: _facts ?? MetricReadingFacts.none,
+            language: context.s.language.text,
           );
 
     if (problems.isNotEmpty) {
@@ -182,11 +183,11 @@ class _MetricEditorScreenState extends State<MetricEditorScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(_isNew ? 'Novi marker' : 'Marker'),
+        title: Text(_isNew ? context.s.newMarker : context.s.marker),
         actions: [
           TextButton(
             onPressed: _saving ? null : _save,
-            child: const Text('Sacuvaj'),
+            child: Text(context.s.save),
           ),
         ],
       ),
@@ -205,28 +206,28 @@ class _MetricEditorScreenState extends State<MetricEditorScreen> {
               controller: _name,
               autofocus: _isNew,
               style: theme.typography.title,
-              decoration: const InputDecoration(
-                labelText: 'Ime',
-                hintText: 'nadutost',
+              decoration: InputDecoration(
+                labelText: context.s.name,
+                hintText: context.s.markerNameHint,
               ),
             ),
             const SizedBox(height: VitalsSpacing.xl),
-            _Heading(label: 'Sekcija', theme: theme),
+            _Heading(label: context.s.section, theme: theme),
             _domainPicker(theme),
             const SizedBox(height: VitalsSpacing.xl),
-            _Heading(label: 'Tip', theme: theme),
+            _Heading(label: context.s.type, theme: theme),
             _kindPicker(theme),
             ..._kindFields(theme),
             const SizedBox(height: VitalsSpacing.xl),
-            _Heading(label: 'Dan s vise unosa', theme: theme),
+            _Heading(label: context.s.dayWithSeveralEntries, theme: theme),
             _aggregationPicker(theme),
             if (DisplayStyle.allowedFor(_kind).isNotEmpty) ...[
               const SizedBox(height: VitalsSpacing.xl),
-              _Heading(label: 'Kako se crta', theme: theme),
+              _Heading(label: context.s.howItIsDrawn, theme: theme),
               _displayPicker(theme),
             ],
             const SizedBox(height: VitalsSpacing.xl),
-            _Heading(label: 'Boja', theme: theme),
+            _Heading(label: context.s.colour, theme: theme),
             _colorPicker(theme),
             if (!_isNew) ...[
               const SizedBox(height: VitalsSpacing.huge),
@@ -243,7 +244,7 @@ class _MetricEditorScreenState extends State<MetricEditorScreen> {
         children: [
           for (final domain in MetricDomain.values)
             ChoiceChip(
-              label: Text(domainNames[domain]!),
+              label: Text(context.s.domainName(domain)),
               selected: _domain == domain,
               onSelected: (_) => setState(() => _domain = domain),
             ),
@@ -270,7 +271,7 @@ class _MetricEditorScreenState extends State<MetricEditorScreen> {
               if (!locked ||
                   canRetype(widget.metric!.kind, kind, hasReadings: true))
                 ChoiceChip(
-                  label: Text(kindNames[kind]!),
+                  label: Text(context.s.kindName(kind)),
                   selected: _kind == kind,
                   onSelected: loading ? null : (_) => _setKind(kind),
                 ),
@@ -279,9 +280,8 @@ class _MetricEditorScreenState extends State<MetricEditorScreen> {
         const SizedBox(height: VitalsSpacing.sm),
         Text(
           locked
-              ? 'Vec ima ${facts.count} unosa, pa je tip zakljucan. '
-                  'Za drugi tip: arhiviraj ovaj i napravi novi.'
-              : kindHints[_kind]!,
+              ? context.s.typeLocked(facts.count)
+              : context.s.kindHint(_kind),
           style: theme.typography.caption.copyWith(color: theme.colors.inkMuted),
         ),
       ],
@@ -291,12 +291,12 @@ class _MetricEditorScreenState extends State<MetricEditorScreen> {
   List<Widget> _kindFields(VitalsThemeData theme) => switch (_kind) {
         MetricKind.scale => [
             const SizedBox(height: VitalsSpacing.xl),
-            _Heading(label: 'Raspon', theme: theme),
+            _Heading(label: context.s.range, theme: theme),
             Row(
               children: [
                 Expanded(
                   child: _Stepper(
-                    label: 'od',
+                    label: context.s.from,
                     value: _scaleMin,
                     onChanged: (v) => setState(() => _scaleMin = v),
                   ),
@@ -304,7 +304,7 @@ class _MetricEditorScreenState extends State<MetricEditorScreen> {
                 const SizedBox(width: VitalsSpacing.md),
                 Expanded(
                   child: _Stepper(
-                    label: 'do',
+                    label: context.s.to,
                     value: _scaleMax,
                     onChanged: (v) => setState(() => _scaleMax = v),
                   ),
@@ -316,17 +316,17 @@ class _MetricEditorScreenState extends State<MetricEditorScreen> {
             // means nothing in March unless you wrote down what 1 and 10 were.
             TextField(
               controller: _lowLabel,
-              decoration: const InputDecoration(
-                labelText: 'Sta znaci najniza',
-                hintText: 'nista',
+              decoration: InputDecoration(
+                labelText: context.s.whatLowMeans,
+                hintText: context.s.lowHint,
               ),
             ),
             const SizedBox(height: VitalsSpacing.md),
             TextField(
               controller: _highLabel,
-              decoration: const InputDecoration(
-                labelText: 'Sta znaci najvisa',
-                hintText: 'jako',
+              decoration: InputDecoration(
+                labelText: context.s.whatHighMeans,
+                hintText: context.s.highHint,
               ),
             ),
           ],
@@ -334,15 +334,15 @@ class _MetricEditorScreenState extends State<MetricEditorScreen> {
             const SizedBox(height: VitalsSpacing.xl),
             TextField(
               controller: _unit,
-              decoration: const InputDecoration(
-                labelText: 'Jedinica',
+              decoration: InputDecoration(
+                labelText: context.s.unit,
                 hintText: 'g',
               ),
             ),
           ],
         MetricKind.choice || MetricKind.tags => [
             const SizedBox(height: VitalsSpacing.xl),
-            _Heading(label: 'Opcije', theme: theme),
+            _Heading(label: context.s.options, theme: theme),
             _optionEditor(theme),
           ],
         _ => const [],
@@ -386,7 +386,7 @@ class _MetricEditorScreenState extends State<MetricEditorScreen> {
             ];
           }),
           icon: const Icon(Icons.add),
-          label: const Text('Dodaj opciju'),
+          label: Text(context.s.addOption),
         ),
       ],
     );
@@ -403,7 +403,7 @@ class _MetricEditorScreenState extends State<MetricEditorScreen> {
           children: [
             for (final rule in allowed)
               ChoiceChip(
-                label: Text(aggregationNames[rule]!),
+                label: Text(context.s.aggregationName(rule)),
                 selected: _aggregation == rule,
                 onSelected: (_) => setState(() => _aggregation = rule),
               ),
@@ -411,7 +411,7 @@ class _MetricEditorScreenState extends State<MetricEditorScreen> {
         ),
         const SizedBox(height: VitalsSpacing.sm),
         Text(
-          aggregationHints[_aggregation]!,
+          context.s.aggregationHint(_aggregation),
           style: theme.typography.caption.copyWith(color: theme.colors.inkMuted),
         ),
       ],
@@ -424,7 +424,7 @@ class _MetricEditorScreenState extends State<MetricEditorScreen> {
         children: [
           for (final style in DisplayStyle.allowedFor(_kind))
             ChoiceChip(
-              label: Text(displayNames[style]!),
+              label: Text(context.s.displayName(style)),
               selected: _displayStyle == style,
               onSelected: (_) => setState(() => _displayStyle = style),
             ),
@@ -446,7 +446,7 @@ class _MetricEditorScreenState extends State<MetricEditorScreen> {
               onTap: () => setState(() => _colorHex = hex),
             ),
           IconButton(
-            tooltip: 'Druga boja',
+            tooltip: context.s.otherColour,
             icon: const Icon(Icons.colorize),
             onPressed: _pickFreeColor,
           ),
@@ -458,7 +458,7 @@ class _MetricEditorScreenState extends State<MetricEditorScreen> {
     final hex = await showDialog<String>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Druga boja'),
+        title: Text(context.s.otherColour),
         content: TextField(
           controller: field,
           autofocus: true,
@@ -467,11 +467,11 @@ class _MetricEditorScreenState extends State<MetricEditorScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Odustani'),
+            child: Text(context.s.cancel),
           ),
           TextButton(
             onPressed: () => Navigator.of(context).pop(field.text.trim()),
-            child: const Text('Uzmi'),
+            child: Text(context.s.use),
           ),
         ],
       ),
@@ -505,18 +505,18 @@ class _MetricEditorScreenState extends State<MetricEditorScreen> {
             }
             if (mounted) Navigator.of(context).pop(true);
           },
-          child: Text(archived ? 'Vrati na listu' : 'Arhiviraj'),
+          child: Text(archived ? context.s.putBackOnList : context.s.archiveVerb),
         ),
         const SizedBox(height: VitalsSpacing.sm),
         Text(
-          'Arhiviran marker zadrzava sve unose i vise se ne nudi.',
+          context.s.archivedExplained,
           style: theme.typography.caption.copyWith(color: theme.colors.inkFaint),
         ),
         const SizedBox(height: VitalsSpacing.lg),
         TextButton(
           onPressed: _confirmDelete,
           child: Text(
-            'Obrisi marker',
+            context.s.deleteMarker,
             style: TextStyle(color: theme.colors.danger),
           ),
         ),
@@ -529,21 +529,20 @@ class _MetricEditorScreenState extends State<MetricEditorScreen> {
     final ok = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Obrisati marker?'),
+        title: Text(context.s.deleteMarkerQuestion),
         content: Text(
           count == 0
-              ? 'Nema unosa, pa se nista ne gubi.'
-              : 'Unosi ostaju zapisani ($count), samo marker nestaje s liste. '
-                  'Ako ti treba da se cuva u izvjestajima, arhiviraj ga.',
+              ? context.s.deleteMarkerNoEntries
+              : context.s.deleteMarkerWithEntries(count),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Odustani'),
+            child: Text(context.s.cancel),
           ),
           TextButton(
             onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Obrisi'),
+            child: Text(context.s.delete),
           ),
         ],
       ),
@@ -625,13 +624,13 @@ class _Stepper extends StatelessWidget {
         Text(label, style: theme.typography.caption),
         const Spacer(),
         IconButton(
-          tooltip: '$label manje',
+          tooltip: context.s.less(label),
           icon: const Icon(Icons.remove),
           onPressed: () => onChanged(value - 1),
         ),
         Text('$value', style: theme.typography.title),
         IconButton(
-          tooltip: '$label vise',
+          tooltip: context.s.more(label),
           icon: const Icon(Icons.add),
           onPressed: () => onChanged(value + 1),
         ),
@@ -689,18 +688,18 @@ class _OptionRowState extends State<_OptionRow> {
                 decoration: archived ? TextDecoration.lineThrough : null,
                 color: archived ? theme.colors.inkFaint : null,
               ),
-              decoration: const InputDecoration(hintText: 'opcija'),
+              decoration: InputDecoration(hintText: context.s.option),
             ),
           ),
           if (widget.hasHistory)
             IconButton(
-              tooltip: archived ? 'Vrati opciju' : 'Arhiviraj opciju',
+              tooltip: archived ? context.s.restoreOption : context.s.archiveOption,
               icon: Icon(archived ? Icons.unarchive : Icons.archive_outlined),
               onPressed: widget.onToggleArchived,
             )
           else
             IconButton(
-              tooltip: 'Ukloni opciju',
+              tooltip: context.s.removeOption,
               icon: const Icon(Icons.close),
               onPressed: widget.onRemove,
             ),

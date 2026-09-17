@@ -55,6 +55,11 @@ class TidelineWidgetProvider : HomeWidgetProvider() {
                     )
                 }
             }
+            // The app publishes this sentence in its own language; the layout
+            // only holds a fallback for a widget placed before the first run.
+            widgetData.getString("empty_text", null)?.let {
+                views.setTextViewText(R.id.widget_empty, it)
+            }
             views.setViewVisibility(
                 R.id.widget_empty,
                 if (shown == 0) View.VISIBLE else View.GONE,

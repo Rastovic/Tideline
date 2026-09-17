@@ -12,8 +12,9 @@ const quickLogSlots = 4;
 /// A seam over `home_widget` so a test can check what would be published and
 /// fake a tap, without a launcher.
 abstract interface class QuickLogWidget {
-  /// Shows these markers' names on the widget. Names and ids only.
-  Future<void> publish(List<Metric> markers);
+  /// Shows these markers' names on the widget. Names and ids only, plus the
+  /// one sentence the widget itself says when nothing is picked.
+  Future<void> publish(List<Metric> markers, {required String emptyText});
 
   /// The marker the app was opened for from a cold start, if any.
   Future<String?> launchedFor();
@@ -37,8 +38,9 @@ final class PlatformQuickLogWidget implements QuickLogWidget {
   static const _provider = 'com.rastovic.tideline.TidelineWidgetProvider';
 
   @override
-  Future<void> publish(List<Metric> markers) async {
+  Future<void> publish(List<Metric> markers, {required String emptyText}) async {
     try {
+      await HomeWidget.saveWidgetData<String>('empty_text', emptyText);
       for (var i = 0; i < quickLogSlots; i++) {
         final metric = i < markers.length ? markers[i] : null;
         await HomeWidget.saveWidgetData<String>('marker_${i}_id', metric?.id);

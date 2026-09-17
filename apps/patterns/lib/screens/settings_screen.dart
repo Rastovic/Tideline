@@ -9,6 +9,7 @@ import '../data/evening_reminder.dart';
 import '../data/patterns_controller.dart';
 import '../data/quick_log_widget.dart';
 import 'backup_screen.dart';
+import '../l10n/app_language.dart';
 
 /// Settings, which for now is the one reminder.
 ///
@@ -98,17 +99,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
   /// prompt, because asking twice does nothing on Android after a hard denial.
   bool _blockedByOs = false;
 
-  Future<void> _write(ReminderSettings next) async {
+  Future<void> _write(ReminderSettings next, AppLanguage language) async {
     setState(() => _settings = next);
     await next.save();
-    await widget.reminder.apply(next);
+    await widget.reminder.apply(next, language: language);
     widget.onChanged?.call(next);
   }
 
   Future<void> _toggle(bool on) async {
+    final language = context.s.language;
     if (!on) {
       setState(() => _blockedByOs = false);
-      await _write(_settings.copyWith(enabled: false));
+      await _write(_settings.copyWith(enabled: false), language);
       return;
     }
 
@@ -126,10 +128,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
 
     setState(() => _blockedByOs = false);
-    await _write(_settings.copyWith(enabled: true));
+    await _write(_settings.copyWith(enabled: true), language);
+  }
+
+  /// Redraws every screen at once, and re-words the reminder already
+  /// scheduled so it does not arrive in the old language.
+  Future<void> _setLanguage(AppLanguage language) async {
+    final notifier = LanguageScope.notifierOf(context);
+    if (notifier == null) return;
+    notifier.value = language;
+    await AppLanguage.save(language);
+    await widget.reminder.apply(_settings, language: language);
   }
 
   Future<void> _pickTime() async {
+    final language = context.s.language;
     final picked = await showTimePicker(
       context: context,
       initialTime: TimeOfDay(
@@ -140,6 +153,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (picked == null) return;
     await _write(
       _settings.copyWith(minute: picked.hour * 60 + picked.minute),
+      language,
     );
   }
 
@@ -148,7 +162,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final theme = VitalsTheme.of(context);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Podesavanja')),
+      appBar: AppBar(title: Text(context.s.settings)),
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.fromLTRB(
@@ -158,8 +172,30 @@ class _SettingsScreenState extends State<SettingsScreen> {
             VitalsSpacing.huge,
           ),
           children: [
+            // Written in both languages, so it can be found by someone who
+            // cannot read the one currently on screen.
             Text(
-              'PODSJETNIK',
+              'LANGUAGE / JEZIK',
+              style: theme.typography.label.copyWith(
+                color: theme.colors.inkFaint,
+                letterSpacing: 1.2,
+              ),
+            ),
+            const SizedBox(height: VitalsSpacing.sm),
+            Wrap(
+              spacing: VitalsSpacing.sm,
+              children: [
+                for (final language in AppLanguage.values)
+                  ChoiceChip(
+                    label: Text(language.nativeName),
+                    selected: context.s.language == language,
+                    onSelected: (_) => _setLanguage(language),
+                  ),
+              ],
+            ),
+            const SizedBox(height: VitalsSpacing.huge),
+            Text(
+              context.s.reminderHeading,
               style: theme.typography.label.copyWith(
                 color: theme.colors.inkFaint,
                 letterSpacing: 1.2,
@@ -170,13 +206,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
               contentPadding: EdgeInsets.zero,
               value: _settings.enabled,
               onChanged: _toggle,
-              title: Text('Jedan podsjetnik uvece', style: theme.typography.body),
+              title: Text(context.s.oneEveningReminder, style: theme.typography.body),
             ),
             ListTile(
               contentPadding: EdgeInsets.zero,
               enabled: _settings.enabled,
               onTap: _settings.enabled ? _pickTime : null,
-              title: Text('Vrijeme', style: theme.typography.body),
+              title: Text(context.s.time, style: theme.typography.body),
               trailing: Text(
                 _clock(_settings),
                 style: theme.typography.title.copyWith(
@@ -191,8 +227,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               // Written down because it is a promise, not a description: the
               // reminder does not know whether the day was logged, and it is
               // never going to.
-              'Kaze isto svake veceri i otvara listu markera. '
-              'Ne zna da li si nesto upisala i ne spominje propusteni dan.',
+              context.s.reminderPromise,
               style: theme.typography.caption.copyWith(
                 color: theme.colors.inkMuted,
               ),
@@ -200,7 +235,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             if (widget.lock case final lock?) ...[
               const SizedBox(height: VitalsSpacing.huge),
               Text(
-                'ZAKLJUCAVANJE',
+                context.s.lockHeading,
                 style: theme.typography.label.copyWith(
                   color: theme.colors.inkFaint,
                   letterSpacing: 1.2,
@@ -211,18 +246,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 value: lock.enabled && lock.available,
                 onChanged: lock.available
                     ? (on) async {
-                        await lock.setEnabled(on);
+                        await lock.setEnabled(on, reason: context.s.unlockReason);
                         if (mounted) setState(() {});
                       }
                     : null,
-                title: Text('Otisak ili PIN telefona',
+                title: Text(context.s.lockTitle,
                     style: theme.typography.body),
                 subtitle: Text(
                   lock.available
-                      ? 'Pri otvaranju i nakon minute van aplikacije. '
-                          'Za iskljucivanje treba otkljucati.'
-                      : 'Telefon nema zakljucan ekran, pa aplikacija ne moze '
-                          'biti zakljucana.',
+                      ? context.s.lockExplained
+                      : context.s.lockUnavailable,
                   style: theme.typography.caption
                       .copyWith(color: theme.colors.inkFaint),
                 ),
@@ -232,7 +265,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 case (final controller?, final ids?)) ...[
               const SizedBox(height: VitalsSpacing.huge),
               Text(
-                'WIDGET NA POCETNOM EKRANU',
+                context.s.widgetHeading,
                 style: theme.typography.label.copyWith(
                   color: theme.colors.inkFaint,
                   letterSpacing: 1.2,
@@ -240,8 +273,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
               const SizedBox(height: VitalsSpacing.sm),
               Text(
-                'Do $quickLogSlots markera. Widget prikazuje samo imena, '
-                'nikad vrijednosti ni da li je nesto upisano.',
+                context.s.widgetExplained(quickLogSlots),
                 style: theme.typography.caption
                     .copyWith(color: theme.colors.inkMuted),
               ),
@@ -264,7 +296,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             if (widget.controller case final controller?) ...[
               const SizedBox(height: VitalsSpacing.huge),
               Text(
-                'DAN',
+                context.s.dayHeading,
                 style: theme.typography.label.copyWith(
                   color: theme.colors.inkFaint,
                   letterSpacing: 1.2,
@@ -272,10 +304,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
               ListTile(
                 contentPadding: EdgeInsets.zero,
-                title: Text('Novi dan pocinje u', style: theme.typography.body),
+                title: Text(context.s.newDayStartsAt, style: theme.typography.body),
                 subtitle: Text(
-                  'Unos u 01:30 pripada danu koji se upravo zavrsio. '
-                  'Promjena vazi za nove unose; stari ostaju gdje su.',
+                  context.s.dayBoundaryExplained,
                   style: theme.typography.caption
                       .copyWith(color: theme.colors.inkFaint),
                 ),
@@ -298,7 +329,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
               const SizedBox(height: VitalsSpacing.huge),
               Text(
-                'ARHIVA',
+                context.s.archiveHeading,
                 style: theme.typography.label.copyWith(
                   color: theme.colors.inkFaint,
                   letterSpacing: 1.2,
@@ -311,7 +342,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 future: _photoBytes ??= controller.photoBytes(),
                 builder: (context, snapshot) => ListTile(
                   contentPadding: EdgeInsets.zero,
-                  title: Text('Fotografije zauzimaju',
+                  title: Text(context.s.photosTakeUp,
                       style: theme.typography.body),
                   trailing: Text(
                     snapshot.hasData ? megabytes(snapshot.data!) : '…',
@@ -322,10 +353,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
               ListTile(
                 contentPadding: EdgeInsets.zero,
-                title: Text('Backup i vracanje',
+                title: Text(context.s.backupAndRestore,
                     style: theme.typography.body),
                 subtitle: Text(
-                  'Jedan fajl sa svime, fotografije unutra',
+                  context.s.oneFileWithEverything,
                   style: theme.typography.caption
                       .copyWith(color: theme.colors.inkFaint),
                 ),
@@ -349,8 +380,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   borderRadius: VitalsRadius.nestedAll,
                 ),
                 child: Text(
-                  'Obavjestenja su iskljucena u postavkama telefona, '
-                  'pa podsjetnik ne moze stici. Sve ostalo radi normalno.',
+                  context.s.notificationsBlocked,
                   style: theme.typography.caption,
                 ),
               ),

@@ -1,4 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="widget_description">Brzi unos: do cetiri markera, bez vrijednosti na ekranu</string>
+    <string name="widget_description">Quick log: up to four markers, no values on screen</string>
 </resources>

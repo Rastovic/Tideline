@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'language.dart';
 import 'metric.dart';
 import 'metric_kind.dart';
 import 'metric_value.dart';
@@ -81,6 +82,7 @@ ExportData buildExport({
   required String from,
   required String to,
   bool includeDiary = false,
+  TextLanguage language = TextLanguage.en,
 }) {
   final byId = {for (final m in metrics) m.id: m};
   final ordered = [
@@ -120,7 +122,7 @@ ExportData buildExport({
       time: _clock(minute),
       marker: metric.name,
       kind: metric.kind.wireName,
-      value: _value(metric, o.value),
+      value: _value(metric, o.value, language),
       unit: metric.unit,
       enteredLate: o.enteredLate,
     ));
@@ -159,10 +161,15 @@ String exportCsv(ExportData data) {
 /// The default opening of the AI export, which the person edits before
 /// sharing. It asks for description, not diagnosis, because the app itself
 /// draws no conclusions and a file it hands over should not invite them.
-const defaultAiPreamble =
-    'Ovo je moj licni zapis iz aplikacije za pracenje. Brojeve sam upisivala '
-    'sama. Opisi sta vidis u podacima: sta se ponavlja, sta ide zajedno, i '
-    'koliko je podataka iza svake tvrdnje. Nemoj postavljati dijagnozu.';
+String defaultAiPreamble([TextLanguage lang = TextLanguage.en]) => lang.pick(
+      'This is my personal record from a tracking app. I entered the numbers '
+          'myself. Describe what you see in the data: what repeats, what goes '
+          'together, and how much data is behind each statement. Do not '
+          'diagnose.',
+      'Ovo je moj licni zapis iz aplikacije za pracenje. Brojeve sam upisivala '
+          'sama. Opisi sta vidis u podacima: sta se ponavlja, sta ide zajedno, i '
+          'koliko je podataka iza svake tvrdnje. Nemoj postavljati dijagnozu.',
+    );
 
 /// Markdown for pasting into an AI chat: the preamble, a schema that says what
 /// every marker means, the counts that were held back, then every reading as
@@ -171,36 +178,51 @@ const defaultAiPreamble =
 /// **The schema travels with the data.** A number 7 means nothing without
 /// "scale 1-10, 1 = nisko", and a model that has to guess the scale will guess
 /// confidently and wrongly.
-String exportAiMarkdown(ExportData data, {String preamble = defaultAiPreamble}) {
+String exportAiMarkdown(
+  ExportData data, {
+  String? preamble,
+  TextLanguage language = TextLanguage.en,
+}) {
+  String t(String en, String sr) => language.pick(en, sr);
   final buffer = StringBuffer()
-    ..writeln(preamble.trim())
+    ..writeln((preamble ?? defaultAiPreamble(language)).trim())
     ..writeln()
     ..writeln('## Period')
     ..writeln()
-    ..writeln('${data.from} - ${data.to}, ${data.rows.length} unosa.')
+    ..writeln('${data.from} - ${data.to}, '
+        '${data.rows.length} ${t('readings', 'unosa')}.')
     ..writeln()
-    ..writeln('## Markeri')
+    ..writeln(t('## Markers', '## Markeri'))
     ..writeln();
 
   for (final m in data.metrics) {
-    buffer.writeln('- **${m.name}** - ${_describeSchema(m)}');
+    buffer.writeln('- **${m.name}** - ${_describeSchema(m, language)}');
   }
 
   buffer
     ..writeln()
-    ..writeln('## Sta nije u fajlu')
+    ..writeln(t('## Not in this file', '## Sta nije u fajlu'))
     ..writeln()
-    ..writeln('- Neupisan dan nema red. Nedostajuci red znaci "nije upisano", '
-        'ne nulu.')
-    ..writeln('- Fotografije nisu ukljucene.')
-    ..writeln('- Privatni unosi dnevnika izostavljeni: ${data.heldBackPrivate}.');
+    ..writeln(t(
+      '- A day with nothing logged has no row. A missing row means "not '
+          'logged", not zero.',
+      '- Neupisan dan nema red. Nedostajuci red znaci "nije upisano", ne nulu.',
+    ))
+    ..writeln(t('- Photos are not included.', '- Fotografije nisu ukljucene.'))
+    ..writeln(t(
+      '- Private diary entries left out: ${data.heldBackPrivate}.',
+      '- Privatni unosi dnevnika izostavljeni: ${data.heldBackPrivate}.',
+    ));
   if (data.heldBackDiary > 0) {
-    buffer.writeln('- Unosi dnevnika izostavljeni: ${data.heldBackDiary}.');
+    buffer.writeln(t(
+      '- Diary entries left out: ${data.heldBackDiary}.',
+      '- Unosi dnevnika izostavljeni: ${data.heldBackDiary}.',
+    ));
   }
 
   buffer
     ..writeln()
-    ..writeln('## Podaci')
+    ..writeln(t('## Data', '## Podaci'))
     ..writeln()
     ..writeln('```json')
     ..writeln(const JsonEncoder.withIndent('  ').convert({
@@ -227,25 +249,30 @@ String exportAiMarkdown(ExportData data, {String preamble = defaultAiPreamble}) 
   return buffer.toString();
 }
 
-String _describeSchema(Metric m) => switch (m.kind) {
-      MetricKind.scale => 'ocjena ${m.scaleMin}-${m.scaleMax}'
-          '${m.lowLabel == null ? '' : ', ${m.scaleMin} = ${m.lowLabel}'}'
-          '${m.highLabel == null ? '' : ', ${m.scaleMax} = ${m.highLabel}'}',
-      MetricKind.percent => 'procenat 0-100',
-      MetricKind.boolean => 'da/ne (true/false)',
-      MetricKind.amount => 'kolicina${m.unit == null ? '' : ' u ${m.unit}'}',
-      MetricKind.count => 'broj',
-      MetricKind.duration => 'trajanje u minutama',
-      MetricKind.timeOfDay => 'vrijeme u danu, HH:MM',
-      MetricKind.choice => 'jedan izbor: '
-          '${m.options.map((o) => o.label).join(', ')}',
-      MetricKind.tags => 'vise oznaka, odvojene sa |: '
-          '${m.options.map((o) => o.label).join(', ')}',
-      MetricKind.text => 'slobodan tekst',
-      MetricKind.photo => 'fotografija',
-    };
+String _describeSchema(Metric m, TextLanguage lang) {
+  String t(String en, String sr) => lang.pick(en, sr);
+  final options = m.options.map((o) => o.label).join(', ');
+  return switch (m.kind) {
+    MetricKind.scale => '${t('rating', 'ocjena')} ${m.scaleMin}-${m.scaleMax}'
+        '${m.lowLabel == null ? '' : ', ${m.scaleMin} = ${m.lowLabel}'}'
+        '${m.highLabel == null ? '' : ', ${m.scaleMax} = ${m.highLabel}'}',
+    MetricKind.percent => t('percent 0-100', 'procenat 0-100'),
+    MetricKind.boolean => t('yes/no (true/false)', 'da/ne (true/false)'),
+    MetricKind.amount => t('amount', 'kolicina') +
+        (m.unit == null ? '' : ' ${t('in', 'u')} ${m.unit}'),
+    MetricKind.count => t('count', 'broj'),
+    MetricKind.duration => t('duration in minutes', 'trajanje u minutama'),
+    MetricKind.timeOfDay => t('time of day, HH:MM', 'vrijeme u danu, HH:MM'),
+    MetricKind.choice => '${t('one choice', 'jedan izbor')}: $options',
+    MetricKind.tags =>
+      '${t('several tags, separated by |', 'vise oznaka, odvojene sa |')}: '
+          '$options',
+    MetricKind.text => t('free text', 'slobodan tekst'),
+    MetricKind.photo => t('photo', 'fotografija'),
+  };
+}
 
-String _value(Metric metric, MetricValue value) {
+String _value(Metric metric, MetricValue value, TextLanguage lang) {
   final labels = {for (final o in metric.options) o.id: o.label};
   return switch (value) {
     NumberValue(:final number) => number == number.roundToDouble()
@@ -255,7 +282,7 @@ String _value(Metric metric, MetricValue value) {
     TimeOfDayValue(:final minutesFromMidnight) => _clock(minutesFromMidnight),
     ChoiceValue(:final optionId) => labels[optionId] ?? optionId,
     TagsValue(:final optionIds) => optionIds.isEmpty
-        ? 'nista od ovoga'
+        ? lang.pick('none of these', 'nista od ovoga')
         : optionIds.map((id) => labels[id] ?? id).join('|'),
     TextValue(:final text) => text,
     PhotoValue() => '',

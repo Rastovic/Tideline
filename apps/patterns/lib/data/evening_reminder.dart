@@ -1,6 +1,8 @@
 import 'package:vitals_notify/vitals_notify.dart';
 
 import 'app_database.dart';
+import '../l10n/app_language.dart';
+import '../l10n/app_strings.dart';
 
 /// When a reminder set for [minute] next fires, counting from [now].
 ///
@@ -46,7 +48,8 @@ final class EveningReminder {
 
   /// Neutral on purpose, and asserted by a test. No "you missed", no count of
   /// what is left, no encouragement.
-  static const String body = 'Upisi kako je bilo.';
+  static String bodyFor(AppLanguage language) =>
+      AppStrings(language).reminderBody;
 
   /// Makes the OS agree with [settings]. Safe to call as often as you like.
   ///
@@ -54,7 +57,11 @@ final class EveningReminder {
   /// pending alarms on a reboot and on an app update, and re-arming from the
   /// app's own record is cheaper than trusting that they survived. Idempotent:
   /// the fixed id means a second call replaces rather than duplicates.
-  Future<void> apply(ReminderSettings settings, {DateTime? now}) async {
+  Future<void> apply(
+    ReminderSettings settings, {
+    DateTime? now,
+    AppLanguage language = AppLanguage.en,
+  }) async {
     if (!settings.enabled) {
       await notifier.cancel(notificationId);
       return;
@@ -69,7 +76,7 @@ final class EveningReminder {
         // better.
         kind: NudgeKind.scheduled,
         title: title,
-        body: body,
+        body: bodyFor(language),
         at: nextReminderAt(now ?? DateTime.now(), settings.minute),
         tag: 'evening',
         quietHoursExempt: true,

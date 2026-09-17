@@ -5,6 +5,7 @@ import 'package:vitals_ui/vitals_ui.dart';
 
 import '../data/patterns_controller.dart';
 import 'metric_labels.dart';
+import '../l10n/app_language.dart';
 
 /// Building a report: which markers, over what stretch, drawn how.
 ///
@@ -107,8 +108,8 @@ class _ReportBuilderScreenState extends State<ReportBuilderScreen> {
       firstDate: DateTime(last.year - 5),
       lastDate: last,
       initialDateRange: initial,
-      helpText: 'Raspon datuma',
-      saveText: 'Uzmi',
+      helpText: context.s.dateRange,
+      saveText: context.s.use,
     );
     if (picked == null) return;
 
@@ -122,11 +123,11 @@ class _ReportBuilderScreenState extends State<ReportBuilderScreen> {
 
   Future<void> _save() async {
     if (_name.text.trim().isEmpty) {
-      setState(() => _problem = 'Daj izvjestaju ime.');
+      setState(() => _problem = context.s.nameTheReport);
       return;
     }
     if (_rows.isEmpty) {
-      setState(() => _problem = 'Izaberi bar jedan marker.');
+      setState(() => _problem = context.s.pickAtLeastOneMarker);
       return;
     }
 
@@ -151,9 +152,9 @@ class _ReportBuilderScreenState extends State<ReportBuilderScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(_isNew ? 'Novi izvjestaj' : 'Izvjestaj'),
+        title: Text(_isNew ? context.s.newReport : context.s.report),
         actions: [
-          TextButton(onPressed: _save, child: const Text('Sacuvaj')),
+          TextButton(onPressed: _save, child: Text(context.s.save)),
         ],
       ),
       body: SafeArea(
@@ -180,19 +181,19 @@ class _ReportBuilderScreenState extends State<ReportBuilderScreen> {
               controller: _name,
               autofocus: _isNew,
               style: theme.typography.title,
-              decoration: const InputDecoration(
-                labelText: 'Ime',
-                hintText: 'kreatin i nadutost',
+              decoration: InputDecoration(
+                labelText: context.s.name,
+                hintText: context.s.reportNameHint,
               ),
             ),
             const SizedBox(height: VitalsSpacing.xl),
-            _heading(theme, 'Period'),
+            _heading(theme, context.s.period),
             Wrap(
               spacing: VitalsSpacing.sm,
               children: [
                 for (final days in _windows)
                   ChoiceChip(
-                    label: Text(_windowLabel(days)),
+                    label: Text(context.s.window(days)),
                     selected: _period is LastDays &&
                         (_period as LastDays).days == days,
                     onSelected: (_) =>
@@ -201,7 +202,7 @@ class _ReportBuilderScreenState extends State<ReportBuilderScreen> {
                 ChoiceChip(
                   label: Text(switch (_period) {
                     final FixedPeriod fixed => _rangeLabel(fixed),
-                    _ => 'Raspon datuma',
+                    _ => context.s.dateRange,
                   }),
                   selected: _period is FixedPeriod,
                   onSelected: (_) => _pickRange(),
@@ -209,23 +210,23 @@ class _ReportBuilderScreenState extends State<ReportBuilderScreen> {
               ],
             ),
             const SizedBox(height: VitalsSpacing.xl),
-            _heading(theme, 'Osa'),
+            _heading(theme, context.s.axis),
             Wrap(
               spacing: VitalsSpacing.sm,
               children: [
                 ChoiceChip(
-                  label: const Text('Po datumu'),
+                  label: Text(context.s.byDate),
                   selected: _axis == ReportAxis.date,
                   onSelected: (_) => setState(() => _axis = ReportAxis.date),
                 ),
                 ChoiceChip(
-                  label: const Text('Po danu ciklusa'),
+                  label: Text(context.s.byCycleDay),
                   selected: _axis == ReportAxis.cycleDay,
                   onSelected: (_) =>
                       setState(() => _axis = ReportAxis.cycleDay),
                 ),
                 ChoiceChip(
-                  label: const Text('Mreza'),
+                  label: Text(context.s.grid),
                   selected: _axis == ReportAxis.grid,
                   onSelected: (_) => setState(() => _axis = ReportAxis.grid),
                 ),
@@ -233,7 +234,7 @@ class _ReportBuilderScreenState extends State<ReportBuilderScreen> {
             ),
             if (_rows.length > 1) ...[
               const SizedBox(height: VitalsSpacing.xl),
-              _heading(theme, 'Redoslijed'),
+              _heading(theme, context.s.order),
               _RowOrder(
                 rows: [
                   for (final row in _rows)
@@ -245,7 +246,7 @@ class _ReportBuilderScreenState extends State<ReportBuilderScreen> {
               ),
             ],
             const SizedBox(height: VitalsSpacing.xl),
-            _heading(theme, 'Markeri'),
+            _heading(theme, context.s.markers),
             for (final metric in markers)
               _MarkerPick(
                 metric: metric,
@@ -349,13 +350,6 @@ class _ReportBuilderScreenState extends State<ReportBuilderScreen> {
     return '${one(from)} - ${one(to)}';
   }
 
-  static String _windowLabel(int days) => switch (days) {
-        7 => '7 dana',
-        30 => 'mjesec',
-        90 => '3 mjeseca',
-        365 => 'godina',
-        _ => '$days dana',
-      };
 }
 
 /// The picked rows in drawing order, each with a handle to drag.
@@ -392,7 +386,7 @@ class _RowOrder extends StatelessWidget {
               index: index,
               child: Icon(
                 Icons.drag_handle,
-                semanticLabel: 'Pomjeri ${metric.name}',
+                semanticLabel: context.s.move(metric.name),
                 color: theme.colors.inkFaint,
               ),
             ),
@@ -440,7 +434,7 @@ class _MarkerPick extends StatelessWidget {
           onChanged: (_) => onToggle(),
           title: Text(metric.name, style: theme.typography.body),
           subtitle: Text(
-            kindNames[metric.kind]!,
+            context.s.kindName(metric.kind),
             style:
                 theme.typography.caption.copyWith(color: theme.colors.inkFaint),
           ),
@@ -461,7 +455,7 @@ class _MarkerPick extends StatelessWidget {
                     children: [
                       for (final style in DisplayStyle.allowedFor(metric.kind))
                         ChoiceChip(
-                          label: Text(displayNames[style]!),
+                          label: Text(context.s.displayName(style)),
                           selected: (series?.displayStyle ??
                                   metric.displayStyle) ==
                               style,
@@ -477,16 +471,16 @@ class _MarkerPick extends StatelessWidget {
                   // one frame stay banned.
                   DropdownButton<String?>(
                     value: series?.bandBehindMetricId,
-                    hint: const Text('Kao traka iza...'),
+                    hint: Text(context.s.asBandBehind),
                     isExpanded: true,
                     items: [
-                      const DropdownMenuItem(
-                        child: Text('Svoj red'),
+                      DropdownMenuItem(
+                        child: Text(context.s.ownRow),
                       ),
                       for (final row in rows)
                         DropdownMenuItem(
                           value: row.id,
-                          child: Text('iza: ${row.name}'),
+                          child: Text(context.s.behind(row.name)),
                         ),
                     ],
                     onChanged: onBand,

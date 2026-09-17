@@ -63,8 +63,8 @@ void main() {
       final training = await controller.search('trening');
       expect(training, hasLength(2));
       expect(
-        training.map((h) => h.source).toSet(),
-        {'dnevnik', 'fotografija'},
+        training.map((h) => h.markerName).toSet(),
+        {'diary', null},
       );
       controller.dispose();
     });
@@ -100,13 +100,13 @@ void main() {
       await tester.pumpWidget(wrap(HomeScreen(controller: controller)));
       await tester.pumpAndSettle();
 
-      await tester.scrollUntilVisible(find.text('dnevnik'), 120);
-      await tester.tap(find.text('dnevnik'));
+      await tester.scrollUntilVisible(find.text('diary'), 120);
+      await tester.tap(find.text('diary'));
       await tester.pumpAndSettle();
       await tester.enterText(find.byType(TextField), 'tajna');
-      await tester.tap(find.text('Privatno'));
+      await tester.tap(find.text('Private'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Sacuvaj'));
+      await tester.tap(find.text('Save'));
       await tester.pumpAndSettle();
 
       final reading = (await controller.readingsOn(controller.today)).single;
@@ -136,7 +136,7 @@ void main() {
       expect(find.text('konflikt na poslu'), findsOneWidget);
       expect(find.text('konflikt kod kuce'), findsNothing);
 
-      await tester.tap(find.text('Ukljuci privatne'));
+      await tester.tap(find.text('Include private'));
       await tester.pumpAndSettle();
       expect(find.text('konflikt kod kuce'), findsOneWidget);
 
@@ -155,7 +155,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
       await tester.pumpAndSettle();
 
-      expect(find.text('Nista ne sadrzi te rijeci.'), findsOneWidget);
+      expect(find.text('Nothing contains those words.'), findsOneWidget);
       controller.dispose();
     });
 
@@ -188,7 +188,7 @@ void main() {
     )));
     await tester.pumpAndSettle();
 
-    expect(find.text('Fotografije zauzimaju'), findsOneWidget);
+    expect(find.text('Photos take up'), findsOneWidget);
     expect(find.text('2 KB'), findsOneWidget);
     for (final banned in ['obrisi', 'oslobodi', 'previse', 'limit']) {
       expect(find.textContaining(banned), findsNothing, reason: banned);

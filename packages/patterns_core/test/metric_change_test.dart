@@ -78,7 +78,7 @@ void main() {
 
       expect(problems.map((p) => p.field), contains('kind'));
       expect(problems.first.message, contains('214'));
-      expect(problems.first.message, contains('Arhiviraj'));
+      expect(problems.first.message, contains('Archive'));
     });
 
     test('the two widenings that cannot lose meaning stay allowed', () {
@@ -162,7 +162,17 @@ void main() {
 
       expect(problems.single.field, 'options');
       expect(problems.single.message, contains('ljutnja'));
-      expect(problems.single.message, contains('Arhiviraj'));
+      expect(problems.single.message, contains('Archive'));
+
+      // The same refusal in the other language, same fields, same count.
+      final serbian = validateMetricChange(
+        tagsMarker(const [tuga, ljutnja]),
+        tagsMarker(const [tuga, sram]),
+        facts: const MetricReadingFacts(count: 30, usedOptionIds: {'o2'}),
+        language: TextLanguage.sr,
+      );
+      expect(serbian.single.field, 'options');
+      expect(serbian.single.message, contains('Arhiviraj'));
     });
 
     test('archiving an option is not removing it', () {

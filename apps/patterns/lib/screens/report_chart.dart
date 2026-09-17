@@ -3,6 +3,7 @@ import 'package:patterns_core/patterns_core.dart';
 import 'package:vitals_ui/vitals_ui.dart';
 
 import 'chart_semantics.dart';
+import '../l10n/app_language.dart';
 
 /// One marker's row, drawn.
 ///
@@ -62,6 +63,7 @@ class ReportRowChart extends StatelessWidget {
         size: Size.infinite,
         foregroundPainter: CellSemanticsPainter(
           metric: row.metric,
+          strings: context.s,
           cells: row.cells,
           rectFor: (index, size) {
             final width = size.width / row.cells.length;

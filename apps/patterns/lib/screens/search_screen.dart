@@ -5,6 +5,7 @@ import 'package:vitals_ui/vitals_ui.dart';
 
 import '../data/patterns_controller.dart';
 import 'day_detail_screen.dart';
+import '../l10n/app_language.dart';
 
 /// Finding an entry by what it says: the diary and photo captions.
 ///
@@ -62,8 +63,8 @@ class _SearchScreenState extends State<SearchScreen> {
           onSubmitted: (_) => _run(),
           textInputAction: TextInputAction.search,
           style: theme.typography.body,
-          decoration: const InputDecoration(
-            hintText: 'Pretrazi dnevnik i opise fotografija',
+          decoration: InputDecoration(
+            hintText: context.s.searchHint,
             border: InputBorder.none,
           ),
         ),
@@ -84,12 +85,12 @@ class _SearchScreenState extends State<SearchScreen> {
                 setState(() => _includePrivate = on);
                 _run();
               },
-              title: Text('Ukljuci privatne', style: theme.typography.body),
+              title: Text(context.s.includePrivate, style: theme.typography.body),
             ),
             const SizedBox(height: VitalsSpacing.md),
             if (hits != null && hits.isEmpty)
               Text(
-                'Nista ne sadrzi te rijeci.',
+                context.s.nothingFound,
                 style: theme.typography.body.copyWith(color: colors.inkMuted),
               ),
             for (final hit in hits ?? const <SearchHit>[])
@@ -118,8 +119,8 @@ class _SearchScreenState extends State<SearchScreen> {
                         Text(
                           [
                             _dayLabel(hit.dayKey),
-                            hit.source,
-                            if (hit.isPrivate) 'privatno',
+                            hit.markerName ?? context.s.photoLower,
+                            if (hit.isPrivate) context.s.privateLower,
                           ].join(' · '),
                           style: theme.typography.caption
                               .copyWith(color: colors.inkMuted),

@@ -5,6 +5,7 @@ import 'package:patterns_data/patterns_data.dart';
 import 'package:vitals_ui/vitals_ui.dart';
 
 import '../data/patterns_controller.dart';
+import '../l10n/app_language.dart';
 
 /// The photos of one day, as a row of thumbnails.
 ///
@@ -83,7 +84,7 @@ class _Missing extends StatelessWidget {
       alignment: Alignment.center,
       padding: const EdgeInsets.all(VitalsSpacing.sm),
       child: Text(
-        caption ?? 'fajl nedostaje',
+        caption ?? context.s.fileMissing,
         textAlign: TextAlign.center,
         style: theme.typography.caption.copyWith(color: theme.colors.inkMuted),
       ),
@@ -120,16 +121,16 @@ class _PhotoViewerScreenState extends State<PhotoViewerScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Obrisati fotografiju?'),
-        content: const Text('Fajl se brise sa telefona. Ovo se ne vraca.'),
+        title: Text(context.s.deletePhotoQuestion),
+        content: Text(context.s.deletePhotoExplained),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Odustani'),
+            child: Text(context.s.cancel),
           ),
           TextButton(
             onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Obrisi'),
+            child: Text(context.s.delete),
           ),
         ],
       ),
@@ -149,7 +150,7 @@ class _PhotoViewerScreenState extends State<PhotoViewerScreen> {
         title: Text(widget.photo.dayKey),
         actions: [
           IconButton(
-            tooltip: 'Obrisi',
+            tooltip: context.s.delete,
             icon: const Icon(Icons.delete_outline),
             onPressed: _confirmDelete,
           ),
@@ -169,9 +170,9 @@ class _PhotoViewerScreenState extends State<PhotoViewerScreen> {
           TextField(
             controller: _caption,
             style: theme.typography.body,
-            decoration: const InputDecoration(
-              labelText: 'Opis',
-              hintText: 'npr. poslije treninga',
+            decoration: InputDecoration(
+              labelText: context.s.caption,
+              hintText: context.s.captionHint,
             ),
             onSubmitted: (text) => widget.controller.photos.setCaption(
               widget.photo.id,

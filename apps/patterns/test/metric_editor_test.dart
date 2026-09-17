@@ -59,11 +59,11 @@ void main() {
     await tester.pumpWidget(wrapEditor(controller));
     await tester.pumpAndSettle();
 
-    await tester.enterText(find.widgetWithText(TextField, 'Ime'), 'kosa');
-    await scrollTo(tester, find.text('Fotografija'));
-    await tester.tap(find.text('Fotografija'));
+    await tester.enterText(find.widgetWithText(TextField, 'Name'), 'kosa');
+    await scrollTo(tester, find.text('Photo'));
+    await tester.tap(find.text('Photo'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Sacuvaj'));
+    await tester.tap(find.text('Save'));
     await tester.pumpAndSettle();
 
     final made = controller.allMarkers.firstWhere((m) => m.name == 'kosa');
@@ -81,7 +81,7 @@ void main() {
     await tester.pumpWidget(wrapEditor(controller));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Sacuvaj'));
+    await tester.tap(find.text('Save'));
     await tester.pumpAndSettle();
 
     expect(find.text('Give it a name.'), findsOneWidget);
@@ -96,7 +96,7 @@ void main() {
     await tester.pumpAndSettle();
 
     // A scale with no name and no labelled ends: two failures, one tap.
-    await tester.tap(find.text('Sacuvaj'));
+    await tester.tap(find.text('Save'));
     await tester.pumpAndSettle();
 
     expect(find.text('Give it a name.'), findsOneWidget);
@@ -115,19 +115,19 @@ void main() {
 
     // A rating: typical, peak, lowest, last - and never a sum, because adding
     // two moods together is not a number that means anything.
-    await scrollTo(tester, find.text('Tipicno'));
-    expect(find.text('Tipicno'), findsOneWidget);
-    expect(find.text('Zbir'), findsNothing);
+    await scrollTo(tester, find.text('Typical'));
+    expect(find.text('Typical'), findsOneWidget);
+    expect(find.text('Sum'), findsNothing);
 
     await scrollToTop(tester);
-    await scrollTo(tester, find.text('Kolicina'));
-    await tester.tap(find.text('Kolicina'));
+    await scrollTo(tester, find.text('Amount'));
+    await tester.tap(find.text('Amount'));
     await tester.pumpAndSettle();
 
     // A dose: 3 g and 2 g on one day are 5 g.
-    await scrollTo(tester, find.text('Zbir'));
-    expect(find.text('Zbir'), findsOneWidget);
-    expect(find.text('Tipicno'), findsOneWidget);
+    await scrollTo(tester, find.text('Sum'));
+    expect(find.text('Sum'), findsOneWidget);
+    expect(find.text('Typical'), findsOneWidget);
     controller.dispose();
   });
 
@@ -164,14 +164,14 @@ void main() {
       await tester.pumpWidget(wrapEditor(controller, metric: marker));
       await tester.pumpAndSettle();
 
-      await scrollTo(tester, find.textContaining('2 unosa'));
-      expect(find.textContaining('2 unosa'), findsOneWidget);
-      expect(find.textContaining('arhiviraj ovaj i napravi novi'),
+      await scrollTo(tester, find.textContaining('2 entries'));
+      expect(find.textContaining('2 entries'), findsOneWidget);
+      expect(find.textContaining('archive this one and make a new one'),
           findsOneWidget);
       // The kinds that would reinterpret those two readings are not offered at
       // all, so the refusal happens before the tap rather than after it.
-      expect(find.text('Postotak'), findsNothing);
-      expect(find.text('Fotografija'), findsNothing);
+      expect(find.text('Percent'), findsNothing);
+      expect(find.text('Photo'), findsNothing);
       controller.dispose();
     });
 
@@ -182,19 +182,19 @@ void main() {
       await tester.pumpAndSettle();
 
       // Bottom from 1 to 4, which would strand the reading of 2.
-      await scrollTo(tester, find.text('RASPON'));
+      await scrollTo(tester, find.text('RANGE'));
       final up = find.widgetWithIcon(IconButton, Icons.add);
       for (var i = 0; i < 3; i++) {
         await tester.tap(up.first);
         await tester.pump();
       }
-      await tester.tap(find.text('Sacuvaj'));
+      await tester.tap(find.text('Save'));
       await tester.pumpAndSettle();
 
       // No manual scroll here on purpose: the form scrolls itself back to the
       // banner. Without that, refusing an edit made at the bottom of a long
       // form looks exactly like the Save button doing nothing.
-      expect(find.textContaining('ispod nove donje granice'), findsOneWidget);
+      expect(find.textContaining('below the new bottom'), findsOneWidget);
       expect(
         (await controller.metrics.byId(marker.id))!.scaleMin,
         1,
@@ -213,17 +213,17 @@ void main() {
       await tester.pumpAndSettle();
 
       await tester.enterText(
-        find.widgetWithText(TextField, 'Ime'),
-        'nadutost ujutru',
+        find.widgetWithText(TextField, 'Name'),
+        'bloating ujutru',
       );
-      await scrollTo(tester, find.text('Najvise'));
-      await tester.tap(find.text('Najvise'));
+      await scrollTo(tester, find.text('Highest'));
+      await tester.tap(find.text('Highest'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Sacuvaj'));
+      await tester.tap(find.text('Save'));
       await tester.pumpAndSettle();
 
       final saved = (await controller.metrics.byId(marker.id))!;
-      expect(saved.name, 'nadutost ujutru');
+      expect(saved.name, 'bloating ujutru');
       expect(saved.aggregation, DayAggregation.peak);
       controller.dispose();
     });
@@ -236,8 +236,8 @@ void main() {
     await tester.pumpWidget(wrapEditor(controller, metric: marker));
     await tester.pumpAndSettle();
 
-    await scrollTo(tester, find.text('Arhiviraj'));
-    await tester.tap(find.text('Arhiviraj'));
+    await scrollTo(tester, find.text('Archive'));
+    await tester.tap(find.text('Archive'));
     await tester.pumpAndSettle();
 
     final archived = (await controller.metrics.byId(marker.id))!;
@@ -261,8 +261,8 @@ void main() {
     await tester.pumpWidget(wrapList(controller));
     await tester.pumpAndSettle();
 
-    await scrollTo(tester, find.text('ARHIVIRANO'));
-    expect(find.text('ARHIVIRANO'), findsOneWidget);
+    await scrollTo(tester, find.text('ARCHIVED'));
+    expect(find.text('ARCHIVED'), findsOneWidget);
     expect(find.text(marker.name), findsOneWidget);
     controller.dispose();
   });
@@ -276,10 +276,14 @@ void main() {
 
     await tester.pumpWidget(wrapEditor(controller, metric: marker));
     await tester.pumpAndSettle();
-    await scrollTo(tester, find.text('Obrisi marker'));
-    await tester.tap(find.text('Obrisi marker'));
+    await scrollTo(tester, find.text('Delete marker'));
+    await tester.tap(find.text('Delete marker'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Obrisi'));
+    // The dialog's own button, not the one on the form behind it.
+    await tester.tap(find.descendant(
+      of: find.byType(AlertDialog),
+      matching: find.text('Delete'),
+    ));
     await tester.pumpAndSettle();
 
     expect(await controller.metrics.byId(marker.id), isNull);

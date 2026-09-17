@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:vitals_ui/vitals_ui.dart';
 
 import '../data/app_database.dart';
+import '../l10n/app_language.dart';
 import '../data/app_lock.dart';
 import '../data/evening_reminder.dart';
 import '../data/patterns_controller.dart';
@@ -21,6 +23,7 @@ class PatternsApp extends StatelessWidget {
     required this.settings,
     this.lock,
     this.quickLog,
+    required this.language,
     super.key,
   });
 
@@ -29,14 +32,30 @@ class PatternsApp extends StatelessWidget {
 
   final QuickLogWidget? quickLog;
 
+  /// Held here rather than in a screen, so changing it in Settings redraws
+  /// the whole app - including the screens already on the stack.
+  final ValueNotifier<AppLanguage> language;
+
   final PatternsController controller;
   final EveningReminder reminder;
   final ReminderSettings settings;
 
   @override
-  Widget build(BuildContext context) => MaterialApp(
+  Widget build(BuildContext context) => ValueListenableBuilder(
+        valueListenable: language,
+        builder: (context, current, _) => LanguageScope(
+          language: language,
+          child: _app(current),
+        ),
+      );
+
+  Widget _app(AppLanguage current) => MaterialApp(
         title: 'Patterns',
         debugShowCheckedModeBanner: false,
+        // The pickers and the system widgets follow the same choice.
+        locale: Locale(current.code),
+        supportedLocales: const [Locale('en'), Locale('sr')],
+        localizationsDelegates: GlobalMaterialLocalizations.delegates,
         theme: VitalsTheme.light(accent: AppAccent.patternsCobalt),
         darkTheme: VitalsTheme.dark(accent: AppAccent.patternsCobalt),
         builder: (context, child) => switch (lock) {

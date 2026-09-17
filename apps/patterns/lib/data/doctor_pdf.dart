@@ -6,7 +6,8 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:vitals_core/vitals_core.dart';
 
-import '../screens/day_grid_chart.dart';
+import '../l10n/app_language.dart';
+import '../l10n/app_strings.dart';
 
 /// Paper sizes worth offering: the page is printed, not read on the phone.
 enum DoctorPaper {
@@ -56,7 +57,9 @@ Future<Uint8List> renderDoctorPdf(
   DoctorPaper paper = DoctorPaper.a4,
   ({pw.Font regular, pw.Font bold})? fonts,
   bool compress = true,
+  AppStrings strings = const AppStrings(AppLanguage.en),
 }) async {
+  final s = strings;
   final hasFont = fonts != null;
   String t(String text) => hasFont ? text : _foldForHelvetica(text);
 
@@ -85,7 +88,7 @@ Future<Uint8List> renderDoctorPdf(
             crossAxisAlignment: pw.CrossAxisAlignment.end,
             children: [
               pw.Text(
-                'Pregled zabiljezenog',
+                t(s.pdfTitle),
                 style: pw.TextStyle(
                   fontSize: 16,
                   fontWeight: pw.FontWeight.bold,
@@ -93,23 +96,23 @@ Future<Uint8List> renderDoctorPdf(
                 ),
               ),
               pw.Text(
-                'Napravljeno ${_date(_dayKeyOf(generatedAt))}',
+                s.pdfMade(_date(_dayKeyOf(generatedAt))),
                 style: small,
               ),
             ],
           ),
           pw.SizedBox(height: 4),
           pw.Text(
-            '${_date(page.from)} - ${_date(page.to)}  ·  '
-            '${page.daysInPeriod} dana  ·  '
-            'bar jedan unos: ${page.daysWithAnyEntry} dana',
+            t('${_date(page.from)} - ${_date(page.to)}  ·  '
+                '${s.pdfDays(page.daysInPeriod)}  ·  '
+                '${s.pdfAnyEntry(page.daysWithAnyEntry)}'),
             style: body,
           ),
           if (page.periodStarts.isNotEmpty) ...[
             pw.SizedBox(height: 2),
             pw.Text(
-              'Pocetak menstruacije: '
-              '${page.periodStarts.map(_date).join(', ')}',
+              t('${s.pdfPeriodStarts}: '
+                  '${page.periodStarts.map(_date).join(', ')}'),
               style: body,
             ),
           ],
@@ -117,15 +120,13 @@ Future<Uint8List> renderDoctorPdf(
           pw.Divider(color: stroke, thickness: 0.5),
           pw.SizedBox(height: 4),
           for (final entry in page.entries) ...[
-            _entry(entry, page, t: t, body: body, small: small),
+            _entry(entry, page, s, t: t, body: body, small: small),
             pw.SizedBox(height: 8),
           ],
           pw.Spacer(),
           pw.Divider(color: stroke, thickness: 0.5),
           pw.Text(
-            'Samostalno zabiljezeno. Brojevi su ono sto je upisano, bez '
-            'tumacenja. Tipicno = medijana dana sa unosom. '
-            'Prazan kvadrat = taj dan nije upisan.',
+            t(s.pdfFooter),
             style: small,
           ),
         ],
@@ -138,7 +139,8 @@ Future<Uint8List> renderDoctorPdf(
 
 pw.Widget _entry(
   DoctorEntry entry,
-  DoctorPage page, {
+  DoctorPage page,
+  AppStrings s, {
   required String Function(String) t,
   required pw.TextStyle body,
   required pw.TextStyle small,
@@ -174,57 +176,61 @@ pw.Widget _entry(
               ],
             ),
             pw.SizedBox(height: 2),
-            for (final line in doctorFacts(entry))
+            for (final line in doctorFacts(entry, s))
               pw.Text(t(line), style: small),
           ],
         ),
       ),
       pw.SizedBox(width: 10),
-      pw.Expanded(child: _grid(entry, color)),
+      pw.Expanded(child: _grid(entry, color, s.weekdays)),
     ],
   );
 }
 
 /// The lines printed under a marker's name. Public so a test can hold the
 /// copy to the no-interpretation rule without parsing a PDF.
-List<String> doctorFacts(DoctorEntry entry) {
+List<String> doctorFacts(
+  DoctorEntry entry, [
+  AppStrings s = const AppStrings(AppLanguage.en),
+]) {
   final stats = entry.stats;
-  final coverage = '${stats.daysLogged}/${stats.daysInPeriod} dana upisano';
+  final coverage = s.pdfCoverage(stats.daysLogged, stats.daysInPeriod);
   final unit = entry.metric.unit == null ? '' : ' ${entry.metric.unit}';
 
   switch (entry.metric.kind) {
     case MetricKind.boolean:
       return [
-        'da: ${entry.daysOn} od ${stats.daysLogged} upisanih dana',
+        s.pdfYesDays(entry.daysOn ?? 0, stats.daysLogged),
         coverage,
       ];
     case MetricKind.tags || MetricKind.choice:
       final shown = entry.optionCounts.take(6).toList();
       return [
-        if (shown.isEmpty && entry.explicitNoneDays == 0) 'nista izabrano',
+        if (shown.isEmpty && entry.explicitNoneDays == 0) s.pdfNothingPicked,
         if (shown.isNotEmpty)
           shown.map((o) => '${o.label} ${o.days}').join(' · '),
         if (entry.optionCounts.length > shown.length)
-          '+ jos ${entry.optionCounts.length - shown.length}',
+          s.pdfMore(entry.optionCounts.length - shown.length),
         if (entry.explicitNoneDays > 0)
-          'nista od ovoga: ${entry.explicitNoneDays}',
+          '${s.noneOfThese}: ${entry.explicitNoneDays}',
         coverage,
       ];
     case MetricKind.timeOfDay:
       return [
-        if (entry.typicalMinute case final minute?) 'tipicno ${_clock(minute)}',
+        if (entry.typicalMinute case final minute?)
+          '${s.typical} ${_clock(minute)}',
         coverage,
       ];
     default:
       return [
         if (stats.typical case final typical?)
-          'tipicno ${_number(typical)}$unit',
+          '${s.typical} ${_number(typical)}$unit',
         if ((entry.lowest, entry.highest) case (
           final low?,
           final high?,
         ) when low.value != high.value)
-          'najnize ${_number(low.value)} (${_shortDate(low.dayKey)}), '
-              'najvise ${_number(high.value)} (${_shortDate(high.dayKey)})',
+          '${s.lowest} ${_number(low.value)} (${_shortDate(low.dayKey)}), '
+              '${s.highest} ${_number(high.value)} (${_shortDate(high.dayKey)})',
         coverage,
       ];
   }
@@ -234,7 +240,7 @@ List<String> doctorFacts(DoctorEntry entry) {
 ///
 /// The same layout as the grid report, for the same reason: a weekly rhythm
 /// is a visible stripe here and invisible in a single row of ninety days.
-pw.Widget _grid(DoctorEntry entry, PdfColor color) {
+pw.Widget _grid(DoctorEntry entry, PdfColor color, List<String> weekdays) {
   final days = entry.days;
   if (days.isEmpty) return pw.SizedBox();
 
@@ -286,7 +292,7 @@ pw.Widget _grid(DoctorEntry entry, PdfColor color) {
                 child: pw.Column(
                   crossAxisAlignment: pw.CrossAxisAlignment.start,
                   children: [
-                    for (final day in DayGridChart.weekdayLabels)
+                    for (final day in weekdays)
                       pw.SizedBox(
                         height: cell,
                         child: pw.Align(

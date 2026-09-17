@@ -60,7 +60,7 @@ void main() {
       to: '2026-09-30',
     );
     expect(data.rows.map((r) => r.value),
-        ['6', '4', '2.5', 'tuga|overthink', 'nista od ovoga']);
+        ['6', '4', '2.5', 'tuga|overthink', 'none of these']);
     expect(data.rows.first.time, '20:05');
     expect(data.rows[2].enteredLate, isTrue);
   });
@@ -115,13 +115,34 @@ void main() {
     );
     final md = exportAiMarkdown(data, preamble: 'moj uvod');
     expect(md, startsWith('moj uvod'));
-    expect(md, contains('**raspolozenje** - ocjena 1-10'));
-    expect(md, contains('Privatni unosi dnevnika izostavljeni: 1.'));
-    expect(md, contains('ne nulu'));
+    expect(md, contains('**raspolozenje** - rating 1-10'));
+    expect(md, contains('Private diary entries left out: 1.'));
+    expect(md, contains('not zero'));
 
     final json = md.split('```json\n')[1].split('\n```')[0];
     final decoded = jsonDecode(json) as Map<String, Object?>;
     expect((decoded['readings']! as List), hasLength(5));
     expect(((decoded['markers']! as List).first as Map)['max'], 10);
+  });
+  test('the file\'s own words follow the language; names never do', () {
+    final data = buildExport(
+      metrics: all,
+      observations: observations,
+      from: '2026-09-01',
+      to: '2026-09-30',
+      language: TextLanguage.sr,
+    );
+    expect(data.rows.last.value, 'nista od ovoga');
+    final md = exportAiMarkdown(data, language: TextLanguage.sr);
+    expect(md, startsWith(defaultAiPreamble(TextLanguage.sr)));
+    expect(md, contains('**raspolozenje** - ocjena 1-10'));
+    expect(md, contains('Privatni unosi dnevnika izostavljeni: 1.'));
+    // A marker's name is hers, in whatever language she wrote it.
+    expect(exportAiMarkdown(buildExport(
+      metrics: all,
+      observations: observations,
+      from: '2026-09-01',
+      to: '2026-09-30',
+    )), contains('**raspolozenje**'));
   });
 }

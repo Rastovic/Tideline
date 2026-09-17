@@ -52,7 +52,7 @@ void main() {
       expect(bloating.aggregation, DayAggregation.peak);
       expect(bloating.displayStyle, DisplayStyle.squares);
       expect(bloating.colorHex, '#E2711D');
-      expect(bloating.lowLabel, 'nista');
+      expect(bloating.lowLabel, 'none');
     });
   });
 

@@ -4,6 +4,7 @@ import 'package:vitals_core/vitals_core.dart';
 import 'package:vitals_ui/vitals_ui.dart';
 
 import 'chart_semantics.dart';
+import '../l10n/app_language.dart';
 
 /// One marker laid out seven wide, one square per day.
 ///
@@ -35,17 +36,6 @@ class DayGridChart extends StatelessWidget {
 
   final Color color;
 
-  /// Short and unambiguous: two of the seven start with the same letter in this
-  /// language, so a single initial cannot carry the header.
-  static const weekdayLabels = [
-    'pon',
-    'uto',
-    'sri',
-    'cet',
-    'pet',
-    'sub',
-    'ned',
-  ];
 
   @override
   Widget build(BuildContext context) {
@@ -63,7 +53,7 @@ class DayGridChart extends StatelessWidget {
           children: [
             Row(
               children: [
-                for (final label in weekdayLabels)
+                for (final label in context.s.weekdays)
                   SizedBox(
                     width: side,
                     child: Text(
@@ -98,6 +88,7 @@ class DayGridChart extends StatelessWidget {
                   size: Size.infinite,
                   foregroundPainter: CellSemanticsPainter(
                     metric: row.metric,
+                    strings: context.s,
                     cells: cells,
                     rectFor: (index, size) => Rect.fromLTWH(
                       (index % 7) * side,

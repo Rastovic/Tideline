@@ -4,6 +4,7 @@ import 'package:camera/camera.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:vitals_ui/vitals_ui.dart';
+import '../l10n/app_language.dart';
 
 /// Takes a photo inside the app, with the previous one held faintly over the
 /// viewfinder.
@@ -70,7 +71,7 @@ class _CaptureScreenState extends State<CaptureScreen>
     try {
       final cameras = await availableCameras();
       if (cameras.isEmpty) {
-        setState(() => _problem = 'Telefon nema kameru.');
+        setState(() => _problem = context.s.noCamera);
         return;
       }
       final back = cameras.firstWhere(
@@ -95,8 +96,8 @@ class _CaptureScreenState extends State<CaptureScreen>
     } on CameraException catch (e) {
       if (!mounted) return;
       setState(() => _problem = e.code.contains('Access')
-          ? 'Kamera nije dozvoljena. Dozvola se daje u postavkama telefona.'
-          : 'Kamera se nije mogla otvoriti.');
+          ? context.s.cameraNotAllowed
+          : context.s.cameraFailed);
     }
   }
 
@@ -127,13 +128,13 @@ class _CaptureScreenState extends State<CaptureScreen>
       appBar: AppBar(
         backgroundColor: Colors.black,
         foregroundColor: Colors.white,
-        title: const Text('Slikaj'),
+        title: Text(context.s.takePhoto),
         actions: [
           if (ghost != null)
             IconButton(
               tooltip: _showGhost
-                  ? 'Sakrij prethodnu fotografiju'
-                  : 'Prikazi prethodnu fotografiju',
+                  ? context.s.hidePreviousPhoto
+                  : context.s.showPreviousPhoto,
               icon: Icon(_showGhost ? Icons.layers : Icons.layers_clear),
               onPressed: () => setState(() => _showGhost = !_showGhost),
             ),
@@ -181,7 +182,7 @@ class _CaptureScreenState extends State<CaptureScreen>
                         padding: const EdgeInsets.all(VitalsSpacing.xl),
                         child: Semantics(
                           button: true,
-                          label: 'Slikaj',
+                          label: context.s.takePhoto,
                           child: GestureDetector(
                             onTap: _take,
                             child: Container(

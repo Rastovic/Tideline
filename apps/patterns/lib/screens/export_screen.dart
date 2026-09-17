@@ -7,6 +7,7 @@ import 'package:vitals_ui/vitals_ui.dart';
 
 import '../data/archive_transfer.dart';
 import '../data/patterns_controller.dart';
+import '../l10n/app_language.dart';
 
 /// The two text files that leave the phone: one for an AI chat, one for a
 /// spreadsheet.
@@ -43,7 +44,11 @@ class _ExportScreenState extends State<ExportScreen> {
     for (final m in _offered)
       if (m.kind != MetricKind.text) m.id,
   };
-  final _preamble = TextEditingController(text: defaultAiPreamble);
+  final _preamble = TextEditingController();
+
+  /// The intro starts in the app's language, and follows a language change
+  /// until she edits it - after that it is her text.
+  AppLanguage? _preambleLanguage;
 
   Future<ExportData>? _preview;
 
@@ -69,6 +74,18 @@ class _ExportScreenState extends State<ExportScreen> {
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final language = context.s.language;
+    if (_preambleLanguage == language) return;
+    final untouched = _preambleLanguage == null ||
+        _preamble.text == defaultAiPreamble(_preambleLanguage!.text);
+    if (untouched) _preamble.text = defaultAiPreamble(language.text);
+    _preambleLanguage = language;
+    _refresh();
+  }
+
+  @override
   void dispose() {
     _preamble.dispose();
     super.dispose();
@@ -87,6 +104,7 @@ class _ExportScreenState extends State<ExportScreen> {
         from: from,
         to: to,
         includeDiary: _includeDiary,
+        language: context.s.language.text,
       );
     });
   }
@@ -94,7 +112,11 @@ class _ExportScreenState extends State<ExportScreen> {
   Future<void> _share(ExportData data) async {
     final (text, name) = switch (_shape) {
       ExportShape.ai => (
-          exportAiMarkdown(data, preamble: _preamble.text),
+          exportAiMarkdown(
+            data,
+            preamble: _preamble.text,
+            language: context.s.language.text,
+          ),
           'zapis-${data.to}.md',
         ),
       ExportShape.csv => (exportCsv(data), 'zapis-${data.to}.csv'),
@@ -121,7 +143,7 @@ class _ExportScreenState extends State<ExportScreen> {
         );
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Izvoz')),
+      appBar: AppBar(title: Text(context.s.export)),
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.fromLTRB(
@@ -131,31 +153,31 @@ class _ExportScreenState extends State<ExportScreen> {
             VitalsSpacing.huge,
           ),
           children: [
-            heading('Za sta'),
+            heading(context.s.exportFor),
             Wrap(
               spacing: VitalsSpacing.sm,
               children: [
                 ChoiceChip(
-                  label: const Text('Za AI'),
+                  label: Text(context.s.forAi),
                   selected: _shape == ExportShape.ai,
                   onSelected: (_) => setState(() => _shape = ExportShape.ai),
                 ),
                 ChoiceChip(
-                  label: const Text('Tabela (CSV)'),
+                  label: Text(context.s.spreadsheetCsv),
                   selected: _shape == ExportShape.csv,
                   onSelected: (_) => setState(() => _shape = ExportShape.csv),
                 ),
               ],
             ),
-            heading('Period'),
+            heading(context.s.period),
             Wrap(
               spacing: VitalsSpacing.sm,
               children: [
-                for (final (days, label) in const [
-                  (30, 'mjesec'),
-                  (90, '3 mjeseca'),
-                  (365, 'godina'),
-                  (null, 'sve'),
+                for (final (days, label) in [
+                  (30, context.s.window(30)),
+                  (90, context.s.window(90)),
+                  (365, context.s.window(365)),
+                  (null, context.s.all),
                 ])
                   ChoiceChip(
                     label: Text(label),
@@ -168,7 +190,7 @@ class _ExportScreenState extends State<ExportScreen> {
               ],
             ),
             if (_shape == ExportShape.ai) ...[
-              heading('Uvod'),
+              heading(context.s.intro),
               TextField(
                 controller: _preamble,
                 minLines: 3,
@@ -176,7 +198,7 @@ class _ExportScreenState extends State<ExportScreen> {
                 style: theme.typography.body,
               ),
             ],
-            heading('Sta ide u fajl'),
+            heading(context.s.whatGoesIn),
             for (final metric in _offered)
               CheckboxListTile(
                 contentPadding: EdgeInsets.zero,
@@ -208,13 +230,11 @@ class _ExportScreenState extends State<ExportScreen> {
                       ),
                       child: Text(
                         [
-                          '${data.rows.length} unosa ide u fajl.',
-                          'Fotografije: nikad.',
-                          'Privatni unosi dnevnika izostavljeni: '
-                              '${data.heldBackPrivate}.',
+                          context.s.exportRowCount(data.rows.length),
+                          context.s.photosNever,
+                          context.s.privateHeldBack(data.heldBackPrivate),
                           if (data.heldBackDiary > 0)
-                            'Dnevnik nije izabran, izostavljeno: '
-                                '${data.heldBackDiary}.',
+                            context.s.diaryHeldBack(data.heldBackDiary),
                         ].join('\n'),
                         style: theme.typography.caption,
                       ),
@@ -223,7 +243,7 @@ class _ExportScreenState extends State<ExportScreen> {
                     FilledButton.icon(
                       onPressed: data.rows.isEmpty ? null : () => _share(data),
                       icon: const Icon(Icons.ios_share),
-                      label: const Text('Podijeli fajl'),
+                      label: Text(context.s.shareFile),
                     ),
                   ],
                 );

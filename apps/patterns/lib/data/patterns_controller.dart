@@ -28,7 +28,7 @@ final class SearchHit {
     required this.dayKey,
     required this.at,
     required this.text,
-    required this.source,
+    this.markerName,
     this.isPrivate = false,
   });
 
@@ -36,8 +36,9 @@ final class SearchHit {
   final DateTime at;
   final String text;
 
-  /// The marker's name for a diary entry, `fotografija` for a caption.
-  final String source;
+  /// The diary marker's name, or null for a photo caption. The screen words
+  /// the null in the current language.
+  final String? markerName;
 
   final bool isPrivate;
 }
@@ -262,6 +263,7 @@ final class PatternsController extends ChangeNotifier {
     required String from,
     required String to,
     bool includeDiary = false,
+    TextLanguage language = TextLanguage.en,
   }) async {
     final all = await metrics.all();
     final byId = {for (final m in all) m.id: m};
@@ -279,6 +281,7 @@ final class PatternsController extends ChangeNotifier {
       from: from,
       to: to,
       includeDiary: includeDiary,
+      language: language,
     );
   }
 
@@ -469,7 +472,7 @@ final class PatternsController extends ChangeNotifier {
             dayKey: reading.dayKey,
             at: reading.recordedAt,
             text: text,
-            source: names[reading.metricId]!,
+            markerName: names[reading.metricId]!,
             isPrivate: isPrivate,
           ),
       for (final photo in await photos.captioned())
@@ -478,7 +481,6 @@ final class PatternsController extends ChangeNotifier {
             dayKey: photo.dayKey,
             at: photo.capturedAt,
             text: photo.caption!,
-            source: 'fotografija',
           ),
     ];
     hits.sort((a, b) => b.at.compareTo(a.at));

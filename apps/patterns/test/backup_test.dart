@@ -73,9 +73,9 @@ void main() {
 
     await tester.pumpWidget(wrap(controller, transfer));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Napravi arhivu'));
+    await tester.tap(find.text('Make a backup'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Podijeli'));
+    await tester.tap(find.text('Share'));
     await tester.pumpAndSettle();
 
     expect(transfer.sent, isNotNull);
@@ -86,9 +86,9 @@ void main() {
     expect(await readingCount(controller), 2);
 
     transfer.toPick = transfer.sent;
-    await tester.tap(find.text('Vrati iz arhive'));
+    await tester.tap(find.text('Restore from backup'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Vrati'));
+    await tester.tap(find.text('Restore'));
     await tester.pumpAndSettle();
 
     expect(
@@ -106,12 +106,12 @@ void main() {
 
     await tester.pumpWidget(wrap(controller, transfer));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Napravi arhivu'));
+    await tester.tap(find.text('Make a backup'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Arhiva je spremna'), findsOneWidget);
+    expect(find.text('Backup is ready'), findsOneWidget);
     expect(find.textContaining('KB'), findsOneWidget);
-    expect(find.textContaining('0 fotografija'), findsOneWidget);
+    expect(find.textContaining('0 photo'), findsOneWidget);
     expect(transfer.sent, isNull, reason: 'nothing sent before she said so');
     controller.dispose();
   });
@@ -122,13 +122,13 @@ void main() {
 
     await tester.pumpWidget(wrap(controller, transfer));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Napravi arhivu'));
+    await tester.tap(find.text('Make a backup'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Odustani'));
+    await tester.tap(find.text('Cancel'));
     await tester.pumpAndSettle();
 
     expect(transfer.sent, isNull);
-    expect(find.textContaining('nije nigdje poslana'), findsOneWidget);
+    expect(find.textContaining('was not sent anywhere'), findsOneWidget);
     controller.dispose();
   });
 
@@ -157,11 +157,11 @@ void main() {
 
       await tester.pumpWidget(wrap(controller, transfer));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Vrati iz arhive'));
+      await tester.tap(find.text('Restore from backup'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Vratiti ovu arhivu?'), findsOneWidget);
-      expect(find.textContaining('1 unosa'), findsOneWidget);
+      expect(find.text('Restore this backup?'), findsOneWidget);
+      expect(find.textContaining('1 entries'), findsOneWidget);
       // Scoped to the dialog: the screen itself carries the same warning as a
       // standing caption, and the point here is that the confirmation repeats
       // it at the moment it matters.
@@ -169,7 +169,7 @@ void main() {
         find.descendant(
           of: find.byType(AlertDialog),
           matching:
-              find.textContaining('zamjenjuje sve sto je sada u aplikaciji'),
+              find.textContaining('replaces everything now in the app'),
         ),
         findsOneWidget,
       );
@@ -191,13 +191,13 @@ void main() {
 
       await tester.pumpWidget(wrap(controller, transfer));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Vrati iz arhive'));
+      await tester.tap(find.text('Restore from backup'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Odustani'));
+      await tester.tap(find.text('Cancel'));
       await tester.pumpAndSettle();
 
       expect(await readingCount(controller), 2);
-      expect(find.textContaining('Nista nije promijenjeno'), findsOneWidget);
+      expect(find.textContaining('Nothing was changed'), findsOneWidget);
       controller.dispose();
     });
 
@@ -208,10 +208,10 @@ void main() {
 
       await tester.pumpWidget(wrap(controller, transfer));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Vrati iz arhive'));
+      await tester.tap(find.text('Restore from backup'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Vratiti ovu arhivu?'), findsNothing);
+      expect(find.text('Restore this backup?'), findsNothing);
       expect(await readingCount(controller), 1);
       controller.dispose();
     });
@@ -225,17 +225,17 @@ void main() {
 
       await tester.pumpWidget(wrap(controller, transfer));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Vrati iz arhive'));
+      await tester.tap(find.text('Restore from backup'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Vratiti ovu arhivu?'), findsNothing);
+      expect(find.text('Restore this backup?'), findsNothing);
       // In this app's own words, not the shared package's English, and it says
       // what state the data is in rather than only what went wrong.
       expect(
-        find.textContaining('Ovo nije arhiva ove aplikacije'),
+        find.textContaining('not a backup from this app'),
         findsOneWidget,
       );
-      expect(find.textContaining('Nista nije promijenjeno'), findsOneWidget);
+      expect(find.textContaining('Nothing was changed'), findsOneWidget);
       expect(await readingCount(controller), 1);
       controller.dispose();
     });
@@ -251,10 +251,10 @@ void main() {
 
       await tester.pumpWidget(wrap(controller, transfer));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Vrati iz arhive'));
+      await tester.tap(find.text('Restore from backup'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Vratiti ovu arhivu?'), findsNothing);
+      expect(find.text('Restore this backup?'), findsNothing);
       expect(await readingCount(controller), 1);
       controller.dispose();
     });
@@ -265,13 +265,13 @@ void main() {
 
       await tester.pumpWidget(wrap(controller, transfer));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Vrati iz arhive'));
+      await tester.tap(find.text('Restore from backup'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Vrati'));
+      await tester.tap(find.text('Restore'));
       await tester.pumpAndSettle();
 
-      expect(find.textContaining('redova vraceno'), findsOneWidget);
-      expect(find.textContaining('fotografija'), findsWidgets);
+      expect(find.textContaining('rows restored'), findsOneWidget);
+      expect(find.textContaining('photo'), findsWidgets);
       controller.dispose();
     });
   });

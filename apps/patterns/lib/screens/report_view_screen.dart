@@ -9,6 +9,8 @@ import 'day_grid_chart.dart';
 import 'metric_labels.dart';
 import 'report_builder_screen.dart';
 import 'report_chart.dart';
+import '../l10n/app_language.dart';
+import '../l10n/app_strings.dart';
 
 /// A built report: stacked rows on one shared axis.
 ///
@@ -121,7 +123,7 @@ class _ReportViewScreenState extends State<ReportViewScreen> {
         title: Text(_definition.name),
         actions: [
           IconButton(
-            tooltip: _isSaved ? 'Izmijeni' : 'Sacuvaj kao izvjestaj',
+            tooltip: _isSaved ? context.s.edit : context.s.saveAsReport,
             icon: const Icon(Icons.tune),
             onPressed: _edit,
           ),
@@ -148,7 +150,7 @@ class _ReportViewScreenState extends State<ReportViewScreen> {
                   const SizedBox(height: VitalsSpacing.xl),
                   if (report.rows.isEmpty)
                     Text(
-                      'Nijedan marker u ovom izvjestaju vise ne postoji.',
+                      context.s.reportMarkersGone,
                       style: theme.typography.body
                           .copyWith(color: theme.colors.inkMuted),
                     ),
@@ -179,17 +181,17 @@ class _ReportViewScreenState extends State<ReportViewScreen> {
         spacing: VitalsSpacing.sm,
         children: [
           ChoiceChip(
-            label: const Text('Po datumu'),
+            label: Text(context.s.byDate),
             selected: _definition.axis == ReportAxis.date,
             onSelected: (_) => _setAxis(ReportAxis.date),
           ),
           ChoiceChip(
-            label: const Text('Po danu ciklusa'),
+            label: Text(context.s.byCycleDay),
             selected: _definition.axis == ReportAxis.cycleDay,
             onSelected: (_) => _setAxis(ReportAxis.cycleDay),
           ),
           ChoiceChip(
-            label: const Text('Mreza'),
+            label: Text(context.s.grid),
             selected: _definition.axis == ReportAxis.grid,
             onSelected: (_) => _setAxis(ReportAxis.grid),
           ),
@@ -225,7 +227,7 @@ class _RowBlock extends StatelessWidget {
             ),
             if (row.bandMetric case final band?)
               Text(
-                'iza: ${band.name}',
+                context.s.behind(band.name),
                 style: theme.typography.caption
                     .copyWith(color: theme.colors.inkFaint),
               ),
@@ -245,7 +247,7 @@ class _RowBlock extends StatelessWidget {
           ReportRowChart(row: row, color: color, onDayTap: onDayTap),
         const SizedBox(height: VitalsSpacing.xs),
         Text(
-          _facts(row),
+          _facts(row, context.s),
           style:
               theme.typography.caption.copyWith(color: theme.colors.inkMuted),
         ),
@@ -256,20 +258,20 @@ class _RowBlock extends StatelessWidget {
   /// Counts and ranges. **Coverage always travels with them**, because a
   /// typical over nine days of a month is a different statement from one over
   /// twenty-eight, and hiding that is how a tracker quietly lies.
-  static String _facts(ReportRow row) {
+  static String _facts(ReportRow row, AppStrings s) {
     final stats = row.stats;
     final parts = <String>[];
     if (stats.typical case final typical?) {
-      parts.add('tipicno ${_number(typical)}');
+      parts.add('${s.typical} ${_number(typical)}');
     }
     if (stats.lowest case final low?) {
       final high = stats.highest ?? low;
       if (high != low) parts.add('${_number(low)}-${_number(high)}');
     }
     if (row.weeklyTypical case final weekly?) {
-      parts.add('tjedno ${_number(weekly)}');
+      parts.add('${s.weekly} ${_number(weekly)}');
     }
-    parts.add('${stats.daysLogged}/${stats.daysInPeriod} dana');
+    parts.add(s.daysOf(stats.daysLogged, stats.daysInPeriod));
     return parts.join(' · ');
   }
 

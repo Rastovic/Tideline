@@ -32,10 +32,10 @@ void main() {
     await tester.pumpWidget(wrap(controller));
     await tester.pumpAndSettle();
 
-    expect(find.text('UM'), findsOneWidget);
-    expect(find.text('TIJELO'), findsOneWidget);
-    expect(find.text('raspolozenje'), findsOneWidget);
-    expect(find.text('kreatin'), findsOneWidget);
+    expect(find.text('MIND'), findsOneWidget);
+    expect(find.text('BODY'), findsOneWidget);
+    expect(find.text('mood'), findsOneWidget);
+    expect(find.text('creatine'), findsOneWidget);
 
     // Every marker starts as a dash. Not a warning, not a red badge, not a
     // count of what is "left" - the home screen never grades a day.
@@ -64,13 +64,13 @@ void main() {
     await tester.pumpWidget(wrap(controller));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('umor'));
+    await tester.tap(find.text('tiredness'));
     await tester.pumpAndSettle();
 
     // The sheet opens on the middle of the scale rather than the bottom, so a
     // slider parked on 1 cannot suggest an answer.
     expect(find.text('6'), findsOneWidget);
-    await tester.tap(find.text('Zabiljezi'));
+    await tester.tap(find.text('Log'));
     await tester.pumpAndSettle();
 
     expect(find.text('✓'), findsOneWidget);
@@ -104,9 +104,9 @@ void main() {
     await tester.pumpWidget(wrap(controller));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('osjecanja'));
+    await tester.tap(find.text('feelings'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Nista od ovoga'));
+    await tester.tap(find.text('None of these'));
     await tester.pumpAndSettle();
 
     final readings = await controller.readingsOn(controller.today);
@@ -129,7 +129,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('bila sam umorna zbog posla'), findsOneWidget);
-    expect(find.text('dnevnik'), findsOneWidget);
+    expect(find.text('diary'), findsOneWidget);
     controller.dispose();
   });
   group('holding a row', () {
@@ -141,14 +141,14 @@ void main() {
       await tester.pumpWidget(wrap(controller));
       await tester.pumpAndSettle();
 
-      await tester.longPress(find.text('umor'));
+      await tester.longPress(find.text('tiredness'));
       await tester.pumpAndSettle();
 
       expect(find.byType(ReportViewScreen), findsOneWidget);
-      expect(find.widgetWithText(AppBar, 'umor'), findsOneWidget);
+      expect(find.widgetWithText(AppBar, 'tiredness'), findsOneWidget);
 
       // Changing the axis stays on this screen.
-      await tester.tap(find.text('Mreza'));
+      await tester.tap(find.text('Grid'));
       await tester.pumpAndSettle();
       expect(await controller.savedReports(), isEmpty);
       controller.dispose();
@@ -160,8 +160,8 @@ void main() {
       await tester.pumpWidget(wrap(controller));
       await tester.pumpAndSettle();
 
-      await tester.scrollUntilVisible(find.text('dnevnik'), 120);
-      await tester.longPress(find.text('dnevnik'));
+      await tester.scrollUntilVisible(find.text('diary'), 120);
+      await tester.longPress(find.text('diary'));
       await tester.pumpAndSettle();
 
       expect(find.byType(ReportViewScreen), findsNothing);

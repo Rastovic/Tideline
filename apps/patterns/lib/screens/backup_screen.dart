@@ -6,6 +6,8 @@ import 'package:vitals_ui/vitals_ui.dart';
 
 import '../data/archive_transfer.dart';
 import '../data/patterns_controller.dart';
+import '../l10n/app_language.dart';
+import '../l10n/app_strings.dart';
 
 /// Backup and restore.
 ///
@@ -61,6 +63,7 @@ class _BackupScreenState extends State<BackupScreen> {
   }
 
   Future<void> _export() async {
+    final strings = context.s;
     setState(() {
       _busy = true;
       _outcome = null;
@@ -73,22 +76,22 @@ class _BackupScreenState extends State<BackupScreen> {
     final proceed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Arhiva je spremna'),
-        content: Text(_exportSummary(archive)),
+        title: Text(strings.archiveReady),
+        content: Text(_exportSummary(archive, strings)),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Odustani'),
+            child: Text(strings.cancel),
           ),
           TextButton(
             onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Podijeli'),
+            child: Text(strings.share),
           ),
         ],
       ),
     );
     if (proceed != true) {
-      _say('Arhiva nije nigdje poslana.');
+      _say(strings.archiveNotSent);
       return;
     }
 
@@ -100,23 +103,24 @@ class _BackupScreenState extends State<BackupScreen> {
         exportedAtLocal: DateTime.now(),
       ),
     );
-    _say(_exportSummary(archive));
+    _say(_exportSummary(archive, strings));
   }
 
   Future<void> _restore() async {
+    final strings = context.s;
     setState(() {
       _busy = true;
       _outcome = null;
     });
     final bytes = await widget.transfer.pick();
     if (bytes == null) {
-      _say('Nista nije ucitano.');
+      _say(strings.nothingLoaded);
       return;
     }
 
     final read = widget.controller.previewArchive(bytes);
     if (read.error case final error?) {
-      _say(_refusal(error), problem: true);
+      _say(_refusal(error, strings), problem: true);
       return;
     }
     if (!mounted) return;
@@ -128,33 +132,33 @@ class _BackupScreenState extends State<BackupScreen> {
       // before everything currently in the app is replaced.
       barrierDismissible: false,
       builder: (context) => AlertDialog(
-        title: const Text('Vratiti ovu arhivu?'),
-        content: Text(_restoreWarning(read.preview!)),
+        title: Text(strings.restoreQuestion),
+        content: Text(_restoreWarning(read.preview!, strings)),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Odustani'),
+            child: Text(strings.cancel),
           ),
           TextButton(
             onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Vrati'),
+            child: Text(strings.restore),
           ),
         ],
       ),
     );
     if (confirmed != true) {
-      _say('Nista nije promijenjeno.');
+      _say(strings.nothingChanged);
       return;
     }
 
     setState(() => _busy = true);
     final result = await widget.controller.restoreArchive(bytes);
     if (result.error case final error?) {
-      _say(_refusal(error), problem: true);
+      _say(_refusal(error, strings), problem: true);
       return;
     }
     _say(
-      _restoreSummary(result.report!),
+      _restoreSummary(result.report!, strings),
       problem: !result.report!.isComplete,
     );
   }
@@ -164,7 +168,7 @@ class _BackupScreenState extends State<BackupScreen> {
     final theme = VitalsTheme.of(context);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Arhiva')),
+      appBar: AppBar(title: Text(context.s.archive)),
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.fromLTRB(
@@ -175,9 +179,7 @@ class _BackupScreenState extends State<BackupScreen> {
           ),
           children: [
             Text(
-              'Jedan fajl sa svime: markeri, unosi, izvjestaji i fotografije. '
-              'Fotografije su unutra, ne pored - arhiva koja tiho izostavi '
-              'pola onoga za cim bi zalila nije arhiva.',
+              context.s.archiveExplained,
               style:
                   theme.typography.body.copyWith(color: theme.colors.inkMuted),
             ),
@@ -186,7 +188,7 @@ class _BackupScreenState extends State<BackupScreen> {
               height: VitalsSpacing.buttonHeight,
               child: FilledButton(
                 onPressed: _busy ? null : _export,
-                child: const Text('Napravi arhivu'),
+                child: Text(context.s.makeArchive),
               ),
             ),
             const SizedBox(height: VitalsSpacing.md),
@@ -194,13 +196,12 @@ class _BackupScreenState extends State<BackupScreen> {
               height: VitalsSpacing.buttonHeight,
               child: OutlinedButton(
                 onPressed: _busy ? null : _restore,
-                child: const Text('Vrati iz arhive'),
+                child: Text(context.s.restoreFromArchive),
               ),
             ),
             const SizedBox(height: VitalsSpacing.md),
             Text(
-              'Vracanje zamjenjuje sve sto je sada u aplikaciji. '
-              'Prvo ti pokaze sta je u fajlu.',
+              context.s.restoreExplained,
               style: theme.typography.caption
                   .copyWith(color: theme.colors.inkFaint),
             ),
@@ -236,59 +237,48 @@ class _BackupScreenState extends State<BackupScreen> {
   ///
   /// Every one of these says what happened and what state the app is in. None
   /// of them is a code or a stack trace.
-  static String _refusal(ArchiveError error) => switch (error.reason) {
-        ArchiveRejection.malformed =>
-          'Ovo nije arhiva ove aplikacije. Nista nije promijenjeno.',
-        ArchiveRejection.futureSchema =>
-          'Ova arhiva je napravljena novijom verzijom aplikacije. '
-              'Nista nije upisano - pola uvoza bi bilo gore od nijednog.',
-        ArchiveRejection.checksumMismatch =>
-          'Fajl je ostecen, pa mu se ne moze vjerovati. '
-              'Nista nije promijenjeno.',
-        ArchiveRejection.missingFile =>
-          'Arhivi nedostaje dio. Mozda se nije do kraja sacuvala. '
-              'Nista nije promijenjeno.',
+  static String _refusal(ArchiveError error, AppStrings s) =>
+      switch (error.reason) {
+        ArchiveRejection.malformed => s.refusedMalformed,
+        ArchiveRejection.futureSchema => s.refusedFuture,
+        ArchiveRejection.checksumMismatch => s.refusedDamaged,
+        ArchiveRejection.missingFile => s.refusedIncomplete,
       };
 
   /// Size first, because that is the number that says whether the photos are
   /// really in there.
   static String _exportSummary(
     ({Uint8List bytes, int photosIncluded, int photosMissing}) archive,
+    AppStrings s,
   ) {
     final size = megabytes(archive.bytes.length);
-    final parts = ['$size, ${archive.photosIncluded} fotografija'];
+    final parts = ['$size, ${s.photoCount(archive.photosIncluded)}'];
     if (archive.photosMissing > 0) {
       // Said out loud rather than logged. The file is already lost; the archive
       // pretending otherwise is what would turn it into a surprise in March.
       parts.add(
-        '${archive.photosMissing} fotografija nema fajl na disku i nije usla '
-        'u arhivu.',
+        s.photosWithoutFile(archive.photosMissing),
       );
     }
     return parts.join('. ');
   }
 
   /// What is in the file, and what it replaces. Both, always.
-  static String _restoreWarning(ImportPreview preview) {
+  static String _restoreWarning(ImportPreview preview, AppStrings s) {
     final observations = preview.rowCounts['observations'] ?? 0;
     final photos = preview.rowCounts['photos'] ?? 0;
     final range = preview.earliestDay != null && preview.latestDay != null
-        ? ', ${preview.earliestDay} do ${preview.latestDay}'
+        ? ', ${s.dayRange(preview.earliestDay!, preview.latestDay!)}'
         : '';
-    return '$observations unosa i $photos fotografija$range.\n\n'
-        'Ovo zamjenjuje sve sto je sada u aplikaciji.';
+    return '${s.entriesAndPhotos(observations, photos)}$range.\n\n'
+        '${s.replacesEverything}';
   }
 
   /// Afterwards, with a count, what did not come back.
-  static String _restoreSummary(RestoreReport report) {
-    if (report.isComplete) {
-      return '${report.rowsWritten} redova vraceno, '
-          '${report.photosRestored} fotografija.';
-    }
-    return '${report.rowsWritten} redova vraceno, '
-        '${report.photosRestored} fotografija. '
-        '${report.photosMissing.length} fotografija nije bilo u arhivi - '
-        'dani i opisi su tu, same slike nisu.';
+  static String _restoreSummary(RestoreReport report, AppStrings s) {
+    final done = s.restored(report.rowsWritten, report.photosRestored);
+    if (report.isComplete) return done;
+    return '$done ${s.photosNotInArchive(report.photosMissing.length)}';
   }
 }
 

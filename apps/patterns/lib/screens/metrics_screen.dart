@@ -5,6 +5,7 @@ import 'package:vitals_ui/vitals_ui.dart';
 import '../data/patterns_controller.dart';
 import 'metric_editor_screen.dart';
 import 'metric_labels.dart';
+import '../l10n/app_language.dart';
 
 /// Everything tracked, and the way to change it.
 ///
@@ -37,11 +38,11 @@ class MetricsScreen extends StatelessWidget {
     final theme = VitalsTheme.of(context);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Markeri')),
+      appBar: AppBar(title: Text(context.s.markers)),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _open(context),
         icon: const Icon(Icons.add),
-        label: const Text('Novi marker'),
+        label: Text(context.s.newMarker),
       ),
       body: SafeArea(
         child: AnimatedBuilder(
@@ -62,7 +63,7 @@ class MetricsScreen extends StatelessWidget {
                   ..._section(
                     context,
                     theme,
-                    title: domainNames[domain]!,
+                    title: context.s.domainName(domain),
                     markers:
                         all.where((m) => m.domain == domain && !m.isArchived),
                     domain: domain,
@@ -71,7 +72,7 @@ class MetricsScreen extends StatelessWidget {
                   ..._section(
                     context,
                     theme,
-                    title: 'ARHIVIRANO',
+                    title: context.s.archivedHeading,
                     markers: archived,
                     domain: MetricDomain.body,
                   ),
@@ -156,7 +157,7 @@ class _MetricRow extends StatelessWidget {
               ),
             ),
             Text(
-              kindNames[metric.kind]!,
+              context.s.kindName(metric.kind),
               style: theme.typography.caption.copyWith(color: colors.inkFaint),
             ),
           ],

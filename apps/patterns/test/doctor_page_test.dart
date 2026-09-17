@@ -83,7 +83,7 @@ void main() {
     test('the facts are counts and ranges, never a verdict', () {
       final mood = Metric.create(
         id: 'm',
-        name: 'raspolozenje',
+        name: 'mood',
         domain: MetricDomain.mind,
         kind: MetricKind.scale,
         createdAt: DateTime.utc(2026),
@@ -105,9 +105,9 @@ void main() {
         to: '2026-09-30',
       );
       final lines = doctorFacts(page.entries.single).join(' ');
-      expect(lines, contains('najnize 2 (1.9.)'));
-      expect(lines, contains('najvise 9 (3.9.)'));
-      expect(lines, contains('2/30 dana upisano'));
+      expect(lines, contains('lowest 2 (1.9.)'));
+      expect(lines, contains('highest 9 (3.9.)'));
+      expect(lines, contains('2/30 days logged'));
       for (final banned in [
         'bolje', 'gore', 'normal', 'zabrinj', 'poboljs', 'pogors', 'trend',
       ]) {
@@ -132,11 +132,11 @@ void main() {
       )));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.text('umor'));
+      await tester.tap(find.text('tiredness'));
       await tester.pumpAndSettle();
-      await tester.scrollUntilVisible(find.text('Napravi PDF'), 200);
+      await tester.scrollUntilVisible(find.text('Make PDF'), 200);
       await tester.runAsync(() async {
-        await tester.tap(find.text('Napravi PDF'));
+        await tester.tap(find.text('Make PDF'));
         // Rendering runs real async work the fake clock does not advance.
         for (var i = 0; i < 50 && transfer.sent == null; i++) {
           await Future<void>.delayed(const Duration(milliseconds: 50));
@@ -159,14 +159,14 @@ void main() {
       )));
       await tester.pumpAndSettle();
 
-      await tester.scrollUntilVisible(find.text('Napravi PDF'), 200);
-      await tester.tap(find.text('Napravi PDF'));
+      await tester.scrollUntilVisible(find.text('Make PDF'), 200);
+      await tester.tap(find.text('Make PDF'));
       await tester.pumpAndSettle();
 
       expect(transfer.sent, isNull);
       await tester.scrollUntilVisible(
-          find.text('Izaberi bar jedan marker.'), -200);
-      expect(find.text('Izaberi bar jedan marker.'), findsOneWidget);
+          find.text('Pick at least one marker.'), -200);
+      expect(find.text('Pick at least one marker.'), findsOneWidget);
       controller.dispose();
     });
 
@@ -178,7 +178,7 @@ void main() {
         fonts: noFonts,
       )));
       await tester.pumpAndSettle();
-      expect(find.text('dnevnik'), findsNothing);
+      expect(find.text('diary'), findsNothing);
       controller.dispose();
     });
   });
@@ -205,23 +205,23 @@ void main() {
 
       // Lazily built, so scroll it into existence, then fully on screen.
       await tester.scrollUntilVisible(
-        find.text('Podijeli fajl'),
+        find.text('Share file'),
         200,
         scrollable: find.byType(Scrollable).first,
       );
-      await tester.ensureVisible(find.text('Podijeli fajl'));
+      await tester.ensureVisible(find.text('Share file'));
       await tester.pumpAndSettle();
-      expect(find.textContaining('Privatni unosi dnevnika izostavljeni: 1.'),
+      expect(find.textContaining('Private diary entries left out: 1.'),
           findsOneWidget);
-      expect(find.textContaining('Dnevnik nije izabran, izostavljeno: 1.'),
+      expect(find.textContaining('Diary not ticked, left out: 1.'),
           findsOneWidget);
 
-      await tester.tap(find.text('Podijeli fajl'));
+      await tester.tap(find.text('Share file'));
       await tester.pumpAndSettle();
 
       final text = utf8.decode(transfer.sent!);
       expect(transfer.sentName, endsWith('.md'));
-      expect(text, contains('raspolozenje'));
+      expect(text, contains('mood'));
       expect(text, isNot(contains('tajna')));
       expect(text, isNot(contains('obicno')));
       controller.dispose();
@@ -237,17 +237,17 @@ void main() {
       ));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.text('Tabela (CSV)'));
+      await tester.tap(find.text('Spreadsheet (CSV)'));
       await tester.pumpAndSettle();
       // Lazily built, so scroll it into existence, then fully on screen.
       await tester.scrollUntilVisible(
-        find.text('Podijeli fajl'),
+        find.text('Share file'),
         200,
         scrollable: find.byType(Scrollable).first,
       );
-      await tester.ensureVisible(find.text('Podijeli fajl'));
+      await tester.ensureVisible(find.text('Share file'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Podijeli fajl'));
+      await tester.tap(find.text('Share file'));
       await tester.pumpAndSettle();
 
       expect(transfer.sentName, endsWith('.csv'));

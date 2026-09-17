@@ -7,6 +7,8 @@ import 'doctor_page_screen.dart';
 import 'export_screen.dart';
 import 'report_builder_screen.dart';
 import 'report_view_screen.dart';
+import '../l10n/app_language.dart';
+import '../l10n/app_strings.dart';
 
 /// The saved reports: questions worth asking again.
 ///
@@ -62,20 +64,18 @@ class _ReportsScreenState extends State<ReportsScreen> {
     final ok = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Obrisati izvjestaj?'),
+        title: Text(context.s.deleteReportQuestion),
         // Worth saying plainly: this is the one delete in the app that cannot
         // cost data, and knowing that is what makes it safe to tidy up.
-        content: const Text(
-          'Nijedan unos se ne dira. Izvjestaj je samo pitanje nad podacima.',
-        ),
+        content: Text(context.s.deleteReportExplained),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Odustani'),
+            child: Text(context.s.cancel),
           ),
           TextButton(
             onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Obrisi'),
+            child: Text(context.s.delete),
           ),
         ],
       ),
@@ -92,10 +92,10 @@ class _ReportsScreenState extends State<ReportsScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Izvjestaji'),
+        title: Text(context.s.reports),
         actions: [
           IconButton(
-            tooltip: 'Izvoz',
+            tooltip: context.s.export,
             icon: const Icon(Icons.ios_share),
             onPressed: () => Navigator.of(context).push(
               MaterialPageRoute<void>(
@@ -104,7 +104,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
             ),
           ),
           IconButton(
-            tooltip: 'Stranica za doktora',
+            tooltip: context.s.doctorPage,
             icon: const Icon(Icons.print_outlined),
             onPressed: () => Navigator.of(context).push(
               MaterialPageRoute<void>(
@@ -118,7 +118,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _build,
         icon: const Icon(Icons.add),
-        label: const Text('Novi izvjestaj'),
+        label: Text(context.s.newReport),
       ),
       body: SafeArea(
         child: reports == null
@@ -127,9 +127,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                 ? Padding(
                     padding: const EdgeInsets.all(VitalsSpacing.screenH),
                     child: Text(
-                      'Jos nijedan. Izvjestaj je set markera i period - '
-                      'slozeni redovi na istoj vremenskoj osi, da ih citas '
-                      'jedan uz drugi.',
+                      context.s.noReportsYet,
                       style: theme.typography.body
                           .copyWith(color: theme.colors.inkMuted),
                     ),
@@ -148,12 +146,12 @@ class _ReportsScreenState extends State<ReportsScreen> {
                           title:
                               Text(report.name, style: theme.typography.body),
                           subtitle: Text(
-                            _describe(report),
+                            _describe(report, context.s),
                             style: theme.typography.caption
                                 .copyWith(color: theme.colors.inkFaint),
                           ),
                           trailing: IconButton(
-                            tooltip: 'Obrisi',
+                            tooltip: context.s.delete,
                             icon: const Icon(Icons.close),
                             onPressed: () => _delete(report),
                           ),
@@ -165,23 +163,19 @@ class _ReportsScreenState extends State<ReportsScreen> {
     );
   }
 
-  static String _describe(ReportDefinition report) {
+  static String _describe(ReportDefinition report, AppStrings s) {
     final rows = report.series.where((s) => !s.isBand).length;
     final period = switch (report.period) {
       LastDays(:final days) => switch (days) {
-          7 => '7 dana',
-          30 => 'mjesec',
-          90 => '3 mjeseca',
-          365 => 'godina',
-          _ => '$days dana',
+          _ => s.window(days),
         },
       FixedPeriod(:final from, :final to) => '$from - $to',
     };
     final axis = switch (report.axis) {
-      ReportAxis.cycleDay => ' · po danu ciklusa',
-      ReportAxis.grid => ' · mreza',
+      ReportAxis.cycleDay => ' · ${s.byCycleDay.toLowerCase()}',
+      ReportAxis.grid => ' · ${s.grid.toLowerCase()}',
       ReportAxis.date => '',
     };
-    return '$rows markera · $period$axis';
+    return '${s.markerCount(rows)} · $period$axis';
   }
 }

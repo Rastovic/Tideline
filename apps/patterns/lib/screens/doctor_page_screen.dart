@@ -6,7 +6,7 @@ import 'package:vitals_ui/vitals_ui.dart';
 import '../data/archive_transfer.dart';
 import '../data/doctor_pdf.dart';
 import '../data/patterns_controller.dart';
-import 'metric_labels.dart';
+import '../l10n/app_language.dart';
 
 /// Loads the fonts the page prints with. Injected so a test does not read
 /// `/system/fonts`.
@@ -61,13 +61,14 @@ class _DoctorPageScreenState extends State<DoctorPageScreen> {
 
   Future<void> _make() async {
     if (_picked.isEmpty) {
-      setState(() => _problem = 'Izaberi bar jedan marker.');
+      setState(() => _problem = context.s.pickAtLeastOneMarker);
       return;
     }
     setState(() {
       _working = true;
       _problem = null;
     });
+    final strings = context.s;
     try {
       final page =
           await widget.controller.doctorPage(_picked, LastDays(_days));
@@ -76,6 +77,7 @@ class _DoctorPageScreenState extends State<DoctorPageScreen> {
         generatedAt: DateTime.now(),
         paper: _paper,
         fonts: await widget.fonts(),
+        strings: strings,
       );
       await widget.transfer.send(bytes, 'pregled-${page.to}.pdf');
     } finally {
@@ -92,7 +94,7 @@ class _DoctorPageScreenState extends State<DoctorPageScreen> {
     final full = _picked.length >= doctorPageMaxMarkers;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Stranica za doktora')),
+      appBar: AppBar(title: Text(context.s.doctorPage)),
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.fromLTRB(
@@ -103,9 +105,7 @@ class _DoctorPageScreenState extends State<DoctorPageScreen> {
           ),
           children: [
             Text(
-              'Jedna stranica za stampu: brojevi, rasponi sa datumima i '
-              'koliko je dana upisano. Bez tumacenja. Dnevnik nikad ne ide '
-              'na ovu stranicu.',
+              context.s.doctorExplained,
               style:
                   theme.typography.caption.copyWith(color: theme.colors.inkMuted),
             ),
@@ -116,24 +116,20 @@ class _DoctorPageScreenState extends State<DoctorPageScreen> {
                       .copyWith(color: theme.colors.danger)),
             ],
             const SizedBox(height: VitalsSpacing.xl),
-            _heading(theme, 'Period'),
+            _heading(theme, context.s.period),
             Wrap(
               spacing: VitalsSpacing.sm,
               children: [
                 for (final days in _windows)
                   ChoiceChip(
-                    label: Text(switch (days) {
-                      30 => 'mjesec',
-                      90 => '3 mjeseca',
-                      _ => '6 mjeseci',
-                    }),
+                    label: Text(context.s.window(days)),
                     selected: _days == days,
                     onSelected: (_) => setState(() => _days = days),
                   ),
               ],
             ),
             const SizedBox(height: VitalsSpacing.xl),
-            _heading(theme, 'Papir'),
+            _heading(theme, context.s.paper),
             Wrap(
               spacing: VitalsSpacing.sm,
               children: [
@@ -148,7 +144,7 @@ class _DoctorPageScreenState extends State<DoctorPageScreen> {
             const SizedBox(height: VitalsSpacing.xl),
             _heading(
               theme,
-              'Markeri (${_picked.length}/$doctorPageMaxMarkers)',
+              context.s.markersPicked(_picked.length, doctorPageMaxMarkers),
             ),
             for (final metric in markers)
               CheckboxListTile(
@@ -162,7 +158,7 @@ class _DoctorPageScreenState extends State<DoctorPageScreen> {
                     : (_) => _toggle(metric),
                 title: Text(metric.name, style: theme.typography.body),
                 subtitle: Text(
-                  kindNames[metric.kind]!,
+                  context.s.kindName(metric.kind),
                   style: theme.typography.caption
                       .copyWith(color: theme.colors.inkFaint),
                 ),
@@ -181,7 +177,7 @@ class _DoctorPageScreenState extends State<DoctorPageScreen> {
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
                   : const Icon(Icons.picture_as_pdf_outlined),
-              label: const Text('Napravi PDF'),
+              label: Text(context.s.makePdf),
             ),
           ],
         ),

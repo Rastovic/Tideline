@@ -11,8 +11,9 @@ abstract interface class Unlocker {
   /// nothing to check against, and the app must not lock itself shut.
   Future<bool> isAvailable();
 
-  /// True only when the person proved it is them.
-  Future<bool> unlock();
+  /// True only when the person proved it is them. [reason] is shown in the
+  /// system prompt, in the app's language.
+  Future<bool> unlock({required String reason});
 }
 
 /// The real one: fingerprint or face, falling back to the phone's own PIN,
@@ -36,10 +37,10 @@ final class PlatformUnlocker implements Unlocker {
   }
 
   @override
-  Future<bool> unlock() async {
+  Future<bool> unlock({required String reason}) async {
     try {
       return await _auth.authenticate(
-        localizedReason: 'Otkljucaj Tideline',
+        localizedReason: reason,
         persistAcrossBackgrounding: true,
       );
     } on Object {
@@ -87,9 +88,9 @@ final class AppLock extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<bool> tryUnlock() async {
+  Future<bool> tryUnlock({String reason = 'Unlock Tideline'}) async {
     if (!_locked) return true;
-    final ok = await unlocker.unlock();
+    final ok = await unlocker.unlock(reason: reason);
     if (ok) {
       _locked = false;
       notifyListeners();
@@ -99,9 +100,11 @@ final class AppLock extends ChangeNotifier {
 
   /// Turning the lock off needs the same proof as getting past it, or anyone
   /// holding the unlocked phone could switch it off for later.
-  Future<bool> setEnabled(bool on) async {
+  Future<bool> setEnabled(bool on, {String reason = 'Unlock Tideline'}) async {
     if (on == _enabled) return true;
-    if (!on && _available && !await unlocker.unlock()) return false;
+    if (!on && _available && !await unlocker.unlock(reason: reason)) {
+      return false;
+    }
     _enabled = on;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_key, on);

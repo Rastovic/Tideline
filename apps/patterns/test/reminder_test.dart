@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:patterns/data/app_database.dart';
 import 'package:patterns/data/evening_reminder.dart';
+import 'package:patterns/l10n/app_language.dart';
 import 'package:patterns/screens/settings_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:vitals_notify/vitals_notify.dart';
@@ -95,16 +96,26 @@ void main() {
       // The reminder has no way to know whether anything was logged: `apply`
       // takes the settings and the clock, and nothing else. The wording is
       // pinned here so a later "helpful" version has to argue with a test.
-      final text = '${EveningReminder.title} ${EveningReminder.body}';
-      for (final banned in [
-        'propust',
-        'nisi',
-        'niz',
-        'dana zaredom',
-        '%',
-        'bravo',
-      ]) {
-        expect(text.toLowerCase(), isNot(contains(banned)), reason: banned);
+      // Both languages, because a reminder that grades the day would do it
+      // in whichever one is on.
+      for (final language in AppLanguage.values) {
+        final text =
+            '${EveningReminder.title} ${EveningReminder.bodyFor(language)}';
+        for (final banned in [
+          'propust',
+          'nisi',
+          'niz',
+          'days zaredom',
+          'missed',
+          'streak',
+          'again',
+          'well done',
+          '%',
+          'bravo',
+        ]) {
+          expect(text.toLowerCase(), isNot(contains(banned)),
+              reason: '$language: $banned');
+        }
       }
     });
   });
@@ -150,9 +161,9 @@ void main() {
       expect(notifier.scheduled, isEmpty);
       expect(tester.widget<SwitchListTile>(find.byType(SwitchListTile)).value,
           isFalse);
-      expect(find.textContaining('iskljucena u postavkama telefona'),
+      expect(find.textContaining('turned off in the phone settings'),
           findsOneWidget);
-      expect(find.textContaining('Sve ostalo radi normalno'), findsOneWidget);
+      expect(find.textContaining('Everything else works normally'), findsOneWidget);
     });
 
     testWidgets('the promise about what it says is on the screen',
@@ -161,7 +172,7 @@ void main() {
       await tester.pumpWidget(wrapSettings(EveningReminder(notifier)));
       await tester.pumpAndSettle();
 
-      expect(find.textContaining('Ne zna da li si nesto upisala'),
+      expect(find.textContaining('does not know whether you logged'),
           findsOneWidget);
     });
 

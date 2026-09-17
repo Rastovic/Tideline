@@ -23,7 +23,8 @@ final class FakeQuickLog implements QuickLogWidget {
   void tap(String id) => _taps.add(id);
 
   @override
-  Future<void> publish(List<Metric> markers) async => published.add(markers);
+  Future<void> publish(List<Metric> markers, {required String emptyText}) async =>
+      published.add(markers);
 
   @override
   Future<String?> launchedFor() async => launched;
@@ -67,7 +68,7 @@ void main() {
 
     expect(quickLog.published, hasLength(1));
     expect(quickLog.published.single.map((m) => m.name),
-        ['raspolozenje', 'umor', 'motivacija', 'razdrazljivost']);
+        ['mood', 'tiredness', 'motivation', 'irritability']);
 
     // Logging changes nothing the widget shows, so nothing is re-sent.
     await controller.log(
@@ -86,7 +87,7 @@ void main() {
 
     quickLog.tap(seedIds['creatine-dose']!);
     await tester.pumpAndSettle();
-    expect(find.text('Zabiljezi'), findsOneWidget);
+    expect(find.text('Log'), findsOneWidget);
     expect(find.text('g'), findsOneWidget);
     controller.dispose();
   });
@@ -98,7 +99,7 @@ void main() {
     await tester.pumpWidget(
         wrap(HomeScreen(controller: controller, quickLog: quickLog)));
     await tester.pumpAndSettle();
-    expect(find.text('Zabiljezi'), findsOneWidget);
+    expect(find.text('Log'), findsOneWidget);
     controller.dispose();
   });
 
@@ -115,12 +116,12 @@ void main() {
     await tester.pumpAndSettle();
 
     // Four already picked, so a fifth is not offered until one goes.
-    final bloating = find.widgetWithText(CheckboxListTile, 'nadutost');
+    final bloating = find.widgetWithText(CheckboxListTile, 'bloating');
     await tester.scrollUntilVisible(bloating, 120,
         scrollable: find.byType(Scrollable).first);
     expect(tester.widget<CheckboxListTile>(bloating).onChanged, isNull);
 
-    final mood = find.widgetWithText(CheckboxListTile, 'raspolozenje');
+    final mood = find.widgetWithText(CheckboxListTile, 'mood');
     await tester.scrollUntilVisible(mood, -120,
         scrollable: find.byType(Scrollable).first);
     await tester.ensureVisible(mood);
@@ -136,7 +137,7 @@ void main() {
 
     final saved = await WidgetMarkers.load(controller.homeOrder);
     expect(saved.map((m) => m.name),
-        ['umor', 'motivacija', 'razdrazljivost', 'nadutost']);
+        ['tiredness', 'motivation', 'irritability', 'bloating']);
     expect(changed, 2);
     controller.dispose();
   });

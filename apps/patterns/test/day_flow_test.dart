@@ -12,6 +12,8 @@ import 'package:patterns/screens/photo_timeline_screen.dart';
 import 'package:patterns/screens/report_chart.dart';
 import 'package:patterns/screens/report_view_screen.dart';
 import 'package:patterns/screens/settings_screen.dart';
+import 'package:patterns/l10n/app_language.dart';
+import 'package:patterns/l10n/app_strings.dart';
 import 'package:patterns_core/patterns_core.dart';
 import 'package:patterns_data/patterns_data.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -70,17 +72,17 @@ void main() {
       final dose = controller.byId(seedIds['creatine-dose']!)!;
       final results = await openSheet(tester, dose);
 
-      expect(primary(tester, 'Zabiljezi').onPressed, isNull);
+      expect(primary(tester, 'Log').onPressed, isNull);
       await tester.enterText(find.byType(TextField), 'abc');
       await tester.pump();
-      expect(primary(tester, 'Zabiljezi').onPressed, isNull);
+      expect(primary(tester, 'Log').onPressed, isNull);
       await tester.enterText(find.byType(TextField), '-2');
       await tester.pump();
-      expect(primary(tester, 'Zabiljezi').onPressed, isNull);
+      expect(primary(tester, 'Log').onPressed, isNull);
 
       await tester.enterText(find.byType(TextField), '2,5');
       await tester.pump();
-      await tester.tap(find.text('Zabiljezi'));
+      await tester.tap(find.text('Log'));
       await tester.pumpAndSettle();
       expect(results.single,
           const NumberValue(2.5, kind: MetricKind.amount));
@@ -103,10 +105,10 @@ void main() {
     testWidgets('an empty diary entry cannot be saved', (tester) async {
       final controller = await freshController();
       await openSheet(tester, controller.byId(seedIds['diary']!)!);
-      expect(primary(tester, 'Sacuvaj').onPressed, isNull);
+      expect(primary(tester, 'Save').onPressed, isNull);
       await tester.enterText(find.byType(TextField), '   ');
       await tester.pump();
-      expect(primary(tester, 'Sacuvaj').onPressed, isNull);
+      expect(primary(tester, 'Save').onPressed, isNull);
       controller.dispose();
     });
 
@@ -115,9 +117,9 @@ void main() {
       final controller = await freshController();
       final results =
           await openSheet(tester, controller.byId(seedIds['feelings']!)!);
-      expect(primary(tester, 'Zabiljezi').onPressed, isNull);
+      expect(primary(tester, 'Log').onPressed, isNull);
       // The explicit answer is still one tap away.
-      await tester.tap(find.text('Nista od ovoga'));
+      await tester.tap(find.text('None of these'));
       await tester.pumpAndSettle();
       expect((results.single! as TagsValue).isExplicitNone, isTrue);
       controller.dispose();
@@ -134,12 +136,12 @@ void main() {
       await tester.pumpAndSettle();
 
       final next = find.ancestor(
-        of: find.byTooltip('Sljedeci dan'),
+        of: find.byTooltip('Next day'),
         matching: find.byType(IconButton),
       );
       expect(tester.widget<IconButton>(next).onPressed, isNull);
 
-      await tester.tap(find.byTooltip('Prethodni dan'));
+      await tester.tap(find.byTooltip('Previous day'));
       await tester.pumpAndSettle();
       final yesterday = addDays(controller.today, -1);
       expect(find.textContaining(
@@ -158,18 +160,18 @@ void main() {
       )));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byTooltip('Dodaj unos'));
+      await tester.tap(find.byTooltip('Add entry'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('umor'));
+      await tester.tap(find.text('tiredness'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Zabiljezi'));
+      await tester.tap(find.text('Log'));
       await tester.pumpAndSettle();
 
       final readings = await controller.readingsOn(yesterday);
       expect(readings, hasLength(1));
       expect(readings.single.enteredLate, isTrue);
       expect(await controller.readingsOn(controller.today), isEmpty);
-      expect(find.text('uneseno naknadno'), findsOneWidget);
+      expect(find.text('entered later'), findsOneWidget);
       controller.dispose();
     });
 
@@ -185,7 +187,7 @@ void main() {
         dayKey: controller.today,
       )));
       await tester.pumpAndSettle();
-      expect(find.text('dan ciklusa 3'), findsOneWidget);
+      expect(find.text('cycle day 3'), findsOneWidget);
       controller.dispose();
     });
 
@@ -199,16 +201,16 @@ void main() {
       )));
       await tester.pumpAndSettle();
 
-      await tester.longPress(find.text('raspolozenje'));
+      await tester.longPress(find.text('mood'));
       await tester.pumpAndSettle();
-      expect(find.text('Obrisati unos?'), findsOneWidget);
-      await tester.tap(find.text('Odustani'));
+      expect(find.text('Delete entry?'), findsOneWidget);
+      await tester.tap(find.text('Cancel'));
       await tester.pumpAndSettle();
       expect(await controller.readingsOn(controller.today), hasLength(1));
 
-      await tester.longPress(find.text('raspolozenje'));
+      await tester.longPress(find.text('mood'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Obrisi'));
+      await tester.tap(find.text('Delete'));
       await tester.pumpAndSettle();
       expect(await controller.readingsOn(controller.today), isEmpty);
       controller.dispose();
@@ -265,8 +267,8 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byType(PhotoTimelineScreen), findsOneWidget);
-    expect(find.text('septembar 2026.'), findsOneWidget);
-    expect(find.text('avgust 2026.'), findsOneWidget);
+    expect(find.text('September 2026'), findsOneWidget);
+    expect(find.text('August 2026'), findsOneWidget);
     controller.dispose();
   });
 
@@ -354,10 +356,10 @@ void main() {
 
     final yesterday = addDays(controller.today, -1);
     expect(labels, contains('${humanDateFor(controller.today)}: 7'));
-    expect(labels, contains('${humanDateFor(yesterday)}: nije upisano'));
+    expect(labels, contains('${humanDateFor(yesterday)}: not logged'));
     // One node per day of the window, in order.
     expect(
-      labels.where((l) => l.contains(': 7') || l.contains('nije upisano')),
+      labels.where((l) => l.contains(': 7') || l.contains('not logged')),
       hasLength(30),
     );
     controller.dispose();
@@ -365,11 +367,5 @@ void main() {
   });
 }
 
-String humanDateFor(String dayKey) {
-  const months = [
-    'januar', 'februar', 'mart', 'april', 'maj', 'jun',
-    'jul', 'avgust', 'septembar', 'oktobar', 'novembar', 'decembar',
-  ];
-  final d = parseDayKey(dayKey)!;
-  return '${d.day}. ${months[d.month - 1]} ${d.year}.';
-}
+String humanDateFor(String dayKey) =>
+    const AppStrings(AppLanguage.en).humanDate(dayKey, withYear: true);

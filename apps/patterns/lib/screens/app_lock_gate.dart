@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:vitals_ui/vitals_ui.dart';
 
 import '../data/app_lock.dart';
+import '../l10n/app_language.dart';
 
 /// Covers every screen while the app is locked.
 ///
@@ -62,7 +63,7 @@ class _AppLockGateState extends State<AppLockGate> with WidgetsBindingObserver {
     if (_asking || !widget.lock.locked) return;
     _asking = true;
     try {
-      await widget.lock.tryUnlock();
+      await widget.lock.tryUnlock(reason: context.s.unlockReason);
     } finally {
       _asking = false;
     }
@@ -101,11 +102,11 @@ class _LockedScreen extends StatelessWidget {
             children: [
               Icon(Icons.lock_outline, size: 48, color: theme.colors.inkMuted),
               const SizedBox(height: VitalsSpacing.lg),
-              Text('Tideline je zakljucan', style: theme.typography.title),
+              Text(context.s.locked, style: theme.typography.title),
               const SizedBox(height: VitalsSpacing.xl),
               FilledButton(
                 onPressed: onUnlock,
-                child: const Text('Otkljucaj'),
+                child: Text(context.s.unlock),
               ),
             ],
           ),

@@ -1,3 +1,4 @@
+import 'language.dart';
 import 'metric.dart';
 import 'metric_kind.dart';
 import 'validation.dart';
@@ -53,8 +54,10 @@ List<ValidationFailure> validateMetricChange(
   Metric before,
   Metric after, {
   required MetricReadingFacts facts,
+  TextLanguage language = TextLanguage.en,
 }) {
-  final problems = validateMetric(after);
+  String t(String en, String sr) => language.pick(en, sr);
+  final problems = validateMetric(after, language);
 
   if (after.kind != before.kind &&
       !canRetype(before.kind, after.kind, hasReadings: facts.hasReadings)) {
@@ -62,8 +65,12 @@ List<ValidationFailure> validateMetricChange(
     // wearing a feature's clothes. The editor offers the honest alternative.
     problems.add(ValidationFailure(
       'kind',
-      'Vec ima ${facts.count} unosa, pa vise ne moze promijeniti tip. '
-          'Arhiviraj ovaj i napravi novi.',
+      t(
+        'It already holds ${facts.count} entries, so the type can no longer '
+            'change. Archive this one and make a new one.',
+        'Vec ima ${facts.count} unosa, pa vise ne moze promijeniti tip. '
+            'Arhiviraj ovaj i napravi novi.',
+      ),
     ));
   }
 
@@ -73,15 +80,23 @@ List<ValidationFailure> validateMetricChange(
     if (lowest != null && lowest < after.scaleMin) {
       problems.add(ValidationFailure(
         'scale',
-        'Vec postoji unos $lowest, ispod nove donje granice '
-            '${after.scaleMin}.',
+        t(
+          'An entry of $lowest already exists, below the new bottom of '
+              '${after.scaleMin}.',
+          'Vec postoji unos $lowest, ispod nove donje granice '
+              '${after.scaleMin}.',
+        ),
       ));
     }
     if (highest != null && highest > after.scaleMax) {
       problems.add(ValidationFailure(
         'scale',
-        'Vec postoji unos $highest, iznad nove gornje granice '
-            '${after.scaleMax}.',
+        t(
+          'An entry of $highest already exists, above the new top of '
+              '${after.scaleMax}.',
+          'Vec postoji unos $highest, iznad nove gornje granice '
+              '${after.scaleMax}.',
+        ),
       ));
     }
   }
@@ -92,7 +107,11 @@ List<ValidationFailure> validateMetricChange(
     if (!facts.usedOptionIds.contains(option.id)) continue;
     problems.add(ValidationFailure(
       'options',
-      '"${option.label}" je vec biran. Arhiviraj ga umjesto da ga brises.',
+      t(
+        '"${option.label}" has already been picked. Archive it instead of '
+            'deleting it.',
+        '"${option.label}" je vec biran. Arhiviraj ga umjesto da ga brises.',
+      ),
     ));
   }
 

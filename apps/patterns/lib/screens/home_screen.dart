@@ -19,6 +19,7 @@ import 'report_view_screen.dart';
 import 'reports_screen.dart';
 import 'search_screen.dart';
 import 'settings_screen.dart';
+import '../l10n/app_language.dart';
 
 /// The home screen: what I track, and whether it is logged today.
 ///
@@ -95,8 +96,11 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     final signature = markers.map((m) => '${m.id}=${m.name}').join('|');
     if (signature == _publishedToWidget) return;
     _publishedToWidget = signature;
-    await quickLog.publish(markers);
+    await quickLog.publish(markers, emptyText: _widgetEmptyText);
   }
+
+  /// Kept from the last build, because publishing happens outside one.
+  String _widgetEmptyText = '';
 
   /// A widget tap: straight to that marker's log sheet.
   void _logById(String id) {
@@ -117,11 +121,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
   late ReminderSettings _settings = widget.initialSettings;
 
-  static const _sectionTitles = {
-    MetricDomain.mind: 'UM',
-    MetricDomain.body: 'TIJELO',
-    MetricDomain.cycle: 'CIKLUS',
-  };
 
   Future<void> _log(Metric metric) async {
     final value = await showLogSheet(
@@ -172,6 +171,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   Widget build(BuildContext context) {
     final theme = VitalsTheme.of(context);
     final colors = theme.colors;
+    _widgetEmptyText = context.s.widgetEmpty;
 
     return Scaffold(
       body: SafeArea(
@@ -201,7 +201,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
                         IconButton(
-                          tooltip: 'Pretraga',
+                          tooltip: context.s.search,
                           icon: const Icon(Icons.search),
                           onPressed: () => Navigator.of(context).push(
                             MaterialPageRoute<void>(
@@ -211,7 +211,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                           ),
                         ),
                         IconButton(
-                          tooltip: 'Detalji dana',
+                          tooltip: context.s.dayDetail,
                           icon: const Icon(Icons.today_outlined),
                           onPressed: () => Navigator.of(context).push(
                             MaterialPageRoute<void>(
@@ -228,7 +228,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                         // not on the home list: home answers "what did I log
                         // today", and a chart there would start grading it.
                         IconButton(
-                          tooltip: 'Izvjestaji',
+                          tooltip: context.s.reports,
                           icon: const Icon(Icons.stacked_bar_chart),
                           onPressed: () => Navigator.of(context).push(
                             MaterialPageRoute<void>(
@@ -238,7 +238,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                           ),
                         ),
                         IconButton(
-                          tooltip: 'Markeri',
+                          tooltip: context.s.markers,
                           icon: const Icon(Icons.tune),
                           onPressed: () => Navigator.of(context).push(
                             MaterialPageRoute<void>(
@@ -249,7 +249,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                         ),
                         if (widget.reminder case final reminder?)
                           IconButton(
-                            tooltip: 'Podesavanja',
+                            tooltip: context.s.settings,
                             icon: const Icon(Icons.settings_outlined),
                             onPressed: () => Navigator.of(context).push(
                               MaterialPageRoute<void>(
@@ -272,7 +272,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                       ],
                     ),
                     Text(
-                      humanDate(controller.today),
+                      context.s.humanDate(controller.today),
                       style: theme.typography.displayL,
                     ),
                   ],
@@ -286,7 +286,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                         bottom: VitalsSpacing.sm,
                       ),
                       child: Text(
-                        _sectionTitles[domain]!,
+                        context.s.domainName(domain),
                         style: theme.typography.label.copyWith(
                           color: colors.inkFaint,
                           letterSpacing: 1.2,

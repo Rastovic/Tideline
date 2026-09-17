@@ -7,7 +7,7 @@ import 'package:vitals_ui/vitals_ui.dart';
 
 import '../data/patterns_controller.dart';
 import 'day_detail_screen.dart';
-import 'metric_labels.dart';
+import '../l10n/app_language.dart';
 
 /// Every photo of one marker, month by month.
 ///
@@ -32,10 +32,6 @@ class _PhotoTimelineScreenState extends State<PhotoTimelineScreen> {
   late Future<List<StoredPhoto>> _photos =
       widget.controller.photos.forMetric(widget.metric.id);
 
-  static const _months = [
-    'januar', 'februar', 'mart', 'april', 'maj', 'jun',
-    'jul', 'avgust', 'septembar', 'oktobar', 'novembar', 'decembar',
-  ];
 
   @override
   Widget build(BuildContext context) {
@@ -56,7 +52,7 @@ class _PhotoTimelineScreenState extends State<PhotoTimelineScreen> {
               return Padding(
                 padding: const EdgeInsets.all(VitalsSpacing.screenH),
                 child: Text(
-                  'Jos nema fotografija.',
+                  context.s.noPhotosYet,
                   style: theme.typography.body
                       .copyWith(color: theme.colors.inkMuted),
                 ),
@@ -81,8 +77,7 @@ class _PhotoTimelineScreenState extends State<PhotoTimelineScreen> {
                       bottom: VitalsSpacing.sm,
                     ),
                     child: Text(
-                      '${_months[int.parse(month.substring(5)) - 1]} '
-                      '${month.substring(0, 4)}.',
+                      context.s.monthYear(month),
                       style: theme.typography.label,
                     ),
                   ),
@@ -138,7 +133,7 @@ class _Thumb extends StatelessWidget {
     final file = path == null ? null : File(path!);
     return Semantics(
       button: true,
-      label: '${humanDate(photo.dayKey, withYear: true)}'
+      label: '${context.s.humanDate(photo.dayKey, withYear: true)}'
           '${photo.caption == null ? '' : ', ${photo.caption}'}',
       child: GestureDetector(
         onTap: onTap,

@@ -16,7 +16,7 @@ final class FakeUnlocker implements Unlocker {
   Future<bool> isAvailable() async => available;
 
   @override
-  Future<bool> unlock() async {
+  Future<bool> unlock({required String reason}) async {
     asked++;
     return answer;
   }
@@ -87,15 +87,15 @@ void main() {
     await tester.pumpWidget(gated(lock));
     await tester.pumpAndSettle();
 
-    expect(find.text('Tideline je zakljucan'), findsOneWidget);
+    expect(find.text('Tideline is locked'), findsOneWidget);
     expect(find.bySemanticsLabel('tajni dnevnik'), findsNothing);
     // Asked once on its own, and a refusal does not start a loop.
     expect(unlocker.asked, 1);
 
     unlocker.answer = true;
-    await tester.tap(find.text('Otkljucaj'));
+    await tester.tap(find.text('Unlock'));
     await tester.pumpAndSettle();
-    expect(find.text('Tideline je zakljucan'), findsNothing);
+    expect(find.text('Tideline is locked'), findsNothing);
     expect(find.text('tajni dnevnik'), findsOneWidget);
     semantics.dispose();
   });

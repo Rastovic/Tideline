@@ -7,6 +7,8 @@ import 'package:patterns/screens/day_grid_chart.dart';
 import 'package:patterns/screens/report_chart.dart';
 import 'package:patterns/screens/report_view_screen.dart';
 import 'package:patterns/screens/reports_screen.dart';
+import 'package:patterns/l10n/app_language.dart';
+import 'package:patterns/l10n/app_strings.dart';
 import 'package:patterns_core/patterns_core.dart';
 import 'package:patterns_data/patterns_data.dart';
 import 'package:vitals_ui/vitals_ui.dart';
@@ -39,7 +41,7 @@ Future<void> scrollTo(WidgetTester tester, Finder finder) async {
 
 ReportDefinition definitionFor(
   List<ReportSeries> series, {
-  String name = 'kreatin i nadutost',
+  String name = 'creatine and bloating',
   ReportAxis axis = ReportAxis.date,
 }) =>
     ReportDefinition(
@@ -61,8 +63,8 @@ void main() {
     await tester.pumpWidget(wrap(ReportsScreen(controller: controller)));
     await tester.pumpAndSettle();
 
-    expect(find.textContaining('Jos nijedan'), findsOneWidget);
-    for (final banned in ['preporu', 'predlaz', 'korelac', 'otkri']) {
+    expect(find.textContaining('None yet'), findsOneWidget);
+    for (final banned in ['preporu', 'predlaz', 'korelac', 'otkri', 'suggest', 'recommend', 'correlat', 'discover']) {
       expect(find.textContaining(banned), findsNothing, reason: banned);
     }
     controller.dispose();
@@ -112,8 +114,8 @@ void main() {
 
     // Coverage travels with the number: one day of thirty is a different
     // statement from twenty-eight, and hiding that is how a tracker lies.
-    expect(find.textContaining('1/30 dana'), findsOneWidget);
-    expect(find.textContaining('tipicno 6'), findsOneWidget);
+    expect(find.textContaining('1/30 days'), findsOneWidget);
+    expect(find.textContaining('typical 6'), findsOneWidget);
     for (final banned in ['dobro', 'lose', 'bolje', 'gore', 'ocjena', '%']) {
       expect(find.textContaining(banned), findsNothing, reason: banned);
     }
@@ -126,9 +128,9 @@ void main() {
     // stretch until it agrees with the series in front of it.
     final controller = await freshController();
     final bloating = controller.allMarkers
-        .firstWhere((m) => m.name == 'nadutost');
+        .firstWhere((m) => m.name == 'bloating');
     final creatine = controller.allMarkers
-        .firstWhere((m) => m.name == 'kreatin');
+        .firstWhere((m) => m.name == 'creatine');
     await controller.log(creatine.id, const BooleanValue(true));
 
     final definition = definitionFor([
@@ -143,7 +145,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byType(ReportRowChart), findsOneWidget);
-    expect(find.text('iza: kreatin'), findsOneWidget);
+    expect(find.text('behind: creatine'), findsOneWidget);
     controller.dispose();
   });
 
@@ -151,7 +153,7 @@ void main() {
       (tester) async {
     final controller = await freshController();
     final irritability = controller.allMarkers
-        .firstWhere((m) => m.name == 'razdrazljivost');
+        .firstWhere((m) => m.name == 'irritability');
     final definition = definitionFor([ReportSeries(metricId: irritability.id)]);
     await controller.saveReport(definition);
 
@@ -161,7 +163,7 @@ void main() {
     )));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Po danu ciklusa'));
+    await tester.tap(find.text('By cycle day'));
     await tester.pumpAndSettle();
 
     final saved = await controller.savedReports();
@@ -185,11 +187,11 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(
-      find.textContaining('Nijedan unos se ne dira'),
+      find.textContaining('No entry is touched'),
       findsOneWidget,
       reason: 'the one delete in the app that cannot cost data says so',
     );
-    await tester.tap(find.text('Obrisi'));
+    await tester.tap(find.text('Delete'));
     await tester.pumpAndSettle();
 
     expect(await controller.savedReports(), isEmpty);
@@ -211,7 +213,7 @@ void main() {
     )));
     await tester.pumpAndSettle();
 
-    expect(find.textContaining('vise ne postoji'), findsOneWidget);
+    expect(find.textContaining('exist any more'), findsOneWidget);
     controller.dispose();
   });
 
@@ -255,18 +257,18 @@ void main() {
       await tester.pumpAndSettle();
 
       await tester.enterText(
-        find.widgetWithText(TextField, 'Ime'),
-        'kreatin i nadutost',
+        find.widgetWithText(TextField, 'Name'),
+        'creatine and bloating',
       );
-      await scrollTo(tester, find.text('nadutost'));
-      await tester.tap(find.text('nadutost'));
+      await scrollTo(tester, find.text('bloating'));
+      await tester.tap(find.text('bloating'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Sacuvaj'));
+      await tester.tap(find.text('Save'));
       await tester.pumpAndSettle();
 
       final saved = await controller.savedReports();
       expect(saved, hasLength(1));
-      expect(saved.single.name, 'kreatin i nadutost');
+      expect(saved.single.name, 'creatine and bloating');
       expect(saved.single.series, hasLength(1));
       expect(saved.single.period.wire, 'last:30');
       controller.dispose();
@@ -280,11 +282,11 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      await tester.enterText(find.widgetWithText(TextField, 'Ime'), 'prazno');
-      await tester.tap(find.text('Sacuvaj'));
+      await tester.enterText(find.widgetWithText(TextField, 'Name'), 'prazno');
+      await tester.tap(find.text('Save'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Izaberi bar jedan marker.'), findsOneWidget);
+      expect(find.text('Pick at least one marker.'), findsOneWidget);
       expect(await controller.savedReports(), isEmpty);
       controller.dispose();
     });
@@ -343,7 +345,7 @@ void main() {
       await gesture.up();
       await tester.pumpAndSettle();
 
-      await tester.tap(find.text('Sacuvaj'));
+      await tester.tap(find.text('Save'));
       await tester.pumpAndSettle();
 
       final saved = (await controller.savedReports()).single;
@@ -403,7 +405,7 @@ void main() {
       expect(find.byType(ReportRowChart), findsNothing);
       // The facts line is unchanged: the grid answers a different question
       // about the same numbers, so it must not report different ones.
-      expect(find.textContaining('1/30 dana'), findsOneWidget);
+      expect(find.textContaining('1/30 days'), findsOneWidget);
       controller.dispose();
     });
 
@@ -422,7 +424,7 @@ void main() {
       )));
       await tester.pumpAndSettle();
 
-      for (final label in DayGridChart.weekdayLabels) {
+      for (final label in const AppStrings(AppLanguage.en).weekdays) {
         expect(find.text(label), findsOneWidget, reason: label);
       }
       controller.dispose();
@@ -441,7 +443,7 @@ void main() {
         definition: definition,
       )));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Mreza'));
+      await tester.tap(find.text('Grid'));
       await tester.pumpAndSettle();
 
       final saved = await controller.savedReports();
@@ -468,12 +470,12 @@ void main() {
         wrap(ReportBuilderScreen(controller: controller)),
       );
       await tester.pumpAndSettle();
-      await tester.enterText(find.widgetWithText(TextField, 'Ime'), 'avgust');
+      await tester.enterText(find.widgetWithText(TextField, 'Name'), 'avgust');
 
       // The range first, then the marker: `scrollUntilVisible` only walks one
       // way, and Period sits above Markeri on this form.
-      await scrollTo(tester, find.text('Raspon datuma'));
-      await tester.tap(find.text('Raspon datuma'));
+      await scrollTo(tester, find.text('Date range'));
+      await tester.tap(find.text('Date range'));
       await tester.pumpAndSettle();
 
       // The picker opens on today, which is the only date guaranteed to be on
@@ -483,13 +485,13 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.text('${today.day}').last);
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Uzmi'));
+      await tester.tap(find.text('Use'));
       await tester.pumpAndSettle();
 
-      await scrollTo(tester, find.text('nadutost'));
-      await tester.tap(find.text('nadutost'));
+      await scrollTo(tester, find.text('bloating'));
+      await tester.tap(find.text('bloating'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Sacuvaj'));
+      await tester.tap(find.text('Save'));
       await tester.pumpAndSettle();
 
       final saved = await controller.savedReports();
@@ -508,14 +510,14 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      await scrollTo(tester, find.text('Raspon datuma'));
-      await tester.tap(find.text('Raspon datuma'));
+      await scrollTo(tester, find.text('Date range'));
+      await tester.tap(find.text('Date range'));
       await tester.pumpAndSettle();
       await tester.tap(find.byIcon(Icons.close));
       await tester.pumpAndSettle();
 
-      expect(find.text('Raspon datuma'), findsOneWidget);
-      expect(find.text('mjesec'), findsOneWidget);
+      expect(find.text('Date range'), findsOneWidget);
+      expect(find.text('month'), findsOneWidget);
       controller.dispose();
     });
 

@@ -120,14 +120,14 @@ List<Metric> seedMetrics({required DateTime createdAt}) {
     // A plain 1-10, not a two-axis pad. The pad's argument was that "anxious"
     // and "numb" are both a 2 on one scale - true, and the named feelings below
     // carry that split instead, at a fraction of the interaction cost.
-    scale(seedIds['mood']!, 'raspolozenje', MetricDomain.mind, '#3B6FE0',
-        low: 'grozno', high: 'odlicno'),
-    scale(seedIds['tiredness']!, 'umor', MetricDomain.mind, '#5A6BA8',
-        low: 'iscrpljena', high: 'odmorna'),
-    scale(seedIds['motivation']!, 'motivacija', MetricDomain.mind, '#17A2A2',
-        low: 'nikakva', high: 'puna'),
-    scale(seedIds['irritability']!, 'razdrazljivost', MetricDomain.mind, '#D93B3B',
-        low: 'mirna', high: 'sve me nervira'),
+    scale(seedIds['mood']!, 'mood', MetricDomain.mind, '#3B6FE0',
+        low: 'awful', high: 'great'),
+    scale(seedIds['tiredness']!, 'tiredness', MetricDomain.mind, '#5A6BA8',
+        low: 'exhausted', high: 'rested'),
+    scale(seedIds['motivation']!, 'motivation', MetricDomain.mind, '#17A2A2',
+        low: 'none', high: 'full'),
+    scale(seedIds['irritability']!, 'irritability', MetricDomain.mind, '#D93B3B',
+        low: 'calm', high: 'everything annoys me'),
 
     // Feelings are tags rather than eight sliders because they are events, not
     // levels: most days most of them are absent, and an empty row is the honest
@@ -135,21 +135,21 @@ List<Metric> seedMetrics({required DateTime createdAt}) {
     // recorded fact and not a skipped day.
     Metric.create(
       id: seedIds['feelings']!,
-      name: 'osjecanja',
+      name: 'feelings',
       domain: MetricDomain.mind,
       kind: MetricKind.tags,
       createdAt: createdAt,
       colorHex: '#8E5BD6',
       sortOrder: order++,
       options: [
-        MetricOption(id: seedOptionIds['feelings.tuga']!, label: 'tuga', colorHex: '#4C7BD9', sortOrder: 0),
-        MetricOption(id: seedOptionIds['feelings.overthink']!, label: 'overthink', colorHex: '#8E6BD6', sortOrder: 1),
-        MetricOption(id: seedOptionIds['feelings.anksioznost']!, label: 'anksioznost', colorHex: '#C4478E', sortOrder: 2),
-        MetricOption(id: seedOptionIds['feelings.ravnodusnost']!, label: 'ravnodusnost', colorHex: '#8A94A6', sortOrder: 3),
-        MetricOption(id: seedOptionIds['feelings.preplavljenost']!, label: 'preplavljenost', colorHex: '#E2711D', sortOrder: 4),
-        MetricOption(id: seedOptionIds['feelings.sram']!, label: 'sram', colorHex: '#B5573F', sortOrder: 5),
-        MetricOption(id: seedOptionIds['feelings.usamljenost']!, label: 'usamljenost', colorHex: '#4A8FA8', sortOrder: 6),
-        MetricOption(id: seedOptionIds['feelings.ljutnja']!, label: 'ljutnja', colorHex: '#D93B3B', sortOrder: 7),
+        MetricOption(id: seedOptionIds['feelings.tuga']!, label: 'sadness', colorHex: '#4C7BD9', sortOrder: 0),
+        MetricOption(id: seedOptionIds['feelings.overthink']!, label: 'overthinking', colorHex: '#8E6BD6', sortOrder: 1),
+        MetricOption(id: seedOptionIds['feelings.anksioznost']!, label: 'anxiety', colorHex: '#C4478E', sortOrder: 2),
+        MetricOption(id: seedOptionIds['feelings.ravnodusnost']!, label: 'numbness', colorHex: '#8A94A6', sortOrder: 3),
+        MetricOption(id: seedOptionIds['feelings.preplavljenost']!, label: 'overwhelm', colorHex: '#E2711D', sortOrder: 4),
+        MetricOption(id: seedOptionIds['feelings.sram']!, label: 'shame', colorHex: '#B5573F', sortOrder: 5),
+        MetricOption(id: seedOptionIds['feelings.usamljenost']!, label: 'loneliness', colorHex: '#4A8FA8', sortOrder: 6),
+        MetricOption(id: seedOptionIds['feelings.ljutnja']!, label: 'anger', colorHex: '#D93B3B', sortOrder: 7),
       ],
     ),
 
@@ -158,26 +158,26 @@ List<Metric> seedMetrics({required DateTime createdAt}) {
     // own answer, without the app offering one.
     Metric.create(
       id: seedIds['context']!,
-      name: 'kontekst',
+      name: 'context',
       domain: MetricDomain.mind,
       kind: MetricKind.tags,
       createdAt: createdAt,
       colorHex: '#7A8A99',
       sortOrder: order++,
       options: [
-        MetricOption(id: seedOptionIds['context.posao']!, label: 'posao', sortOrder: 0),
-        MetricOption(id: seedOptionIds['context.konflikt']!, label: 'konflikt', sortOrder: 1),
-        MetricOption(id: seedOptionIds['context.los-san']!, label: 'los san', sortOrder: 2),
-        MetricOption(id: seedOptionIds['context.novac']!, label: 'novac', sortOrder: 3),
-        MetricOption(id: seedOptionIds['context.samoca']!, label: 'samoca', sortOrder: 4),
-        MetricOption(id: seedOptionIds['context.bolest']!, label: 'bolest', sortOrder: 5),
-        MetricOption(id: seedOptionIds['context.putovanje']!, label: 'putovanje', sortOrder: 6),
+        MetricOption(id: seedOptionIds['context.posao']!, label: 'work', sortOrder: 0),
+        MetricOption(id: seedOptionIds['context.konflikt']!, label: 'conflict', sortOrder: 1),
+        MetricOption(id: seedOptionIds['context.los-san']!, label: 'bad sleep', sortOrder: 2),
+        MetricOption(id: seedOptionIds['context.novac']!, label: 'money', sortOrder: 3),
+        MetricOption(id: seedOptionIds['context.samoca']!, label: 'alone', sortOrder: 4),
+        MetricOption(id: seedOptionIds['context.bolest']!, label: 'illness', sortOrder: 5),
+        MetricOption(id: seedOptionIds['context.putovanje']!, label: 'travel', sortOrder: 6),
       ],
     ),
 
     Metric.create(
       id: seedIds['diary']!,
-      name: 'dnevnik',
+      name: 'diary',
       domain: MetricDomain.mind,
       kind: MetricKind.text,
       createdAt: createdAt,
@@ -188,7 +188,7 @@ List<Metric> seedMetrics({required DateTime createdAt}) {
     // --- Body -------------------------------------------------------------
     Metric.create(
       id: seedIds['creatine']!,
-      name: 'kreatin',
+      name: 'creatine',
       domain: MetricDomain.body,
       kind: MetricKind.boolean,
       createdAt: createdAt,
@@ -197,7 +197,7 @@ List<Metric> seedMetrics({required DateTime createdAt}) {
     ),
     Metric.create(
       id: seedIds['creatine-dose']!,
-      name: 'kreatin doza',
+      name: 'creatine dose',
       domain: MetricDomain.body,
       kind: MetricKind.amount,
       createdAt: createdAt,
@@ -207,27 +207,27 @@ List<Metric> seedMetrics({required DateTime createdAt}) {
     ),
     // Peak rather than typical: what you remember about a bloated day is how
     // bad it got, and a median over three readings hides exactly that.
-    scale(seedIds['bloating']!, 'nadutost', MetricDomain.body, '#E2711D',
-        low: 'nista', high: 'jako', rule: DayAggregation.peak),
+    scale(seedIds['bloating']!, 'bloating', MetricDomain.body, '#E2711D',
+        low: 'none', high: 'severe', rule: DayAggregation.peak),
     Metric.create(
       id: seedIds['training']!,
-      name: 'trening',
+      name: 'training',
       domain: MetricDomain.body,
       kind: MetricKind.boolean,
       createdAt: createdAt,
       colorHex: '#3F8FA8',
       sortOrder: order++,
     ),
-    scale(seedIds['training-quality']!, 'trening kvalitet', MetricDomain.body, '#E0A100',
-        low: 'jedva', high: 'odlicno'),
-    scale(seedIds['appetite']!, 'apetit', MetricDomain.body, '#C4478E',
-        low: 'nikakav', high: 'ogroman'),
-    scale(seedIds['overeating-urge']!, 'zelja za prejedanjem', MetricDomain.body,
+    scale(seedIds['training-quality']!, 'training quality', MetricDomain.body, '#E0A100',
+        low: 'barely', high: 'great'),
+    scale(seedIds['appetite']!, 'appetite', MetricDomain.body, '#C4478E',
+        low: 'none', high: 'huge'),
+    scale(seedIds['overeating-urge']!, 'urge to overeat', MetricDomain.body,
         '#8E5BD6',
-        low: 'nema', high: 'jaka', rule: DayAggregation.peak),
+        low: 'none', high: 'strong', rule: DayAggregation.peak),
     Metric.create(
       id: seedIds['bedtime']!,
-      name: 'lijeganje',
+      name: 'bedtime',
       domain: MetricDomain.body,
       kind: MetricKind.timeOfDay,
       createdAt: createdAt,
@@ -236,7 +236,7 @@ List<Metric> seedMetrics({required DateTime createdAt}) {
     ),
     Metric.create(
       id: seedIds['waketime']!,
-      name: 'ustajanje',
+      name: 'wake-up',
       domain: MetricDomain.body,
       kind: MetricKind.timeOfDay,
       createdAt: createdAt,
@@ -250,7 +250,7 @@ List<Metric> seedMetrics({required DateTime createdAt}) {
     // this domain owns no symptom and claims no meaning.
     Metric.create(
       id: seedIds['period-start']!,
-      name: 'pocetak ciklusa',
+      name: 'period start',
       domain: MetricDomain.cycle,
       kind: MetricKind.boolean,
       createdAt: createdAt,
@@ -259,7 +259,7 @@ List<Metric> seedMetrics({required DateTime createdAt}) {
     ),
     Metric.create(
       id: seedIds['period-end']!,
-      name: 'kraj ciklusa',
+      name: 'period end',
       domain: MetricDomain.cycle,
       kind: MetricKind.boolean,
       createdAt: createdAt,

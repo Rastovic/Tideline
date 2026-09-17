@@ -9,6 +9,8 @@ import '../data/photo_picker.dart';
 import 'day_photos.dart';
 import 'log_sheet.dart';
 import 'metric_labels.dart';
+import '../l10n/app_language.dart';
+import '../l10n/app_strings.dart';
 
 /// Everything recorded on one day, in the order it happened.
 ///
@@ -76,7 +78,7 @@ class _DayDetailScreenState extends State<DayDetailScreen> {
       initialDate: current,
       firstDate: DateTime(today.year - 5),
       lastDate: today,
-      helpText: 'Idi na dan',
+      helpText: context.s.goToDay,
     );
     if (picked == null) return;
     _show(formatDayKey(picked.year, picked.month, picked.day));
@@ -104,7 +106,7 @@ class _DayDetailScreenState extends State<DayDetailScreen> {
             children: [
               ListTile(
                 leading: const Icon(Icons.add_a_photo_outlined),
-                title: const Text('Fotografija dana'),
+                title: Text(context.s.photoOfTheDay),
                 onTap: () => Navigator.of(context).pop('free-photo'),
               ),
               const Divider(height: 1),
@@ -177,12 +179,12 @@ class _DayDetailScreenState extends State<DayDetailScreen> {
           children: [
             ListTile(
               leading: const Icon(Icons.photo_camera_outlined),
-              title: const Text('Slikaj'),
+              title: Text(context.s.takePhoto),
               onTap: () => Navigator.of(context).pop(PhotoSource.camera),
             ),
             ListTile(
               leading: const Icon(Icons.photo_library_outlined),
-              title: const Text('Iz galerije'),
+              title: Text(context.s.fromGallery),
               onTap: () => Navigator.of(context).pop(PhotoSource.gallery),
             ),
           ],
@@ -212,19 +214,19 @@ class _DayDetailScreenState extends State<DayDetailScreen> {
     final ok = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Obrisati unos?'),
+        title: Text(context.s.deleteEntryQuestion),
         content: Text(
-          '${metric?.name ?? 'Unos'}: '
-          '${describeValue(observation.value, metric)}',
+          '${metric?.name ?? context.s.entry}: '
+          '${describeValue(observation.value, metric, context.s)}',
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Odustani'),
+            child: Text(context.s.cancel),
           ),
           TextButton(
             onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Obrisi'),
+            child: Text(context.s.delete),
           ),
         ],
       ),
@@ -245,13 +247,13 @@ class _DayDetailScreenState extends State<DayDetailScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(humanDate(_dayKey, withYear: true)),
+              Text(context.s.humanDate(_dayKey, withYear: true)),
               FutureBuilder<int?>(
                 future: _cycleDay,
                 builder: (context, snapshot) => snapshot.data == null
                     ? const SizedBox.shrink()
                     : Text(
-                        'dan ciklusa ${snapshot.data}',
+                        context.s.cycleDay(snapshot.data!),
                         style: theme.typography.caption
                             .copyWith(color: theme.colors.inkMuted),
                       ),
@@ -261,17 +263,17 @@ class _DayDetailScreenState extends State<DayDetailScreen> {
         ),
         actions: [
           IconButton(
-            tooltip: 'Prethodni dan',
+            tooltip: context.s.previousDay,
             icon: const Icon(Icons.chevron_left),
             onPressed: () => _show(addDays(_dayKey, -1)),
           ),
           IconButton(
-            tooltip: 'Idi na dan',
+            tooltip: context.s.goToDay,
             icon: const Icon(Icons.calendar_month_outlined),
             onPressed: _pickDay,
           ),
           IconButton(
-            tooltip: 'Sljedeci dan',
+            tooltip: context.s.nextDay,
             icon: const Icon(Icons.chevron_right),
             onPressed: _isToday ? null : () => _show(addDays(_dayKey, 1)),
           ),
@@ -279,7 +281,7 @@ class _DayDetailScreenState extends State<DayDetailScreen> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: _addEntry,
-        tooltip: 'Dodaj unos',
+        tooltip: context.s.addEntry,
         child: const Icon(Icons.add),
       ),
       body: FutureBuilder<List<Observation>>(
@@ -310,7 +312,7 @@ class _DayDetailScreenState extends State<DayDetailScreen> {
                 photoStrip,
                 Center(
                   child: Text(
-                    'Nista zabiljezeno.',
+                    context.s.nothingLogged,
                     style: theme.typography.body.copyWith(
                       color: theme.colors.inkMuted,
                     ),
@@ -392,19 +394,19 @@ class _ReadingCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    metric?.name ?? 'nepoznat marker',
+                    metric?.name ?? context.s.unknownMarker,
                     style: theme.typography.label,
                   ),
                   const SizedBox(height: VitalsSpacing.xs),
                   Text(
-                    describeValue(observation.value, metric),
+                    describeValue(observation.value, metric, context.s),
                     style: theme.typography.body,
                   ),
                   if (observation.value case TextValue(isPrivate: true))
                     Padding(
                       padding: const EdgeInsets.only(top: VitalsSpacing.xs),
                       child: Text(
-                        'privatno',
+                        context.s.privateLower,
                         style: theme.typography.caption.copyWith(
                           color: colors.inkFaint,
                         ),
@@ -414,7 +416,7 @@ class _ReadingCard extends StatelessWidget {
                     Padding(
                       padding: const EdgeInsets.only(top: VitalsSpacing.xs),
                       child: Text(
-                        'uneseno naknadno',
+                        context.s.enteredLate,
                         style: theme.typography.caption.copyWith(
                           color: colors.inkFaint,
                         ),
@@ -434,10 +436,11 @@ class _ReadingCard extends StatelessWidget {
 ///
 /// Tags are named rather than counted, because "tuga, overthink" is the thing
 /// worth reading back and "2 tags" is not.
-String describeValue(MetricValue value, Metric? metric) => switch (value) {
+String describeValue(MetricValue value, Metric? metric, AppStrings s) =>
+    switch (value) {
       NumberValue(:final number) =>
         '$number${metric?.unit == null ? '' : ' ${metric!.unit}'}',
-      BooleanValue(value: final flag) => flag ? 'da' : 'ne',
+      BooleanValue(value: final flag) => flag ? s.yes : s.no,
       TextValue(:final text) => text,
       TimeOfDayValue() => value.toString().replaceAll('TimeOfDayValue(', '')
           .replaceAll(')', ''),
@@ -445,9 +448,9 @@ String describeValue(MetricValue value, Metric? metric) => switch (value) {
       TagsValue(:final optionIds) => optionIds.isEmpty
           // The recorded answer, spelled out. An empty line here would read as
           // a bug, and worse, as a day that was never filled in.
-          ? 'nista od ovoga'
+          ? s.noneOfThese
           : optionIds.map((id) => _labelFor(metric, id)).join(', '),
-      PhotoValue(:final caption) => caption ?? 'fotografija',
+      PhotoValue(:final caption) => caption ?? s.photoLower,
     };
 
 String _labelFor(Metric? metric, String optionId) {

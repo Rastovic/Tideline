@@ -19,7 +19,7 @@
         android:id="@+id/widget_empty"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Izaberi markere u Podesavanjima"
+        android:text="Pick markers in Settings"
         android:textColor="@color/widget_ink_muted"
         android:textSize="13sp"
         android:visibility="gone" />

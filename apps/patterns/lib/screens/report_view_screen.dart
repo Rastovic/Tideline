@@ -4,6 +4,7 @@ import 'package:vitals_core/vitals_core.dart';
 import 'package:vitals_ui/vitals_ui.dart';
 
 import '../data/patterns_controller.dart';
+import 'day_detail_screen.dart';
 import 'day_grid_chart.dart';
 import 'metric_labels.dart';
 import 'report_builder_screen.dart';
@@ -152,7 +153,20 @@ class _ReportViewScreenState extends State<ReportViewScreen> {
                           .copyWith(color: theme.colors.inkMuted),
                     ),
                   for (final row in report.rows) ...[
-                    _RowBlock(row: row, report: report),
+                    _RowBlock(
+                      row: row,
+                      report: report,
+                      onDayTap: report.definition.axis == ReportAxis.cycleDay
+                          ? null
+                          : (dayKey) => Navigator.of(context).push(
+                                MaterialPageRoute<void>(
+                                  builder: (_) => DayDetailScreen(
+                                    controller: widget.controller,
+                                    dayKey: dayKey,
+                                  ),
+                                ),
+                              ),
+                    ),
                     const SizedBox(height: VitalsSpacing.xl),
                   ],
                 ],
@@ -184,10 +198,11 @@ class _ReportViewScreenState extends State<ReportViewScreen> {
 }
 
 class _RowBlock extends StatelessWidget {
-  const _RowBlock({required this.row, required this.report});
+  const _RowBlock({required this.row, required this.report, this.onDayTap});
 
   final ReportRow row;
   final Report report;
+  final ValueChanged<String>? onDayTap;
 
   @override
   Widget build(BuildContext context) {
@@ -220,9 +235,14 @@ class _RowBlock extends StatelessWidget {
         // Same cells either way - the grid is a layout, not a different
         // reading of the data.
         if (report.definition.axis == ReportAxis.grid)
-          DayGridChart(row: row, dayKeys: report.dayKeys, color: color)
+          DayGridChart(
+            row: row,
+            dayKeys: report.dayKeys,
+            color: color,
+            onDayTap: onDayTap,
+          )
         else
-          ReportRowChart(row: row, color: color),
+          ReportRowChart(row: row, color: color, onDayTap: onDayTap),
         const SizedBox(height: VitalsSpacing.xs),
         Text(
           _facts(row),

@@ -47,6 +47,15 @@ class _LogSheetState extends State<_LogSheet> {
   late final Set<String> _picked = _initialTags();
   late final TextEditingController _text =
       TextEditingController(text: _initialText());
+
+  /// The amount as typed. Starts from the reading being edited, so an edit
+  /// shows the number it is changing instead of a blank field.
+  late final TextEditingController _amountText = TextEditingController(
+    text: switch (widget.initial) {
+      NumberValue(:final number) => _plain(number),
+      _ => '',
+    },
+  );
   late TimeOfDay _time = _initialTime();
   late bool _private = switch (widget.initial) {
     TextValue(:final isPrivate) => isPrivate,
@@ -88,8 +97,24 @@ class _LogSheetState extends State<_LogSheet> {
     return TimeOfDay.now();
   }
 
+  static String _plain(num value) => value == value.roundToDouble()
+      ? '${value.round()}'
+      : '$value';
+
+  /// Null for anything that is not a number, or is below zero.
+  ///
+  /// **An empty or unreadable field is not zero.** Saving it as 0 g would put
+  /// a reading on the day that nobody made, and a dose of 0 is a real answer
+  /// that means something different from "not typed".
+  num? get _typedAmount {
+    final parsed = num.tryParse(_amountText.text.trim().replaceAll(',', '.'));
+    if (parsed == null || parsed < 0 || !parsed.isFinite) return null;
+    return parsed;
+  }
+
   @override
   void dispose() {
+    _amountText.dispose();
     _text.dispose();
     super.dispose();
   }
@@ -231,13 +256,13 @@ class _LogSheetState extends State<_LogSheet> {
         children: [
           Expanded(
             child: TextField(
+              controller: _amountText,
               autofocus: true,
               keyboardType:
                   const TextInputType.numberWithOptions(decimal: true),
               style: theme.typography.displayL,
               decoration: const InputDecoration(hintText: '0'),
-              onChanged: (raw) =>
-                  _number = num.tryParse(raw.replaceAll(',', '.')) ?? 0,
+              onChanged: (_) => setState(() {}),
             ),
           ),
           if (unit.isNotEmpty) ...[
@@ -247,9 +272,14 @@ class _LogSheetState extends State<_LogSheet> {
         ],
       ),
       const SizedBox(height: VitalsSpacing.xl),
-      _primary('Zabiljezi', () {
-        _submit(NumberValue(_number, kind: metric.kind));
-      }),
+      _primary(
+        'Zabiljezi',
+        switch (_typedAmount) {
+          final amount? => () =>
+              _submit(NumberValue(amount, kind: metric.kind)),
+          null => null,
+        },
+      ),
     ];
   }
 
@@ -301,13 +331,19 @@ class _LogSheetState extends State<_LogSheet> {
         _secondary('Nista od ovoga', () => _submit(TagsValue(const []))),
         const SizedBox(height: VitalsSpacing.md),
       ],
-      _primary('Zabiljezi', () {
-        if (multiple) {
-          _submit(TagsValue(_picked));
-        } else if (_picked.isNotEmpty) {
-          _submit(ChoiceValue(_picked.first));
-        }
-      }),
+      // Nothing picked is not an answer here. "None of these" has its own
+      // button, and letting an empty tap record it would put that answer on
+      // days nobody gave it.
+      _primary(
+        'Zabiljezi',
+        _picked.isEmpty
+            ? null
+            : () => _submit(
+                  multiple
+                      ? TagsValue(_picked)
+                      : ChoiceValue(_picked.first),
+                ),
+      ),
     ];
   }
 
@@ -318,6 +354,7 @@ class _LogSheetState extends State<_LogSheet> {
           maxLines: 8,
           minLines: 4,
           style: theme.typography.body,
+          onChanged: (_) => setState(() {}),
           decoration: const InputDecoration(
             hintText: 'Kako je bilo, i zbog cega',
           ),
@@ -342,7 +379,9 @@ class _LogSheetState extends State<_LogSheet> {
         const SizedBox(height: VitalsSpacing.lg),
         _primary(
           'Sacuvaj',
-          () => _submit(TextValue(_text.text, isPrivate: _private)),
+          _text.text.trim().isEmpty
+              ? null
+              : () => _submit(TextValue(_text.text.trim(), isPrivate: _private)),
         ),
       ];
 
@@ -369,7 +408,7 @@ class _LogSheetState extends State<_LogSheet> {
         }),
       ];
 
-  Widget _primary(String label, VoidCallback onPressed) => SizedBox(
+  Widget _primary(String label, VoidCallback? onPressed) => SizedBox(
         height: VitalsSpacing.buttonHeight,
         child: FilledButton(onPressed: onPressed, child: Text(label)),
       );

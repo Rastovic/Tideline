@@ -341,6 +341,24 @@ final class PatternsController extends ChangeNotifier {
     await refresh(now: at);
   }
 
+  /// Records a reading on [dayKey]: an ordinary one when that is today, a
+  /// marked late one when it is not.
+  ///
+  /// Today is re-read first, because a screen opened before the day boundary
+  /// can still be holding yesterday as "today".
+  Future<void> logOn(String dayKey, String metricId, MetricValue value) async {
+    await refresh();
+    if (dayKey == _today) {
+      await log(metricId, value);
+    } else {
+      await logForDay(metricId, value, dayKey);
+    }
+  }
+
+  /// Which cycle day [dayKey] was, or null where it cannot be counted.
+  Future<int?> cycleDayOn(String dayKey) async =>
+      cycleDayFor(dayKey, await cyclePeriods());
+
   /// Records one reading against a day chosen by hand.
   Future<void> logForDay(
     String metricId,

@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:patterns_core/patterns_core.dart';
-import 'package:vitals_ui/vitals_ui.dart';
-
 import 'package:patterns_data/patterns_data.dart';
+import 'package:vitals_core/vitals_core.dart';
+import 'package:vitals_ui/vitals_ui.dart';
 
 import '../data/patterns_controller.dart';
 import '../data/photo_picker.dart';
 import 'day_photos.dart';
 import 'log_sheet.dart';
+import 'metric_labels.dart';
 
 /// Everything recorded on one day, in the order it happened.
 ///
@@ -34,19 +35,120 @@ class DayDetailScreen extends StatefulWidget {
 }
 
 class _DayDetailScreenState extends State<DayDetailScreen> {
+  late String _dayKey = widget.dayKey;
   late Future<List<Observation>> _readings = _load();
   late Future<List<StoredPhoto>> _photos = _loadPhotos();
+  late Future<int?> _cycleDay = widget.controller.cycleDayOn(_dayKey);
 
   Future<List<Observation>> _load() =>
-      widget.controller.readingsOn(widget.dayKey);
+      widget.controller.readingsOn(_dayKey);
 
   Future<List<StoredPhoto>> _loadPhotos() =>
-      widget.controller.photosOn(widget.dayKey);
+      widget.controller.photosOn(_dayKey);
 
-  void _reload() => setState(() {
-        _readings = _load();
-        _photos = _loadPhotos();
-      });
+  /// Guarded, because a capture finishes after the camera returns and the
+  /// screen may be gone by then.
+  void _reload() {
+    if (!mounted) return;
+    setState(() {
+      _readings = _load();
+      _photos = _loadPhotos();
+      _cycleDay = widget.controller.cycleDayOn(_dayKey);
+    });
+  }
+
+  bool get _isToday => _dayKey.compareTo(widget.controller.today) >= 0;
+
+  /// Moves to another day. **Never past today**: a day that has not happened
+  /// has nothing to show, and logging into it would be a reading from the
+  /// future.
+  void _show(String dayKey) {
+    if (dayKey.compareTo(widget.controller.today) > 0) return;
+    _dayKey = dayKey;
+    _reload();
+  }
+
+  Future<void> _pickDay() async {
+    final today = parseDayKey(widget.controller.today)!;
+    final current = parseDayKey(_dayKey) ?? today;
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: current,
+      firstDate: DateTime(today.year - 5),
+      lastDate: today,
+      helpText: 'Idi na dan',
+    );
+    if (picked == null) return;
+    _show(formatDayKey(picked.year, picked.month, picked.day));
+  }
+
+  /// Adds a reading to this day, whichever day it is.
+  ///
+  /// The way to fill in a day that was missed - last night's mood remembered
+  /// this morning, or a period that started yesterday. A reading added to a
+  /// past day is marked as entered late rather than passed off as noticed.
+  Future<void> _addEntry() async {
+    final markers = widget.controller.allMarkers
+        .where((m) => m.isActive)
+        .toList();
+    final choice = await showModalBottomSheet<Object>(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) => SafeArea(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(context).size.height * 0.7,
+          ),
+          child: ListView(
+            shrinkWrap: true,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.add_a_photo_outlined),
+                title: const Text('Fotografija dana'),
+                onTap: () => Navigator.of(context).pop('free-photo'),
+              ),
+              const Divider(height: 1),
+              for (final metric in markers)
+                ListTile(
+                  leading: Icon(
+                    Icons.circle,
+                    size: 12,
+                    color: markerColor(metric.colorHex),
+                  ),
+                  title: Text(metric.name),
+                  onTap: () => Navigator.of(context).pop(metric),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+    if (!mounted || choice == null) return;
+    if (choice == 'free-photo') {
+      await _pickSource();
+      return;
+    }
+    final metric = choice as Metric;
+    final value = await showLogSheet(
+      context,
+      metric: metric,
+      onCapture: metric.kind == MetricKind.photo
+          ? (source) async {
+              final bytes = await widget.picker.pick(source);
+              if (bytes == null) return;
+              await widget.controller.capturePhoto(
+                bytes,
+                metricId: metric.id,
+                dayKey: _dayKey,
+              );
+              _reload();
+            }
+          : null,
+    );
+    if (value == null) return;
+    await widget.controller.logOn(_dayKey, metric.id, value);
+    _reload();
+  }
 
   /// A photo that belongs to the day rather than to any marker.
   ///
@@ -56,7 +158,7 @@ class _DayDetailScreenState extends State<DayDetailScreen> {
   Future<void> _addFreePhoto(PhotoSource source) async {
     final bytes = await widget.picker.pick(source);
     if (bytes == null) return;
-    await widget.controller.capturePhoto(bytes, dayKey: widget.dayKey);
+    await widget.controller.capturePhoto(bytes, dayKey: _dayKey);
     _reload();
   }
 
@@ -97,7 +199,31 @@ class _DayDetailScreenState extends State<DayDetailScreen> {
     _reload();
   }
 
+  /// Asked first. A long-press is easy to make by accident while scrolling,
+  /// and a reading deleted from a day months ago cannot be remembered back.
   Future<void> _delete(Observation observation) async {
+    final metric = widget.controller.byId(observation.metricId);
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Obrisati unos?'),
+        content: Text(
+          '${metric?.name ?? 'Unos'}: '
+          '${describeValue(observation.value, metric)}',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Odustani'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Obrisi'),
+          ),
+        ],
+      ),
+    );
+    if (ok != true) return;
     await widget.controller.deleteReading(observation.id);
     _reload();
   }
@@ -107,11 +233,48 @@ class _DayDetailScreenState extends State<DayDetailScreen> {
     final theme = VitalsTheme.of(context);
 
     return Scaffold(
-      appBar: AppBar(title: Text(widget.dayKey)),
+      appBar: AppBar(
+        title: GestureDetector(
+          onTap: _pickDay,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(humanDate(_dayKey, withYear: true)),
+              FutureBuilder<int?>(
+                future: _cycleDay,
+                builder: (context, snapshot) => snapshot.data == null
+                    ? const SizedBox.shrink()
+                    : Text(
+                        'dan ciklusa ${snapshot.data}',
+                        style: theme.typography.caption
+                            .copyWith(color: theme.colors.inkMuted),
+                      ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          IconButton(
+            tooltip: 'Prethodni dan',
+            icon: const Icon(Icons.chevron_left),
+            onPressed: () => _show(addDays(_dayKey, -1)),
+          ),
+          IconButton(
+            tooltip: 'Idi na dan',
+            icon: const Icon(Icons.calendar_month_outlined),
+            onPressed: _pickDay,
+          ),
+          IconButton(
+            tooltip: 'Sljedeci dan',
+            icon: const Icon(Icons.chevron_right),
+            onPressed: _isToday ? null : () => _show(addDays(_dayKey, 1)),
+          ),
+        ],
+      ),
       floatingActionButton: FloatingActionButton(
-        onPressed: _pickSource,
-        tooltip: 'Dodaj fotografiju',
-        child: const Icon(Icons.add_a_photo_outlined),
+        onPressed: _addEntry,
+        tooltip: 'Dodaj unos',
+        child: const Icon(Icons.add),
       ),
       body: FutureBuilder<List<Observation>>(
         future: _readings,

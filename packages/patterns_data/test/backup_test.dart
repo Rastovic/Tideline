@@ -234,4 +234,25 @@ void main() {
       expect(result.error, isNotNull);
     });
   });
+  test('a damaged byte anywhere is a refusal, never a crash', () async {
+    // A download cut short or a file mangled by a cloud drive can break the
+    // compressed stream or the manifest itself, not only a checksum. Every
+    // one of those has to come back as an error the screen can say, because a
+    // throw here is a restore screen that freezes with no explanation.
+    final bytes = await exportAll();
+    final crashes = <int>[];
+    for (var i = 0; i < bytes.length; i++) {
+      final damaged = Uint8List.fromList(bytes);
+      damaged[i] ^= 0xFF;
+      try {
+        const ArchiveReader().read(
+          damaged,
+          appSchemaVersion: PatternsDatabase.currentSchemaVersion,
+        );
+      } on Object {
+        crashes.add(i);
+      }
+    }
+    expect(crashes, isEmpty, reason: '${crashes.length} positions threw');
+  });
 }

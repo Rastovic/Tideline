@@ -10,6 +10,7 @@ import 'day_detail_screen.dart';
 import 'log_sheet.dart';
 import 'metric_labels.dart';
 import 'metrics_screen.dart';
+import 'photo_timeline_screen.dart';
 import 'report_view_screen.dart';
 import 'reports_screen.dart';
 import 'search_screen.dart';
@@ -46,8 +47,30 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   PatternsController get controller => widget.controller;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  /// Re-reads the day on every return to the app.
+  ///
+  /// A phone keeps the app alive in the background for days. Without this, one
+  /// opened in the morning still shows yesterday's date and yesterday's ticks,
+  /// which reads as today already being logged.
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) controller.refresh();
+  }
 
   late ReminderSettings _settings = widget.initialSettings;
 
@@ -67,6 +90,15 @@ class _HomeScreenState extends State<HomeScreen> {
     );
     if (value == null) return;
     await controller.log(metric.id, value);
+  }
+
+  void _openTimeline(Metric metric) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) =>
+            PhotoTimelineScreen(controller: controller, metric: metric),
+      ),
+    );
   }
 
   void _openReport(Metric metric) {
@@ -184,7 +216,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       ],
                     ),
                     Text(
-                      _humanDate(controller.today),
+                      humanDate(controller.today),
                       style: theme.typography.displayL,
                     ),
                   ],
@@ -209,11 +241,14 @@ class _HomeScreenState extends State<HomeScreen> {
                       _MarkerRow(
                         status: status,
                         onTap: () => _log(status.metric),
-                        // A diary or a photo has nothing to chart. Holding it
-                        // does nothing rather than opening an empty report.
-                        onLongPress: status.metric.displayStyle == null
-                            ? null
-                            : () => _openReport(status.metric),
+                        // A photo marker opens its timeline; a diary has
+                        // nothing to chart, so holding it does nothing.
+                        onLongPress: switch (status.metric) {
+                          Metric(kind: MetricKind.photo) => () =>
+                              _openTimeline(status.metric),
+                          Metric(displayStyle: null) => null,
+                          _ => () => _openReport(status.metric),
+                        },
                       ),
                   ],
               ],
@@ -224,19 +259,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  /// `2026-08-19` as `19. avgust`. No weekday and no relative wording: "danas"
-  /// on a screen you open at 01:00 with a 04:00 day boundary is a lie.
-  static String _humanDate(String dayKey) {
-    const months = [
-      'januar', 'februar', 'mart', 'april', 'maj', 'jun',
-      'jul', 'avgust', 'septembar', 'oktobar', 'novembar', 'decembar',
-    ];
-    final parts = dayKey.split('-');
-    if (parts.length != 3) return dayKey;
-    final month = int.tryParse(parts[1]) ?? 1;
-    final day = int.tryParse(parts[2]) ?? 1;
-    return '$day. ${months[(month - 1).clamp(0, 11)]}';
-  }
 }
 
 class _MarkerRow extends StatelessWidget {

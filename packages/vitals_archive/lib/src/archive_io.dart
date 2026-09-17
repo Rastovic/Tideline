@@ -120,9 +120,17 @@ final class ArchiveReader {
     required int appSchemaVersion,
     bool verifyChecksums = true,
   }) {
-    Archive archive;
+    // Everything, not only the zip directory. The directory can survive
+    // damage that the compressed entries or the manifest text do not, and
+    // those throw later - from `readBytes`, from `utf8.decode` - when an
+    // entry is actually inflated. A throw from any of them is the same fact
+    // for the person restoring: this file cannot be trusted.
     try {
-      archive = ZipDecoder().decodeBytes(zipBytes);
+      return _read(
+        zipBytes,
+        appSchemaVersion: appSchemaVersion,
+        verifyChecksums: verifyChecksums,
+      );
     } on Object {
       return (
         contents: null,
@@ -132,6 +140,14 @@ final class ArchiveReader {
         ),
       );
     }
+  }
+
+  ({ArchiveContents? contents, ArchiveError? error}) _read(
+    Uint8List zipBytes, {
+    required int appSchemaVersion,
+    required bool verifyChecksums,
+  }) {
+    final archive = ZipDecoder().decodeBytes(zipBytes);
 
     final byName = {
       for (final file in archive.files)

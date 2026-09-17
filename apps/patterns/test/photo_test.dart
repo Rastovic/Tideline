@@ -136,7 +136,9 @@ void main() {
     ));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byIcon(Icons.add_a_photo_outlined));
+    await tester.tap(find.byTooltip('Dodaj unos'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Fotografija dana'));
     await tester.pumpAndSettle();
 
     // The tap has to happen against the fake clock, and the file write that

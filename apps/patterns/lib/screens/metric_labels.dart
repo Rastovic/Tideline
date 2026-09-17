@@ -89,3 +89,20 @@ Color? markerColor(String? hex) {
   final value = int.tryParse(hex.substring(1), radix: 16);
   return value == null ? null : Color(0xFF000000 | value);
 }
+
+/// `2026-08-19` as `19. avgust`, or `19. avgust 2026.` with [withYear].
+///
+/// No weekday and no relative wording: "danas" on a screen opened at 01:00
+/// with a 04:00 day boundary is a lie.
+String humanDate(String dayKey, {bool withYear = false}) {
+  const months = [
+    'januar', 'februar', 'mart', 'april', 'maj', 'jun',
+    'jul', 'avgust', 'septembar', 'oktobar', 'novembar', 'decembar',
+  ];
+  final parts = dayKey.split('-');
+  if (parts.length != 3) return dayKey;
+  final month = int.tryParse(parts[1]) ?? 1;
+  final day = int.tryParse(parts[2]) ?? 1;
+  final base = '$day. ${months[(month - 1).clamp(0, 11)]}';
+  return withYear ? '$base ${parts[0]}.' : base;
+}

@@ -15,10 +15,19 @@ import 'package:vitals_ui/vitals_ui.dart';
 /// [ReportRow.bandOn], a boolean drawn behind as a pale band - safe precisely
 /// because a band has no scale of its own to stretch until it agrees.
 class ReportRowChart extends StatelessWidget {
-  const ReportRowChart({required this.row, required this.color, super.key});
+  const ReportRowChart({
+    required this.row,
+    required this.color,
+    this.onDayTap,
+    super.key,
+  });
 
   final ReportRow row;
   final Color color;
+
+  /// The day key under a tap. Null where a position is not one day - on the
+  /// cycle-day axis a column is many dates.
+  final ValueChanged<String>? onDayTap;
 
   /// Tall enough to read, short enough that six markers fit on a phone.
   static const double rowHeight = 44;
@@ -44,7 +53,8 @@ class ReportRowChart extends StatelessWidget {
 
     final (low, high) = _bounds();
 
-    return SizedBox(
+    final onDayTap = this.onDayTap;
+    final chart = SizedBox(
       height: _height,
       child: CustomPaint(
         size: Size.infinite,
@@ -87,6 +97,21 @@ class ReportRowChart extends StatelessWidget {
               empty: theme.colors.stroke,
             ),
         },
+      ),
+    );
+    if (onDayTap == null || row.cells.isEmpty) return chart;
+
+    return LayoutBuilder(
+      builder: (context, constraints) => GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTapUp: (details) {
+          final width = constraints.maxWidth / row.cells.length;
+          final index = (details.localPosition.dx / width)
+              .floor()
+              .clamp(0, row.cells.length - 1);
+          onDayTap(row.cells[index].dayKey);
+        },
+        child: chart,
       ),
     );
   }

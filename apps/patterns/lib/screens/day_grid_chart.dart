@@ -19,8 +19,11 @@ class DayGridChart extends StatelessWidget {
     required this.row,
     required this.dayKeys,
     required this.color,
+    this.onDayTap,
     super.key,
   });
+
+  final ValueChanged<String>? onDayTap;
 
   final ReportRow row;
 
@@ -32,7 +35,15 @@ class DayGridChart extends StatelessWidget {
 
   /// Short and unambiguous: two of the seven start with the same letter in this
   /// language, so a single initial cannot carry the header.
-  static const weekdayLabels = ['pon', 'uto', 'sri', 'cet', 'pet', 'sub', 'ned'];
+  static const weekdayLabels = [
+    'pon',
+    'uto',
+    'sri',
+    'cet',
+    'pet',
+    'sub',
+    'ned',
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -56,23 +67,40 @@ class DayGridChart extends StatelessWidget {
                     child: Text(
                       label,
                       textAlign: TextAlign.center,
-                      style: theme.typography.caption
-                          .copyWith(color: theme.colors.inkFaint),
+                      style: theme.typography.caption.copyWith(
+                        color: theme.colors.inkFaint,
+                      ),
                     ),
                   ),
               ],
             ),
             const SizedBox(height: VitalsSpacing.xs),
-            SizedBox(
-              height: weeks * side,
-              child: CustomPaint(
-                size: Size.infinite,
-                painter: _GridPainter(
-                  cells: cells,
-                  metric: row.metric,
-                  stats: row.stats,
-                  color: color,
-                  empty: theme.colors.stroke,
+            GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTapUp: onDayTap == null
+                  ? null
+                  : (details) {
+                      final col = (details.localPosition.dx / side).floor();
+                      final line = (details.localPosition.dy / side).floor();
+                      final index = line * 7 + col;
+                      if (col < 0 || col > 6 || index < 0) return;
+                      if (index >= cells.length) return;
+                      // A padding slot is not a day, so it opens nothing.
+                      if (cells[index] case final cell?) {
+                        onDayTap!(cell.dayKey);
+                      }
+                    },
+              child: SizedBox(
+                height: weeks * side,
+                child: CustomPaint(
+                  size: Size.infinite,
+                  painter: _GridPainter(
+                    cells: cells,
+                    metric: row.metric,
+                    stats: row.stats,
+                    color: color,
+                    empty: theme.colors.stroke,
+                  ),
                 ),
               ),
             ),

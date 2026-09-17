@@ -6,6 +6,8 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:vitals_core/vitals_core.dart';
 
+import '../screens/day_grid_chart.dart';
+
 /// Paper sizes worth offering: the page is printed, not read on the phone.
 enum DoctorPaper {
   a4('A4', PdfPageFormat.a4),
@@ -243,7 +245,7 @@ pw.Widget _grid(DoctorEntry entry, PdfColor color) {
 
   return pw.LayoutBuilder(
     builder: (context, constraints) {
-      const labelWidth = 12.0;
+      const labelWidth = 14.0;
       final width = (constraints?.maxWidth ?? 300) - labelWidth;
       final cell = (width / columns).clamp(2.0, 9.0);
       final gap = cell > 5 ? 1.0 : 0.4;
@@ -278,21 +280,13 @@ pw.Widget _grid(DoctorEntry entry, PdfColor color) {
           pw.Row(
             crossAxisAlignment: pw.CrossAxisAlignment.start,
             children: [
-              // Two letters, because two weekdays share a first letter in Serbian.
+              // The grid report's labels: two weekdays share a first letter.
               pw.SizedBox(
                 width: labelWidth,
                 child: pw.Column(
                   crossAxisAlignment: pw.CrossAxisAlignment.start,
                   children: [
-                    for (final day in const [
-                      'po',
-                      'ut',
-                      'sr',
-                      'ce',
-                      'pe',
-                      'su',
-                      'ne',
-                    ])
+                    for (final day in DayGridChart.weekdayLabels)
                       pw.SizedBox(
                         height: cell,
                         child: pw.Align(

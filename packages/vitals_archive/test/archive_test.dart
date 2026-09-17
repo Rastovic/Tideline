@@ -126,6 +126,25 @@ void main() {
       expect(result.error!.reason, ArchiveRejection.malformed);
     });
 
+    test('a damaged byte anywhere is a refusal, never a throw', () {
+      // The zip directory can survive damage that an entry's compressed
+      // stream or the manifest text does not, and those used to throw from
+      // inflating or decoding instead of being refused. A throw here is a
+      // restore screen that stops with no explanation.
+      final bytes = buildArchive();
+      final threw = <int>[];
+      for (var i = 0; i < bytes.length; i++) {
+        final damaged = Uint8List.fromList(bytes);
+        damaged[i] ^= 0xFF;
+        try {
+          reader.read(damaged, appSchemaVersion: 3);
+        } on Object {
+          threw.add(i);
+        }
+      }
+      expect(threw, isEmpty, reason: '${threw.length} positions threw');
+    });
+
     test('a tampered file is caught by its checksum', () {
       // Flip a byte inside the zip payload and the sha256 no longer matches.
       final bytes = buildArchive();

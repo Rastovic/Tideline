@@ -152,6 +152,29 @@ final class ObservationRepository {
     return _toDomain(rows, kinds);
   }
 
+  /// Every live reading of [metricIds], whatever the day, newest first.
+  ///
+  /// For search, which has no period: an entry is looked for by what it says,
+  /// and "sometime last spring" is not a range anyone can type. Only ever asked
+  /// for the diary, which is one row a day at most people's pace.
+  Future<List<Observation>> allOf({
+    required Iterable<String> metricIds,
+    required Map<String, MetricKind> kinds,
+  }) async {
+    final ids = metricIds.toList();
+    if (ids.isEmpty) return const [];
+    final rows = await (_db.select(_db.observations)
+          ..where((o) => o.metricId.isIn(ids) & o.deletedAt.isNull())
+          ..orderBy([
+            (o) => OrderingTerm(
+                  expression: o.recordedAt,
+                  mode: OrderingMode.desc,
+                ),
+          ]))
+        .get();
+    return _toDomain(rows, kinds);
+  }
+
   /// Everything recorded on one day, for the day detail screen.
   Future<List<Observation>> onDay(
     String dayKey, {

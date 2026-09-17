@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:patterns/data/patterns_controller.dart';
 import 'package:patterns/screens/home_screen.dart';
+import 'package:patterns/screens/report_view_screen.dart';
 import 'package:patterns_core/patterns_core.dart';
 import 'package:patterns_data/patterns_data.dart';
 import 'package:vitals_ui/vitals_ui.dart';
@@ -92,6 +93,7 @@ void main() {
     await tester.pumpWidget(wrap(controller));
     await tester.pumpAndSettle();
 
+    await tester.scrollUntilVisible(find.text('2×'), 120);
     expect(find.text('2×'), findsOneWidget);
     controller.dispose();
   });
@@ -129,5 +131,41 @@ void main() {
     expect(find.text('bila sam umorna zbog posla'), findsOneWidget);
     expect(find.text('dnevnik'), findsOneWidget);
     controller.dispose();
+  });
+  group('holding a row', () {
+    testWidgets('opens that marker\'s last month and saves nothing',
+        (tester) async {
+      // Looking at one marker is not a question worth keeping. The saved list
+      // is hers, and it would grow by one every time a row was held.
+      final controller = await freshController();
+      await tester.pumpWidget(wrap(controller));
+      await tester.pumpAndSettle();
+
+      await tester.longPress(find.text('umor'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(ReportViewScreen), findsOneWidget);
+      expect(find.widgetWithText(AppBar, 'umor'), findsOneWidget);
+
+      // Changing the axis stays on this screen.
+      await tester.tap(find.text('Mreza'));
+      await tester.pumpAndSettle();
+      expect(await controller.savedReports(), isEmpty);
+      controller.dispose();
+    });
+
+    testWidgets('does nothing on a marker with nothing to chart',
+        (tester) async {
+      final controller = await freshController();
+      await tester.pumpWidget(wrap(controller));
+      await tester.pumpAndSettle();
+
+      await tester.scrollUntilVisible(find.text('dnevnik'), 120);
+      await tester.longPress(find.text('dnevnik'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(ReportViewScreen), findsNothing);
+      controller.dispose();
+    });
   });
 }

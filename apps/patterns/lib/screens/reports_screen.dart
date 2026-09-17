@@ -3,6 +3,7 @@ import 'package:patterns_core/patterns_core.dart';
 import 'package:vitals_ui/vitals_ui.dart';
 
 import '../data/patterns_controller.dart';
+import 'doctor_page_screen.dart';
 import 'report_builder_screen.dart';
 import 'report_view_screen.dart';
 
@@ -89,7 +90,21 @@ class _ReportsScreenState extends State<ReportsScreen> {
     final reports = _reports;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Izvjestaji')),
+      appBar: AppBar(
+        title: const Text('Izvjestaji'),
+        actions: [
+          IconButton(
+            tooltip: 'Stranica za doktora',
+            icon: const Icon(Icons.print_outlined),
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) =>
+                    DoctorPageScreen(controller: widget.controller),
+              ),
+            ),
+          ),
+        ],
+      ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _build,
         icon: const Icon(Icons.add),

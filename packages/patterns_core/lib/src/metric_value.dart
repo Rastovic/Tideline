@@ -153,9 +153,18 @@ final class TagsValue extends MetricValue {
 
 /// Free text.
 final class TextValue extends MetricValue {
-  const TextValue(this.text);
+  const TextValue(this.text, {this.isPrivate = false});
 
   final String text;
+
+  /// Kept out of search and out of the doctor page. **Never out of the
+  /// backup**: a private entry is still hers, and a backup that silently drops
+  /// it is a backup that loses data.
+  ///
+  /// Part of the value rather than a column, because only a diary entry can be
+  /// private, and so a row written before the flag existed reads as it always
+  /// did - a plain string on the wire is simply not private.
+  final bool isPrivate;
 
   @override
   MetricKind get kind => MetricKind.text;
@@ -164,13 +173,16 @@ final class TextValue extends MetricValue {
   num? get asNumber => null;
 
   @override
-  Object? toWire() => text;
+  Object? toWire() => isPrivate ? {'text': text, 'private': true} : text;
 
   @override
-  bool operator ==(Object other) => other is TextValue && other.text == text;
+  bool operator ==(Object other) =>
+      other is TextValue &&
+      other.text == text &&
+      other.isPrivate == isPrivate;
 
   @override
-  int get hashCode => Object.hash('text', text);
+  int get hashCode => Object.hash('text', text, isPrivate);
 
   @override
   String toString() => 'TextValue(${text.length} chars)';

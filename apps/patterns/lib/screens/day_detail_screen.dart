@@ -231,6 +231,16 @@ class _ReadingCard extends StatelessWidget {
                     describeValue(observation.value, metric),
                     style: theme.typography.body,
                   ),
+                  if (observation.value case TextValue(isPrivate: true))
+                    Padding(
+                      padding: const EdgeInsets.only(top: VitalsSpacing.xs),
+                      child: Text(
+                        'privatno',
+                        style: theme.typography.caption.copyWith(
+                          color: colors.inkFaint,
+                        ),
+                      ),
+                    ),
                   if (observation.enteredLate)
                     Padding(
                       padding: const EdgeInsets.only(top: VitalsSpacing.xs),

@@ -32,6 +32,25 @@ void main() {
     expect((restored! as TagsValue).isExplicitNone, isTrue);
   });
 
+  group('a private diary entry', () {
+    test('round-trips with its flag', () {
+      const value = TextValue('samo za mene', isPrivate: true);
+      final restored = decodeValue(MetricKind.text, value.toWire());
+      expect(restored, value);
+      expect((restored! as TextValue).isPrivate, isTrue);
+    });
+
+    test('an entry written before the flag existed reads as not private', () {
+      // A plain string is what every diary row looked like until now.
+      final restored = decodeValue(MetricKind.text, 'stari unos');
+      expect(restored, const TextValue('stari unos'));
+    });
+
+    test('a non-private entry still writes the old plain string', () {
+      expect(const TextValue('obican').toWire(), 'obican');
+    });
+  });
+
   test('a photo with no caption round-trips', () {
     const value = PhotoValue(photoId: 'p2');
     expect(decodeValue(MetricKind.photo, value.toWire()), value);

@@ -231,6 +231,19 @@ class _ReportBuilderScreenState extends State<ReportBuilderScreen> {
                 ),
               ],
             ),
+            if (_rows.length > 1) ...[
+              const SizedBox(height: VitalsSpacing.xl),
+              _heading(theme, 'Redoslijed'),
+              _RowOrder(
+                rows: [
+                  for (final row in _rows)
+                    if (widget.controller.byId(row.metricId)
+                        case final metric?)
+                      metric,
+                ],
+                onReorder: _reorder,
+              ),
+            ],
             const SizedBox(height: VitalsSpacing.xl),
             _heading(theme, 'Markeri'),
             for (final metric in markers)
@@ -258,6 +271,23 @@ class _ReportBuilderScreenState extends State<ReportBuilderScreen> {
       if (series.metricId == metricId) return series;
     }
     return null;
+  }
+
+  /// Moves one row, top to bottom being the order the report draws.
+  ///
+  /// **Only rows move.** A band has no place of its own in the stack - it is
+  /// drawn behind the row it names wherever that row goes - so the bands keep
+  /// their relative order after the rows and are never offered here.
+  void _reorder(int oldIndex, int newIndex) {
+    setState(() {
+      final rows = [..._rows];
+      rows.insert(newIndex, rows.removeAt(oldIndex));
+      _series = [
+        ...rows,
+        for (final s in _series)
+          if (s.isBand) s,
+      ];
+    });
   }
 
   void _setStyle(String metricId, DisplayStyle? style) {
@@ -326,6 +356,50 @@ class _ReportBuilderScreenState extends State<ReportBuilderScreen> {
         365 => 'godina',
         _ => '$days dana',
       };
+}
+
+/// The picked rows in drawing order, each with a handle to drag.
+///
+/// A handle rather than a long-press on the whole row: the list sits inside a
+/// scrolling form, and a long-press there reads as the start of a scroll as
+/// often as the start of a drag.
+class _RowOrder extends StatelessWidget {
+  const _RowOrder({required this.rows, required this.onReorder});
+
+  final List<Metric> rows;
+  final void Function(int oldIndex, int newIndex) onReorder;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = VitalsTheme.of(context);
+    return ReorderableListView(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      buildDefaultDragHandles: false,
+      onReorderItem: onReorder,
+      children: [
+        for (final (index, metric) in rows.indexed)
+          ListTile(
+            key: ValueKey(metric.id),
+            contentPadding: EdgeInsets.zero,
+            leading: Icon(
+              Icons.circle,
+              size: 12,
+              color: markerColor(metric.colorHex) ?? theme.colors.accent,
+            ),
+            title: Text(metric.name, style: theme.typography.body),
+            trailing: ReorderableDragStartListener(
+              index: index,
+              child: Icon(
+                Icons.drag_handle,
+                semanticLabel: 'Pomjeri ${metric.name}',
+                color: theme.colors.inkFaint,
+              ),
+            ),
+          ),
+      ],
+    );
+  }
 }
 
 class _MarkerPick extends StatelessWidget {

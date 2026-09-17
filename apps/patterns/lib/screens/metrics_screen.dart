@@ -125,7 +125,7 @@ class _MetricRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = VitalsTheme.of(context);
     final colors = theme.colors;
-    final dotColor = _parseHex(metric.colorHex) ?? colors.accent;
+    final dotColor = markerColor(metric.colorHex) ?? colors.accent;
     final faded = metric.isArchived;
 
     return InkWell(
@@ -163,11 +163,5 @@ class _MetricRow extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  static Color? _parseHex(String? hex) {
-    if (hex == null || hex.length != 7 || !hex.startsWith('#')) return null;
-    final value = int.tryParse(hex.substring(1), radix: 16);
-    return value == null ? null : Color(0xFF000000 | value);
   }
 }

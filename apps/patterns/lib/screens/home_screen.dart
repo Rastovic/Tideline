@@ -8,8 +8,11 @@ import '../data/patterns_controller.dart';
 import '../data/photo_picker.dart';
 import 'day_detail_screen.dart';
 import 'log_sheet.dart';
+import 'metric_labels.dart';
 import 'metrics_screen.dart';
+import 'report_view_screen.dart';
 import 'reports_screen.dart';
+import 'search_screen.dart';
 import 'settings_screen.dart';
 
 /// The home screen: what I track, and whether it is logged today.
@@ -66,6 +69,17 @@ class _HomeScreenState extends State<HomeScreen> {
     await controller.log(metric.id, value);
   }
 
+  void _openReport(Metric metric) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => ReportViewScreen.forMarker(
+          controller: controller,
+          metric: metric,
+        ),
+      ),
+    );
+  }
+
   Future<void> _capture(String? metricId, PhotoSource source) async {
     final bytes = await widget.picker.pick(source);
     if (bytes == null) return;
@@ -95,16 +109,25 @@ class _HomeScreenState extends State<HomeScreen> {
                 VitalsSpacing.huge,
               ),
               children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  crossAxisAlignment: CrossAxisAlignment.center,
+                // Shortcuts above the date rather than beside it: five
+                // buttons are 240dp, and beside "17. septembar" in display
+                // type they run off a 360dp phone.
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      _humanDate(controller.today),
-                      style: theme.typography.displayL,
-                    ),
                     Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
                       children: [
+                        IconButton(
+                          tooltip: 'Pretraga',
+                          icon: const Icon(Icons.search),
+                          onPressed: () => Navigator.of(context).push(
+                            MaterialPageRoute<void>(
+                              builder: (_) =>
+                                  SearchScreen(controller: controller),
+                            ),
+                          ),
+                        ),
                         IconButton(
                           tooltip: 'Detalji dana',
                           icon: const Icon(Icons.today_outlined),
@@ -117,9 +140,8 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                           ),
                         ),
-                        // Deliberately not the long-press on a marker row:
-                        // that gesture is spoken for by the marker's report,
-                        // and squatting on it now means moving it later.
+                        // Not the long-press on a marker row: that opens the
+                        // marker's own last month.
                         // MY-SETUP puts saved reports behind one shortcut,
                         // not on the home list: home answers "what did I log
                         // today", and a chart there would start grading it.
@@ -161,6 +183,10 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                       ],
                     ),
+                    Text(
+                      _humanDate(controller.today),
+                      style: theme.typography.displayL,
+                    ),
                   ],
                 ),
                 const SizedBox(height: VitalsSpacing.lg),
@@ -183,6 +209,11 @@ class _HomeScreenState extends State<HomeScreen> {
                       _MarkerRow(
                         status: status,
                         onTap: () => _log(status.metric),
+                        // A diary or a photo has nothing to chart. Holding it
+                        // does nothing rather than opening an empty report.
+                        onLongPress: status.metric.displayStyle == null
+                            ? null
+                            : () => _openReport(status.metric),
                       ),
                   ],
               ],
@@ -209,19 +240,25 @@ class _HomeScreenState extends State<HomeScreen> {
 }
 
 class _MarkerRow extends StatelessWidget {
-  const _MarkerRow({required this.status, required this.onTap});
+  const _MarkerRow({
+    required this.status,
+    required this.onTap,
+    this.onLongPress,
+  });
 
   final MarkerStatus status;
   final VoidCallback onTap;
+  final VoidCallback? onLongPress;
 
   @override
   Widget build(BuildContext context) {
     final theme = VitalsTheme.of(context);
     final colors = theme.colors;
-    final dotColor = _parseHex(status.metric.colorHex) ?? colors.accent;
+    final dotColor = markerColor(status.metric.colorHex) ?? colors.accent;
 
     return InkWell(
       onTap: onTap,
+      onLongPress: onLongPress,
       borderRadius: VitalsRadius.nestedAll,
       child: Padding(
         padding: const EdgeInsets.symmetric(
@@ -258,11 +295,5 @@ class _MarkerRow extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  static Color? _parseHex(String? hex) {
-    if (hex == null || hex.length != 7 || !hex.startsWith('#')) return null;
-    final value = int.tryParse(hex.substring(1), radix: 16);
-    return value == null ? null : Color(0xFF000000 | value);
   }
 }

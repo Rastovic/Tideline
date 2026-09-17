@@ -22,6 +22,26 @@ final class MarkerStatus {
   bool get isLoggedToday => count > 0;
 }
 
+/// One entry a search found: a diary entry or a photo caption.
+final class SearchHit {
+  const SearchHit({
+    required this.dayKey,
+    required this.at,
+    required this.text,
+    required this.source,
+    this.isPrivate = false,
+  });
+
+  final String dayKey;
+  final DateTime at;
+  final String text;
+
+  /// The marker's name for a diary entry, `fotografija` for a caption.
+  final String source;
+
+  final bool isPrivate;
+}
+
 /// Everything the screens read, and the only thing that writes.
 ///
 /// A plain [ChangeNotifier] rather than a state-management package: one person,
@@ -215,6 +235,31 @@ final class PatternsController extends ChangeNotifier {
     );
   }
 
+  /// The doctor page for [metricIds], in that order, over [period].
+  Future<DoctorPage> doctorPage(
+    List<String> metricIds,
+    ReportPeriod period,
+  ) async {
+    final (from, to) = period.resolve(_today);
+    final all = await metrics.all();
+    final byId = {for (final m in all) m.id: m};
+    return buildDoctorPage(
+      metrics: [
+        for (final id in metricIds)
+          if (byId[id] case final metric? when !metric.isDeleted) metric,
+      ],
+      observations: await observations.range(
+        metricIds: metricIds,
+        from: from,
+        to: to,
+        kinds: {for (final m in all) m.id: m.kind},
+      ),
+      from: from,
+      to: to,
+      cyclePeriods: await cyclePeriods(),
+    );
+  }
+
   /// The recorded periods, derived from the two cycle markers.
   ///
   /// Counting, never predicting: an unanchored stretch produces no cycle day
@@ -330,6 +375,53 @@ final class PatternsController extends ChangeNotifier {
   /// Everything recorded on one day, for the day detail screen.
   Future<List<Observation>> readingsOn(String dayKey) =>
       observations.onDay(dayKey, kinds: kinds);
+
+  /// Diary entries and photo captions holding every word of [query], newest
+  /// first.
+  ///
+  /// **Private entries are left out unless asked for**, which is what private
+  /// means here: the phone handed to someone else to look something up does
+  /// not show them. They are still on their day, and still in the backup.
+  Future<List<SearchHit>> search(
+    String query, {
+    bool includePrivate = false,
+  }) async {
+    if (query.trim().isEmpty) return const [];
+    final diaries = [
+      for (final metric in _all)
+        if (metric.kind == MetricKind.text && !metric.isDeleted) metric,
+    ];
+    final names = {for (final m in diaries) m.id: m.name};
+
+    final hits = <SearchHit>[
+      for (final reading in await observations.allOf(
+        metricIds: names.keys,
+        kinds: kinds,
+      ))
+        if (reading.value case TextValue(:final text, :final isPrivate)
+            when (includePrivate || !isPrivate) && matchesQuery(text, query))
+          SearchHit(
+            dayKey: reading.dayKey,
+            at: reading.recordedAt,
+            text: text,
+            source: names[reading.metricId]!,
+            isPrivate: isPrivate,
+          ),
+      for (final photo in await photos.captioned())
+        if (matchesQuery(photo.caption!, query))
+          SearchHit(
+            dayKey: photo.dayKey,
+            at: photo.capturedAt,
+            text: photo.caption!,
+            source: 'fotografija',
+          ),
+    ];
+    hits.sort((a, b) => b.at.compareTo(a.at));
+    return hits;
+  }
+
+  /// What every photo occupies on disk, for the size shown in Settings.
+  Future<int> photoBytes() => photos.totalBytes();
 
   /// Every photo of one day, marker photos and free ones alike.
   Future<List<StoredPhoto>> photosOn(String dayKey) => photos.onDay(dayKey);

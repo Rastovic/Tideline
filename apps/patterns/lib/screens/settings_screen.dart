@@ -47,6 +47,10 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreenState extends State<SettingsScreen> {
   late ReminderSettings _settings = widget.settings;
 
+  /// Asked once per visit, so a rebuild from the reminder switch does not
+  /// query the database again.
+  Future<int>? _photoBytes;
+
   /// Set when the OS refused. Shown as a plain sentence rather than a repeated
   /// prompt, because asking twice does nothing on Android after a hard denial.
   bool _blockedByOs = false;
@@ -157,6 +161,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 style: theme.typography.label.copyWith(
                   color: theme.colors.inkFaint,
                   letterSpacing: 1.2,
+                ),
+              ),
+              // A number to look at, never a limit. Nothing here deletes a
+              // photo, suggests deleting one, or warns at a threshold: the
+              // phone's own storage warning is the only one that is true.
+              FutureBuilder<int>(
+                future: _photoBytes ??= controller.photoBytes(),
+                builder: (context, snapshot) => ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: Text('Fotografije zauzimaju',
+                      style: theme.typography.body),
+                  trailing: Text(
+                    snapshot.hasData ? megabytes(snapshot.data!) : '…',
+                    style: theme.typography.body
+                        .copyWith(color: theme.colors.inkMuted),
+                  ),
                 ),
               ),
               ListTile(

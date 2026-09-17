@@ -48,6 +48,10 @@ class _LogSheetState extends State<_LogSheet> {
   late final TextEditingController _text =
       TextEditingController(text: _initialText());
   late TimeOfDay _time = _initialTime();
+  late bool _private = switch (widget.initial) {
+    TextValue(:final isPrivate) => isPrivate,
+    _ => false,
+  };
 
   Metric get metric => widget.metric;
 
@@ -318,8 +322,28 @@ class _LogSheetState extends State<_LogSheet> {
             hintText: 'Kako je bilo, i zbog cega',
           ),
         ),
-        const SizedBox(height: VitalsSpacing.xl),
-        _primary('Sacuvaj', () => _submit(TextValue(_text.text))),
+        // Off unless turned on for this entry. Private keeps it out of search
+        // and off the doctor page, and never out of the backup.
+        // Its own Material: the sheet paints its background on a plain
+        // container, which would hide the tile's ink.
+        Material(
+          type: MaterialType.transparency,
+          child: SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            value: _private,
+            onChanged: (on) => setState(() => _private = on),
+            title: Text('Privatno', style: theme.typography.body),
+            subtitle: Text(
+              'Ne pojavljuje se u pretrazi ni na stranici za doktora',
+              style: theme.typography.caption,
+            ),
+          ),
+        ),
+        const SizedBox(height: VitalsSpacing.lg),
+        _primary(
+          'Sacuvaj',
+          () => _submit(TextValue(_text.text, isPrivate: _private)),
+        ),
       ];
 
   List<Widget> _clock(BuildContext context, VitalsThemeData theme) => [

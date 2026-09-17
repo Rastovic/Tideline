@@ -716,4 +716,30 @@ the marker list can never scroll back up to the period chips - the taps have to
 happen in screen order. And driving `showDateRangePicker` means tapping a day
 number twice, once for each end of the range, before its own save button.
 
-Next: reordering rows inside a report, then the printable doctor page.
+Done 2026-09-17, see below.
+
+
+## Reorder, search, private entries, doctor page (2026-09-17)
+
+**Private lives in the value, not a column.** `TextValue.toWire()` writes a
+plain string unless private, then `{"text", "private": true}`. Every diary row
+written before the flag still decodes, and backup and restore carry it without
+knowing it exists. The cost is small: only a diary can be private, and a query
+for private entries has to decode the rows. At one diary a day that is nothing.
+
+**The doctor page takes no diary, whatever the caller passes.** `buildDoctorPage`
+drops text and photo markers itself instead of trusting the screen. Free text
+on a clinical page is the entry most likely to be read by the wrong person.
+
+**PDF fonts come from `/system/fonts/Roboto-*.ttf`.** The `pdf` package's
+built-in Helvetica is Latin-1 and has no `č`, `ć` or `đ`. The system font is on
+every Android phone, so none is bundled. Tests and desktop fall back to
+Helvetica with diacritics folded, which is why the base-font warnings show up
+in test output.
+
+**The home header moved the shortcuts above the date.** Five 48dp buttons next
+to a display-size date overflow 360dp. That also pushed rows below a 600px test
+viewport, and an earlier home test needed a `scrollUntilVisible`.
+
+**`ReorderableListView.onReorder` is deprecated** in this Flutter; the builder
+uses `onReorderItem`, which already corrects the index for the removed row.

@@ -255,7 +255,7 @@ class _BackupScreenState extends State<BackupScreen> {
   static String _exportSummary(
     ({Uint8List bytes, int photosIncluded, int photosMissing}) archive,
   ) {
-    final size = _megabytes(archive.bytes.length);
+    final size = megabytes(archive.bytes.length);
     final parts = ['$size, ${archive.photosIncluded} fotografija'];
     if (archive.photosMissing > 0) {
       // Said out loud rather than logged. The file is already lost; the archive
@@ -290,10 +290,11 @@ class _BackupScreenState extends State<BackupScreen> {
         '${report.photosMissing.length} fotografija nije bilo u arhivi - '
         'dani i opisi su tu, same slike nisu.';
   }
+}
 
-  static String _megabytes(int bytes) {
-    final mb = bytes / (1024 * 1024);
-    if (mb < 0.1) return '${(bytes / 1024).round()} KB';
-    return '${mb.toStringAsFixed(1)} MB';
-  }
+/// `3.4 MB`, or `640 KB` under a tenth of a megabyte.
+String megabytes(int bytes) {
+  final mb = bytes / (1024 * 1024);
+  if (mb < 0.1) return '${(bytes / 1024).round()} KB';
+  return '${mb.toStringAsFixed(1)} MB';
 }

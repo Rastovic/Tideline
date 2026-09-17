@@ -307,6 +307,78 @@ void main() {
     });
   });
 
+  group('row order', () {
+    testWidgets('a dragged row saves in its new place, and the band follows it',
+        (tester) async {
+      final controller = await freshController();
+      final scales = controller.allMarkers
+          .where((m) => m.kind == MetricKind.scale)
+          .take(3)
+          .toList();
+      final flag = controller.allMarkers
+          .firstWhere((m) => m.kind == MetricKind.boolean);
+      final definition = definitionFor([
+        for (final m in scales) ReportSeries(metricId: m.id),
+        ReportSeries(metricId: flag.id, bandBehindMetricId: scales.last.id),
+      ]);
+
+      await tester.pumpWidget(wrap(ReportBuilderScreen(
+        controller: controller,
+        definition: definition,
+      )));
+      await tester.pumpAndSettle();
+
+      // A band has no place of its own in the stack, so only rows are offered.
+      final handles = find.byIcon(Icons.drag_handle);
+      expect(handles, findsNWidgets(3));
+
+      final rowHeight = tester.getSize(find.byType(ListTile).first).height;
+      final gesture =
+          await tester.startGesture(tester.getCenter(handles.last));
+      await tester.pump();
+      for (var i = 0; i < 10; i++) {
+        await gesture.moveBy(Offset(0, -rowHeight * 2.5 / 10));
+        await tester.pump(const Duration(milliseconds: 16));
+      }
+      await gesture.up();
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Sacuvaj'));
+      await tester.pumpAndSettle();
+
+      final saved = (await controller.savedReports()).single;
+      expect(
+        [for (final s in saved.series) s.metricId],
+        [scales[2].id, scales[0].id, scales[1].id, flag.id],
+      );
+      expect(saved.series.last.bandBehindMetricId, scales[2].id);
+
+      // The report draws in the order it was saved in.
+      final report = await controller.buildSavedReport(saved);
+      expect(
+        [for (final row in report.rows) row.metric.id],
+        [scales[2].id, scales[0].id, scales[1].id],
+      );
+      controller.dispose();
+    });
+
+    testWidgets('one row has nothing to order, so there is no section',
+        (tester) async {
+      final controller = await freshController();
+      final mood = controller.allMarkers
+          .firstWhere((m) => m.kind == MetricKind.scale);
+      await tester.pumpWidget(wrap(ReportBuilderScreen(
+        controller: controller,
+        definition: definitionFor([ReportSeries(metricId: mood.id)]),
+      )));
+      await tester.pumpAndSettle();
+
+      expect(find.text('REDOSLIJED'), findsNothing);
+      expect(find.byIcon(Icons.drag_handle), findsNothing);
+      controller.dispose();
+    });
+  });
+
   group('the day grid', () {
     testWidgets('is a layout of the same cells, not a different reading',
         (tester) async {

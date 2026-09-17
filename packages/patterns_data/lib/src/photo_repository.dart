@@ -126,6 +126,23 @@ final class PhotoRepository {
     return rows.isEmpty ? null : _toDomain(rows.single);
   }
 
+  /// Every live photo carrying a caption, newest first. Search reads this.
+  Future<List<StoredPhoto>> captioned() async {
+    final rows = await (_db.select(_db.photos)
+          ..where((p) =>
+              p.deletedAt.isNull() &
+              p.caption.isNotNull() &
+              p.caption.equals('').not())
+          ..orderBy([
+            (p) => OrderingTerm(
+                  expression: p.capturedAt,
+                  mode: OrderingMode.desc,
+                ),
+          ]))
+        .get();
+    return [for (final row in rows) _toDomain(row)];
+  }
+
   /// What every photo occupies, for the size budget in Settings.
   Future<int> totalBytes() async {
     final total = _db.photos.byteSize.sum();

@@ -40,6 +40,12 @@ MetricValue? decodeValue(MetricKind kind, Object? wire) {
       return null;
     case MetricKind.text:
       if (wire is String) return TextValue(wire);
+      if (wire is Map && wire['text'] is String) {
+        return TextValue(
+          wire['text'] as String,
+          isPrivate: wire['private'] == true,
+        );
+      }
       return null;
     case MetricKind.photo:
       if (wire is Map) {

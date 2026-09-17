@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:patterns_core/patterns_core.dart';
+import 'package:vitals_core/vitals_core.dart';
 import 'package:vitals_ui/vitals_ui.dart';
 
 import '../data/patterns_controller.dart';
 import 'day_grid_chart.dart';
+import 'metric_labels.dart';
 import 'report_builder_screen.dart';
 import 'report_chart.dart';
 
@@ -21,11 +23,38 @@ class ReportViewScreen extends StatefulWidget {
   const ReportViewScreen({
     required this.controller,
     required this.definition,
+    this.isSaved = true,
     super.key,
   });
 
+  /// One marker's last month, opened by a long-press on home.
+  ///
+  /// **Not saved.** Looking at a marker is not asking a question worth keeping,
+  /// and a list that grows by one every time a row is held stops being hers.
+  /// Changing the axis here stays on this screen; the builder is one tap away
+  /// if this turns out to be one to keep.
+  ReportViewScreen.forMarker({
+    required PatternsController controller,
+    required Metric metric,
+    Key? key,
+  }) : this(
+          controller: controller,
+          definition: ReportDefinition(
+            id: Ids.newId(),
+            name: metric.name,
+            series: [ReportSeries(metricId: metric.id)],
+            period: const LastDays(30),
+            createdAt: DateTime.now().toUtc(),
+          ),
+          isSaved: false,
+          key: key,
+        );
+
   final PatternsController controller;
   final ReportDefinition definition;
+
+  /// False for a report that exists only on this screen.
+  final bool isSaved;
 
   @override
   State<ReportViewScreen> createState() => _ReportViewScreenState();
@@ -33,6 +62,7 @@ class ReportViewScreen extends StatefulWidget {
 
 class _ReportViewScreenState extends State<ReportViewScreen> {
   late ReportDefinition _definition = widget.definition;
+  late bool _isSaved = widget.isSaved;
   Report? _report;
 
   @override
@@ -56,7 +86,7 @@ class _ReportViewScreenState extends State<ReportViewScreen> {
       _definition = _definition.copyWith(axis: axis);
       _report = null;
     });
-    await widget.controller.saveReport(_definition);
+    if (_isSaved) await widget.controller.saveReport(_definition);
     await _rebuild();
   }
 
@@ -71,6 +101,9 @@ class _ReportViewScreenState extends State<ReportViewScreen> {
     );
     if (edited == null) return;
     setState(() {
+      // The builder saves on the way out, so an unsaved view becomes a saved
+      // report exactly when she pressed the button that says so.
+      _isSaved = true;
       _definition = edited;
       _report = null;
     });
@@ -87,7 +120,7 @@ class _ReportViewScreenState extends State<ReportViewScreen> {
         title: Text(_definition.name),
         actions: [
           IconButton(
-            tooltip: 'Izmijeni',
+            tooltip: _isSaved ? 'Izmijeni' : 'Sacuvaj kao izvjestaj',
             icon: const Icon(Icons.tune),
             onPressed: _edit,
           ),
@@ -159,7 +192,7 @@ class _RowBlock extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = VitalsTheme.of(context);
-    final color = _parseHex(row.metric.colorHex) ?? theme.colors.accent;
+    final color = markerColor(row.metric.colorHex) ?? theme.colors.accent;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -222,10 +255,4 @@ class _RowBlock extends StatelessWidget {
 
   static String _number(num value) =>
       value == value.roundToDouble() ? '${value.round()}' : value.toStringAsFixed(1);
-
-  static Color? _parseHex(String? hex) {
-    if (hex == null || hex.length != 7 || !hex.startsWith('#')) return null;
-    final value = int.tryParse(hex.substring(1), radix: 16);
-    return value == null ? null : Color(0xFF000000 | value);
-  }
 }

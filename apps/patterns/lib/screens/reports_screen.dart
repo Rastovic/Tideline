@@ -5,6 +5,7 @@ import 'package:vitals_ui/vitals_ui.dart';
 import '../data/patterns_controller.dart';
 import 'doctor_page_screen.dart';
 import 'export_screen.dart';
+import 'panel.dart';
 import 'report_builder_screen.dart';
 import 'report_view_screen.dart';
 import '../l10n/app_language.dart';
@@ -141,21 +142,34 @@ class _ReportsScreenState extends State<ReportsScreen> {
                     ),
                     children: [
                       for (final report in reports)
-                        ListTile(
-                          contentPadding: EdgeInsets.zero,
-                          title:
-                              Text(report.name, style: theme.typography.body),
-                          subtitle: Text(
-                            _describe(report, context.s),
-                            style: theme.typography.caption
-                                .copyWith(color: theme.colors.inkFaint),
-                          ),
+                        Panel(
+                          label: _describe(report, context.s),
                           trailing: IconButton(
                             tooltip: context.s.delete,
-                            icon: const Icon(Icons.close),
+                            visualDensity: VisualDensity.compact,
+                            icon: Icon(
+                              Icons.close,
+                              size: 18,
+                              color: theme.colors.inkFaint,
+                            ),
                             onPressed: () => _delete(report),
                           ),
                           onTap: () => _open(report),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  report.name,
+                                  style: theme.typography.title,
+                                ),
+                              ),
+                              Icon(
+                                Icons.arrow_forward,
+                                size: 18,
+                                color: theme.colors.accent,
+                              ),
+                            ],
+                          ),
                         ),
                     ],
                   ),

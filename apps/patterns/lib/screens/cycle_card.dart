@@ -43,74 +43,71 @@ class CycleCard extends StatelessWidget {
       if (status?.lastStart case final start?)
         s.cycleStartedOn(s.humanDate(start)),
       if (status?.bleedingDays case final days?)
-        status!.bleedingNow ? s.cycleBleedingSoFar(days) : s.cycleBleedingDays(days),
+        status!.bleedingNow
+            ? s.cycleBleedingSoFar(days)
+            : s.cycleBleedingDays(days),
     ];
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: VitalsSpacing.sm),
-      padding: const EdgeInsets.all(VitalsSpacing.lg),
-      decoration: BoxDecoration(
-        color: colors.surface,
-        borderRadius: VitalsRadius.nestedAll,
-        border: Border.all(color: colors.stroke),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            switch (status?.day) {
-              final day? => s.cycleDayNumber(day),
-              null => s.cycleNotAnchored,
-            },
-            style: theme.typography.title,
+    // Drawn inside the home screen's cycle panel, so it carries no card of
+    // its own.
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          switch (status?.day) {
+            final day? => s.cycleDayNumber(day),
+            null => s.cycleNotAnchored,
+          },
+          style: theme.typography.displayL.copyWith(
+            fontFeatures: const [FontFeature.tabularFigures()],
           ),
-          if (lines.isNotEmpty) ...[
-            const SizedBox(height: VitalsSpacing.xs),
-            Text(
-              lines.join(' · '),
-              style: theme.typography.caption.copyWith(color: colors.inkMuted),
-            ),
-          ],
-          if (status != null && !status.isAnchored) ...[
-            const SizedBox(height: VitalsSpacing.xs),
-            Text(
-              status.lastStart == null
-                  ? s.cycleNothingRecorded
-                  : s.cycleTooFarBack,
-              style: theme.typography.caption.copyWith(color: colors.inkFaint),
-            ),
-          ],
-          if (status != null && status.recentLengths.isNotEmpty) ...[
-            const SizedBox(height: VitalsSpacing.xs),
-            Text(
-              s.cycleLengthsLine(status.recentLengths.join(', ')),
-              style: theme.typography.caption.copyWith(color: colors.inkMuted),
-            ),
-          ],
-          const SizedBox(height: VitalsSpacing.md),
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: () => _pickDay(context, start: true),
-                  child: Text(s.periodStarted, textAlign: TextAlign.center),
-                ),
-              ),
-              const SizedBox(width: VitalsSpacing.sm),
-              Expanded(
-                child: OutlinedButton(
-                  // Nothing to end when nothing is open. Offering it anyway
-                  // would record an end that pairs with no start.
-                  onPressed: status?.bleedingNow == true
-                      ? () => _pickDay(context, start: false)
-                      : null,
-                  child: Text(s.periodEnded, textAlign: TextAlign.center),
-                ),
-              ),
-            ],
+        ),
+        if (lines.isNotEmpty) ...[
+          const SizedBox(height: VitalsSpacing.xs),
+          Text(
+            lines.join(' · '),
+            style: theme.typography.caption.copyWith(color: colors.inkMuted),
           ),
         ],
-      ),
+        if (status != null && !status.isAnchored) ...[
+          const SizedBox(height: VitalsSpacing.xs),
+          Text(
+            status.lastStart == null
+                ? s.cycleNothingRecorded
+                : s.cycleTooFarBack,
+            style: theme.typography.caption.copyWith(color: colors.inkFaint),
+          ),
+        ],
+        if (status != null && status.recentLengths.isNotEmpty) ...[
+          const SizedBox(height: VitalsSpacing.xs),
+          Text(
+            s.cycleLengthsLine(status.recentLengths.join(', ')),
+            style: theme.typography.caption.copyWith(color: colors.inkMuted),
+          ),
+        ],
+        const SizedBox(height: VitalsSpacing.md),
+        Row(
+          children: [
+            Expanded(
+              child: OutlinedButton(
+                onPressed: () => _pickDay(context, start: true),
+                child: Text(s.periodStarted, textAlign: TextAlign.center),
+              ),
+            ),
+            const SizedBox(width: VitalsSpacing.sm),
+            Expanded(
+              child: OutlinedButton(
+                // Nothing to end when nothing is open. Offering it anyway
+                // would record an end that pairs with no start.
+                onPressed: status?.bleedingNow == true
+                    ? () => _pickDay(context, start: false)
+                    : null,
+                child: Text(s.periodEnded, textAlign: TextAlign.center),
+              ),
+            ),
+          ],
+        ),
+      ],
     );
   }
 

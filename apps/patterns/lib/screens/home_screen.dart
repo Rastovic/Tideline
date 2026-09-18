@@ -15,6 +15,7 @@ import 'log_sheet.dart';
 import 'metric_labels.dart';
 import 'cycle_card.dart';
 import 'metrics_screen.dart';
+import 'panel.dart';
 import 'photo_timeline_screen.dart';
 import 'profile_screens.dart';
 import 'report_view_screen.dart';
@@ -335,46 +336,51 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                 ),
                 const SizedBox(height: VitalsSpacing.lg),
                 for (final domain in MetricDomain.values)
-                  if (sections[domain]?.isNotEmpty ?? false) ...[
-                    Padding(
-                      padding: const EdgeInsets.only(
-                        top: VitalsSpacing.lg,
-                        bottom: VitalsSpacing.sm,
+                  if (sections[domain]?.isNotEmpty ?? false)
+                    Panel(
+                      label: context.s.domainName(domain),
+                      padding: const EdgeInsets.fromLTRB(
+                        VitalsSpacing.lg,
+                        VitalsSpacing.lg,
+                        VitalsSpacing.sm,
+                        VitalsSpacing.sm,
                       ),
-                      child: Text(
-                        context.s.domainName(domain),
-                        style: theme.typography.label.copyWith(
-                          color: colors.inkFaint,
-                          letterSpacing: 1.2,
-                        ),
-                      ),
+                      child: domain == MetricDomain.cycle
+                          ? Padding(
+                              padding: const EdgeInsets.only(
+                                right: VitalsSpacing.sm,
+                                bottom: VitalsSpacing.sm,
+                              ),
+                              child: CycleCard(
+                                status: _cycle,
+                                today: controller.today,
+                                onLog: (start, dayKey) async {
+                                  await controller.logPeriod(
+                                    start: start,
+                                    dayKey: dayKey,
+                                  );
+                                },
+                              ),
+                            )
+                          : Column(
+                              children: [
+                                for (final status in sections[domain]!)
+                                  _MarkerRow(
+                                    status: status,
+                                    onTap: () => _log(status.metric),
+                                    // A photo marker opens its timeline; a
+                                    // diary has nothing to chart, so holding
+                                    // it does nothing.
+                                    onLongPress: switch (status.metric) {
+                                      Metric(kind: MetricKind.photo) => () =>
+                                          _openTimeline(status.metric),
+                                      Metric(displayStyle: null) => null,
+                                      _ => () => _openReport(status.metric),
+                                    },
+                                  ),
+                              ],
+                            ),
                     ),
-                    if (domain == MetricDomain.cycle)
-                      CycleCard(
-                        status: _cycle,
-                        today: controller.today,
-                        onLog: (start, dayKey) async {
-                          await controller.logPeriod(
-                            start: start,
-                            dayKey: dayKey,
-                          );
-                        },
-                      )
-                    else
-                    for (final status in sections[domain]!)
-                      _MarkerRow(
-                        status: status,
-                        onTap: () => _log(status.metric),
-                        // A photo marker opens its timeline; a diary has
-                        // nothing to chart, so holding it does nothing.
-                        onLongPress: switch (status.metric) {
-                          Metric(kind: MetricKind.photo) => () =>
-                              _openTimeline(status.metric),
-                          Metric(displayStyle: null) => null,
-                          _ => () => _openReport(status.metric),
-                        },
-                      ),
-                  ],
               ],
             );
           },

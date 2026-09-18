@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:vitals_notify/vitals_notify.dart';
 
 import 'app/patterns_app.dart';
+import 'app/tideline_themes.dart';
 import 'data/app_database.dart';
 import 'data/app_lock.dart';
 import 'data/evening_reminder.dart';
@@ -42,6 +43,7 @@ Future<void> main() async {
 
   // Loaded before the first frame, so the app never flashes its content
   // before the lock covers it.
+  final theme = ValueNotifier(await ThemeChoice.load());
   final lock = AppLock();
   await lock.load();
 
@@ -51,6 +53,7 @@ Future<void> main() async {
       lock: lock,
       quickLog: const PlatformQuickLogWidget(),
       language: language,
+      theme: theme,
       reminder: reminder,
       settings: settings,
     ),

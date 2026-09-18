@@ -25,6 +25,11 @@ final class VitalsThemeData extends ThemeExtension<VitalsThemeData> {
               : const Color(0xFF0E1116),
         );
 
+  /// Tokens from a full colour set, for an app that offers its own themes
+  /// rather than the shared palette with one accent.
+  VitalsThemeData.fromColors({required this.accent, required this.colors})
+      : typography = VitalsTypography.forColor(colors.ink);
+
   const VitalsThemeData._raw({
     required this.accent,
     required this.colors,
@@ -82,6 +87,14 @@ final class VitalsTheme {
   static ThemeData dark({required AppAccent accent}) =>
       _build(accent, Brightness.dark);
 
+  /// A theme from a complete colour set. [accent] only identifies the app;
+  /// every colour drawn comes from [colors].
+  static ThemeData fromColors(
+    VitalsColors colors, {
+    required AppAccent accent,
+  }) =>
+      _fromData(VitalsThemeData.fromColors(accent: accent, colors: colors));
+
   /// The Vitals tokens for this subtree.
   ///
   /// Throws rather than returning null: a component rendered outside a
@@ -98,8 +111,11 @@ final class VitalsTheme {
     return data;
   }
 
-  static ThemeData _build(AppAccent accent, Brightness brightness) {
-    final vitals = VitalsThemeData(accent: accent, brightness: brightness);
+  static ThemeData _build(AppAccent accent, Brightness brightness) =>
+      _fromData(VitalsThemeData(accent: accent, brightness: brightness));
+
+  static ThemeData _fromData(VitalsThemeData vitals) {
+    final brightness = vitals.colors.brightness;
     final c = vitals.colors;
     final t = vitals.typography;
 

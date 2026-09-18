@@ -8,8 +8,11 @@ import '../data/archive_transfer.dart';
 import '../data/evening_reminder.dart';
 import '../data/patterns_controller.dart';
 import '../data/quick_log_widget.dart';
+import '../app/tideline_themes.dart';
 import 'backup_screen.dart';
+import 'panel.dart';
 import 'profile_screens.dart';
+import 'theme_picker.dart';
 import '../l10n/app_language.dart';
 
 /// Settings, which for now is the one reminder.
@@ -173,228 +176,234 @@ class _SettingsScreenState extends State<SettingsScreen> {
             VitalsSpacing.huge,
           ),
           children: [
-            // Written in both languages, so it can be found by someone who
-            // cannot read the one currently on screen.
-            Text(
-              'LANGUAGE / JEZIK',
-              style: theme.typography.label.copyWith(
-                color: theme.colors.inkFaint,
-                letterSpacing: 1.2,
+            // Ordered from the person outwards: whose record this is, how the
+            // day works for them, then the phone around it (widget, lock),
+            // then how the app looks, then the backup. Removing a profile is
+            // last and apart.
+            if (widget.controller case final controller?)
+              Panel(
+                label: context.s.profileHeading,
+                child: ProfileSettingsSection(controller: controller),
               ),
+            Panel(
+              label: context.s.reminderHeading,
+              child: _column(_reminder(theme)),
             ),
-            const SizedBox(height: VitalsSpacing.sm),
-            Wrap(
-              spacing: VitalsSpacing.sm,
-              children: [
-                for (final language in AppLanguage.values)
-                  ChoiceChip(
-                    label: Text(language.nativeName),
-                    selected: context.s.language == language,
-                    onSelected: (_) => _setLanguage(language),
-                  ),
-              ],
-            ),
-            const SizedBox(height: VitalsSpacing.huge),
-            Text(
-              context.s.reminderHeading,
-              style: theme.typography.label.copyWith(
-                color: theme.colors.inkFaint,
-                letterSpacing: 1.2,
+            if (widget.controller case final controller?)
+              Panel(
+                label: context.s.dayHeading,
+                child: _column(_day(theme, controller)),
               ),
-            ),
-            const SizedBox(height: VitalsSpacing.sm),
-            SwitchListTile(
-              contentPadding: EdgeInsets.zero,
-              value: _settings.enabled,
-              onChanged: _toggle,
-              title: Text(context.s.oneEveningReminder, style: theme.typography.body),
-            ),
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              enabled: _settings.enabled,
-              onTap: _settings.enabled ? _pickTime : null,
-              title: Text(context.s.time, style: theme.typography.body),
-              trailing: Text(
-                _clock(_settings),
-                style: theme.typography.title.copyWith(
-                  color: _settings.enabled
-                      ? theme.colors.ink
-                      : theme.colors.inkFaint,
-                ),
+            if ((widget.controller, _widgetIds) case (
+              final controller?,
+              final ids?,
+            ))
+              Panel(
+                label: context.s.widgetHeading,
+                child: _column(_widget(theme, controller, ids)),
               ),
-            ),
-            const SizedBox(height: VitalsSpacing.md),
-            Text(
-              // Written down because it is a promise, not a description: the
-              // reminder does not know whether the day was logged, and it is
-              // never going to.
-              context.s.reminderPromise,
-              style: theme.typography.caption.copyWith(
-                color: theme.colors.inkMuted,
+            if (widget.lock case final lock?)
+              Panel(
+                label: context.s.lockHeading,
+                child: _column(_lock(theme, lock)),
               ),
+            if (ThemeScope.of(context) case final choice?)
+              Panel(
+                label: context.s.themeHeading,
+                child: ThemePicker(choice: choice),
+              ),
+            Panel(
+              label: context.s.languageHeading,
+              child: _column(_appearance(theme)),
             ),
             if (widget.controller case final controller?) ...[
+              Panel(
+                label: context.s.archiveHeading,
+                child: _column(_archive(theme, controller)),
+              ),
+              // Last, and apart. See DeleteProfileSection.
               const SizedBox(height: VitalsSpacing.huge),
-              ProfileSettingsSection(controller: controller),
-            ],
-            if (widget.lock case final lock?) ...[
-              const SizedBox(height: VitalsSpacing.huge),
-              Text(
-                context.s.lockHeading,
-                style: theme.typography.label.copyWith(
-                  color: theme.colors.inkFaint,
-                  letterSpacing: 1.2,
-                ),
-              ),
-              SwitchListTile(
-                contentPadding: EdgeInsets.zero,
-                value: lock.enabled && lock.available,
-                onChanged: lock.available
-                    ? (on) async {
-                        await lock.setEnabled(on, reason: context.s.unlockReason);
-                        if (mounted) setState(() {});
-                      }
-                    : null,
-                title: Text(context.s.lockTitle,
-                    style: theme.typography.body),
-                subtitle: Text(
-                  lock.available
-                      ? context.s.lockExplained
-                      : context.s.lockUnavailable,
-                  style: theme.typography.caption
-                      .copyWith(color: theme.colors.inkFaint),
-                ),
-              ),
-            ],
-            if ((widget.controller, _widgetIds)
-                case (final controller?, final ids?)) ...[
-              const SizedBox(height: VitalsSpacing.huge),
-              Text(
-                context.s.widgetHeading,
-                style: theme.typography.label.copyWith(
-                  color: theme.colors.inkFaint,
-                  letterSpacing: 1.2,
-                ),
-              ),
-              const SizedBox(height: VitalsSpacing.sm),
-              Text(
-                context.s.widgetExplained(quickLogSlots),
-                style: theme.typography.caption
-                    .copyWith(color: theme.colors.inkMuted),
-              ),
-              for (final metric in controller.homeOrder)
-                CheckboxListTile(
-                  contentPadding: EdgeInsets.zero,
-                  controlAffinity: ListTileControlAffinity.leading,
-                  value: ids.contains(metric.id),
-                  onChanged: ids.contains(metric.id) ||
-                          ids.length < quickLogSlots
-                      ? (_) => _toggleWidgetMarker(metric.id)
-                      : null,
-                  title: Text(metric.name, style: theme.typography.body),
-                  secondary: ids.contains(metric.id)
-                      ? Text('${ids.indexOf(metric.id) + 1}.',
-                          style: theme.typography.caption)
-                      : null,
-                ),
-            ],
-            if (widget.controller case final controller?) ...[
-              const SizedBox(height: VitalsSpacing.huge),
-              Text(
-                context.s.dayHeading,
-                style: theme.typography.label.copyWith(
-                  color: theme.colors.inkFaint,
-                  letterSpacing: 1.2,
-                ),
-              ),
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                title: Text(context.s.newDayStartsAt, style: theme.typography.body),
-                subtitle: Text(
-                  context.s.dayBoundaryExplained,
-                  style: theme.typography.caption
-                      .copyWith(color: theme.colors.inkFaint),
-                ),
-                trailing: DropdownButton<int>(
-                  value: controller.dayBoundaryHour,
-                  items: [
-                    for (var hour = 0; hour <= 6; hour++)
-                      DropdownMenuItem(
-                        value: hour,
-                        child: Text('${hour.toString().padLeft(2, '0')}:00'),
-                      ),
-                  ],
-                  onChanged: (hour) async {
-                    if (hour == null) return;
-                    await DayBoundary.save(hour);
-                    await controller.setDayBoundaryHour(hour);
-                    if (mounted) setState(() {});
-                  },
-                ),
-              ),
-              const SizedBox(height: VitalsSpacing.huge),
-              Text(
-                context.s.archiveHeading,
-                style: theme.typography.label.copyWith(
-                  color: theme.colors.inkFaint,
-                  letterSpacing: 1.2,
-                ),
-              ),
-              // A number to look at, never a limit. Nothing here deletes a
-              // photo, suggests deleting one, or warns at a threshold: the
-              // phone's own storage warning is the only one that is true.
-              FutureBuilder<int>(
-                future: _photoBytes ??= controller.photoBytes(),
-                builder: (context, snapshot) => ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: Text(context.s.photosTakeUp,
-                      style: theme.typography.body),
-                  trailing: Text(
-                    snapshot.hasData ? megabytes(snapshot.data!) : '…',
-                    style: theme.typography.body
-                        .copyWith(color: theme.colors.inkMuted),
-                  ),
-                ),
-              ),
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                title: Text(context.s.backupAndRestore,
-                    style: theme.typography.body),
-                subtitle: Text(
-                  context.s.oneFileWithEverything,
-                  style: theme.typography.caption
-                      .copyWith(color: theme.colors.inkFaint),
-                ),
-                trailing: const Icon(Icons.chevron_right),
-                onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute<void>(
-                    builder: (_) => BackupScreen(
-                      controller: controller,
-                      transfer: widget.transfer,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-            if (_blockedByOs) ...[
-              const SizedBox(height: VitalsSpacing.lg),
-              Container(
-                padding: const EdgeInsets.all(VitalsSpacing.md),
-                decoration: BoxDecoration(
-                  color: theme.colors.danger.withValues(alpha: 0.10),
-                  borderRadius: VitalsRadius.nestedAll,
-                ),
-                child: Text(
-                  context.s.notificationsBlocked,
-                  style: theme.typography.caption,
-                ),
-              ),
+              DeleteProfileSection(controller: controller),
             ],
           ],
         ),
       ),
     );
   }
+
+  Widget _column(List<Widget> children) => Column(
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    mainAxisSize: MainAxisSize.min,
+    children: children,
+  );
+
+  List<Widget> _reminder(VitalsThemeData theme) => [
+    SwitchListTile(
+      contentPadding: EdgeInsets.zero,
+      value: _settings.enabled,
+      onChanged: _toggle,
+      title: Text(context.s.oneEveningReminder, style: theme.typography.body),
+    ),
+    // Right under the switch it explains, not at the bottom of the page.
+    if (_blockedByOs)
+      Container(
+        margin: const EdgeInsets.only(bottom: VitalsSpacing.md),
+        padding: const EdgeInsets.all(VitalsSpacing.md),
+        decoration: BoxDecoration(
+          color: theme.colors.danger.withValues(alpha: 0.10),
+          borderRadius: VitalsRadius.nestedAll,
+        ),
+        child: Text(
+          context.s.notificationsBlocked,
+          style: theme.typography.caption,
+        ),
+      ),
+    ListTile(
+      contentPadding: EdgeInsets.zero,
+      enabled: _settings.enabled,
+      onTap: _settings.enabled ? _pickTime : null,
+      title: Text(context.s.time, style: theme.typography.body),
+      trailing: Text(
+        _clock(_settings),
+        style: theme.typography.title.copyWith(
+          color: _settings.enabled ? theme.colors.ink : theme.colors.inkFaint,
+        ),
+      ),
+    ),
+    const SizedBox(height: VitalsSpacing.sm),
+    Text(
+      // Written down because it is a promise, not a description: the
+      // reminder does not know whether the day was logged, and it is
+      // never going to.
+      context.s.reminderPromise,
+      style: theme.typography.caption.copyWith(color: theme.colors.inkMuted),
+    ),
+  ];
+
+  List<Widget> _day(VitalsThemeData theme, PatternsController controller) => [
+    ListTile(
+      contentPadding: EdgeInsets.zero,
+      title: Text(context.s.newDayStartsAt, style: theme.typography.body),
+      subtitle: Text(
+        context.s.dayBoundaryExplained,
+        style: theme.typography.caption.copyWith(color: theme.colors.inkFaint),
+      ),
+      trailing: DropdownButton<int>(
+        value: controller.dayBoundaryHour,
+        items: [
+          for (var hour = 0; hour <= 6; hour++)
+            DropdownMenuItem(
+              value: hour,
+              child: Text('${hour.toString().padLeft(2, '0')}:00'),
+            ),
+        ],
+        onChanged: (hour) async {
+          if (hour == null) return;
+          await DayBoundary.save(hour);
+          await controller.setDayBoundaryHour(hour);
+          if (mounted) setState(() {});
+        },
+      ),
+    ),
+  ];
+
+  List<Widget> _widget(
+    VitalsThemeData theme,
+    PatternsController controller,
+    List<String> ids,
+  ) => [
+    Text(
+      context.s.widgetExplained(quickLogSlots),
+      style: theme.typography.caption.copyWith(color: theme.colors.inkMuted),
+    ),
+    for (final metric in controller.homeOrder)
+      CheckboxListTile(
+        contentPadding: EdgeInsets.zero,
+        controlAffinity: ListTileControlAffinity.leading,
+        value: ids.contains(metric.id),
+        onChanged: ids.contains(metric.id) || ids.length < quickLogSlots
+            ? (_) => _toggleWidgetMarker(metric.id)
+            : null,
+        title: Text(metric.name, style: theme.typography.body),
+        secondary: ids.contains(metric.id)
+            ? Text(
+                '${ids.indexOf(metric.id) + 1}.',
+                style: theme.typography.caption,
+              )
+            : null,
+      ),
+  ];
+
+  List<Widget> _lock(VitalsThemeData theme, AppLock lock) => [
+    SwitchListTile(
+      contentPadding: EdgeInsets.zero,
+      value: lock.enabled && lock.available,
+      onChanged: lock.available
+          ? (on) async {
+              await lock.setEnabled(on, reason: context.s.unlockReason);
+              if (mounted) setState(() {});
+            }
+          : null,
+      title: Text(context.s.lockTitle, style: theme.typography.body),
+      subtitle: Text(
+        lock.available ? context.s.lockExplained : context.s.lockUnavailable,
+        style: theme.typography.caption.copyWith(color: theme.colors.inkFaint),
+      ),
+    ),
+  ];
+
+  /// How the app looks and speaks. The chips carry each language's own name,
+  /// so the choice is still findable by someone who cannot read the heading.
+  /// The chips carry each language's own name, so the choice is still
+  /// findable by someone who cannot read the heading.
+  List<Widget> _appearance(VitalsThemeData theme) => [
+    Wrap(
+      spacing: VitalsSpacing.sm,
+      children: [
+        for (final language in AppLanguage.values)
+          ChoiceChip(
+            label: Text(language.nativeName),
+            selected: context.s.language == language,
+            onSelected: (_) => _setLanguage(language),
+          ),
+      ],
+    ),
+  ];
+
+  List<Widget> _archive(
+    VitalsThemeData theme,
+    PatternsController controller,
+  ) => [
+    // A number to look at, never a limit. Nothing here deletes a photo,
+    // suggests deleting one, or warns at a threshold: the phone's own
+    // storage warning is the only one that is true.
+    FutureBuilder<int>(
+      future: _photoBytes ??= controller.photoBytes(),
+      builder: (context, snapshot) => ListTile(
+        contentPadding: EdgeInsets.zero,
+        title: Text(context.s.photosTakeUp, style: theme.typography.body),
+        trailing: Text(
+          snapshot.hasData ? megabytes(snapshot.data!) : '…',
+          style: theme.typography.body.copyWith(color: theme.colors.inkMuted),
+        ),
+      ),
+    ),
+    ListTile(
+      contentPadding: EdgeInsets.zero,
+      title: Text(context.s.backupAndRestore, style: theme.typography.body),
+      subtitle: Text(
+        context.s.oneFileWithEverything,
+        style: theme.typography.caption.copyWith(color: theme.colors.inkFaint),
+      ),
+      trailing: const Icon(Icons.chevron_right),
+      onTap: () => Navigator.of(context).push(
+        MaterialPageRoute<void>(
+          builder: (_) =>
+              BackupScreen(controller: controller, transfer: widget.transfer),
+        ),
+      ),
+    ),
+  ];
 
   static String _clock(ReminderSettings settings) =>
       '${settings.hour.toString().padLeft(2, '0')}:'

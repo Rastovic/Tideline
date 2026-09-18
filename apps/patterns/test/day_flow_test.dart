@@ -263,6 +263,8 @@ void main() {
     await tester.pumpWidget(wrap(HomeScreen(controller: controller)));
     await tester.pumpAndSettle();
     await tester.scrollUntilVisible(find.text('koza'), 120);
+    await tester.ensureVisible(find.text('koza'));
+    await tester.pumpAndSettle();
     await tester.longPress(find.text('koza'));
     await tester.pumpAndSettle();
 

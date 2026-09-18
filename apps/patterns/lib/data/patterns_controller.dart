@@ -4,6 +4,7 @@ import 'package:patterns_core/patterns_core.dart';
 import 'package:patterns_data/patterns_data.dart';
 import 'package:vitals_core/vitals_core.dart';
 
+import 'demo_data.dart';
 import 'photo_store.dart';
 
 /// What the home list shows for one marker.
@@ -59,23 +60,23 @@ final class PatternsController extends ChangeNotifier {
     required int dayBoundaryHour,
     PhotoStore? photoStore,
     String activeProfileId = defaultProfileId,
-  })  : _db = db,
-        // ignore: prefer_initializing_formals
-        _activeProfileId = activeProfileId,
-        _dayBoundaryHour = dayBoundaryHour,
-        // ignore: prefer_initializing_formals
-        _photoStore = photoStore,
-        metrics = MetricRepository(db, installId: installId),
-        observations = ObservationRepository(
-          db,
-          installId: installId,
-          dayBoundaryHour: dayBoundaryHour,
-        ),
-        photos = PhotoRepository(db, installId: installId),
-        profiles = ProfileRepository(db, installId: installId),
-        reports = ReportRepository(db, installId: installId),
-        backup = PatternsBackup(db),
-        _installId = installId;
+  }) : _db = db,
+       // ignore: prefer_initializing_formals
+       _activeProfileId = activeProfileId,
+       _dayBoundaryHour = dayBoundaryHour,
+       // ignore: prefer_initializing_formals
+       _photoStore = photoStore,
+       metrics = MetricRepository(db, installId: installId),
+       observations = ObservationRepository(
+         db,
+         installId: installId,
+         dayBoundaryHour: dayBoundaryHour,
+       ),
+       photos = PhotoRepository(db, installId: installId),
+       profiles = ProfileRepository(db, installId: installId),
+       reports = ReportRepository(db, installId: installId),
+       backup = PatternsBackup(db),
+       _installId = installId;
 
   final PatternsDatabase _db;
   int _dayBoundaryHour;
@@ -146,7 +147,9 @@ final class PatternsController extends ChangeNotifier {
     final grouped = <MetricDomain, List<MarkerStatus>>{};
     for (final metric in _all) {
       if (!metric.isActive || _hidden(metric)) continue;
-      grouped.putIfAbsent(metric.domain, () => []).add(
+      grouped
+          .putIfAbsent(metric.domain, () => [])
+          .add(
             MarkerStatus(metric: metric, count: _todayCounts[metric.id] ?? 0),
           );
     }
@@ -155,10 +158,10 @@ final class PatternsController extends ChangeNotifier {
 
   /// Active markers in the order the home list shows them.
   List<Metric> get homeOrder => [
-        for (final domain in MetricDomain.values)
-          for (final status in sections[domain] ?? const <MarkerStatus>[])
-            status.metric,
-      ];
+    for (final domain in MetricDomain.values)
+      for (final status in sections[domain] ?? const <MarkerStatus>[])
+        status.metric,
+  ];
 
   /// A cycle marker while the cycle is off for this profile. Hidden, never
   /// deleted: turning the cycle back on brings back every period recorded.
@@ -168,8 +171,8 @@ final class PatternsController extends ChangeNotifier {
           activeProfile.ownsCycleMarker(metric));
 
   Map<String, MetricKind> get kinds => {
-        for (final metric in _all) metric.id: metric.kind,
-      };
+    for (final metric in _all) metric.id: metric.kind,
+  };
 
   Metric? byId(String id) {
     for (final metric in _all) {
@@ -225,7 +228,7 @@ final class PatternsController extends ChangeNotifier {
   /// the export. The file is already lost; refusing to back up everything else
   /// would only make that worse.
   Future<({Uint8List bytes, int photosIncluded, int photosMissing})>
-      exportArchive({required String appVersion}) async {
+  exportArchive({required String appVersion}) async {
     final now = DateTime.now();
     return backup.export(
       appVersion: appVersion,
@@ -394,8 +397,10 @@ final class PatternsController extends ChangeNotifier {
   ///
   /// The home list drops archived markers; the editor must not, or a finished
   /// course of a supplement becomes unreachable the moment it is archived.
-  List<Metric> get allMarkers =>
-      List.unmodifiable([for (final m in _all) if (!_hidden(m)) m]);
+  List<Metric> get allMarkers => List.unmodifiable([
+    for (final m in _all)
+      if (!_hidden(m)) m,
+  ]);
 
   /// The next free position in a section, so a new marker lands at the bottom
   /// of its own list rather than in the middle of another one.
@@ -489,25 +494,143 @@ final class PatternsController extends ChangeNotifier {
     final markers = switch (start) {
       ProfileStart.empty => const <Metric>[],
       ProfileStart.starter => starterMarkers(
-          profileId: profile.id,
-          createdAt: now,
-          newId: Ids.newId,
-        ),
+        profileId: profile.id,
+        createdAt: now,
+        newId: Ids.newId,
+      ),
       ProfileStart.copy => copyMarkers(
-          (await metrics.all(profileId: copyFrom ?? activeProfileId))
-              // The period pair is the source profile's own; a copy that
-              // wants a cycle gets a fresh pair when it turns it on.
-              .where((m) => m.domain != MetricDomain.cycle),
-          profileId: profile.id,
-          createdAt: now,
-          newId: Ids.newId,
-        ),
+        (await metrics.all(profileId: copyFrom ?? activeProfileId))
+        // The period pair is the source profile's own; a copy that
+        // wants a cycle gets a fresh pair when it turns it on.
+        .where((m) => m.domain != MetricDomain.cycle),
+        profileId: profile.id,
+        createdAt: now,
+        newId: Ids.newId,
+      ),
     };
     for (final marker in markers) {
       await metrics.save(marker, now: now);
     }
 
     await switchProfile(profile.id);
+    return profile;
+  }
+
+  /// A profile full of made-up readings and a few saved reports, to show what
+  /// the reports look like before months of real logging exist.
+  ///
+  /// **Its own profile, always.** Nothing is written into anyone else's
+  /// record, and deleting the demo profile removes every trace of it.
+  Future<Profile> createDemoProfile({
+    required String name,
+    required ({
+      String moodAndTiredness,
+      String creatineAndBloating,
+      String byCycleDay,
+      String weeklyRhythm,
+    })
+    reportNames,
+    int days = 120,
+  }) async {
+    final profile = await createProfile(
+      name: name,
+      start: ProfileStart.starter,
+    );
+    await setCycleEnabled(true);
+    final withCycle = activeProfile;
+
+    final readings = demoReadings(
+      markers: _all,
+      today: _today,
+      periodStartId: withCycle.periodStartMetricId,
+      periodEndId: withCycle.periodEndMetricId,
+      days: days,
+    );
+    // One transaction: two thousand single inserts on a phone is seconds of a
+    // frozen screen, and a half-written demo is worse than none.
+    await _db.transaction(() async {
+      for (final r in readings) {
+        final date = parseDayKey(r.dayKey)!;
+        final at = DateTime(
+          date.year,
+          date.month,
+          date.day,
+          r.minuteOfDay ~/ 60,
+          r.minuteOfDay % 60,
+        );
+        await observations.log(
+          metricId: r.metricId,
+          value: r.value,
+          at: at.toUtc(),
+          utcOffsetMinutes: at.timeZoneOffset.inMinutes,
+          note: r.note,
+        );
+      }
+    });
+
+    String? id(String markerName) {
+      for (final m in _all) {
+        if (m.name == markerName) return m.id;
+      }
+      return null;
+    }
+
+    final now = DateTime.now().toUtc();
+    ReportSeries? series(String name, [DisplayStyle? style, String? behind]) =>
+        switch (id(name)) {
+          final found? => ReportSeries(
+            metricId: found,
+            displayStyle: style,
+            bandBehindMetricId: behind == null ? null : id(behind),
+          ),
+          null => null,
+        };
+
+    final definitions = [
+      ReportDefinition(
+        id: Ids.newId(),
+        name: reportNames.moodAndTiredness,
+        series: [?series('mood'), ?series('tiredness'), ?series('bedtime')],
+        period: const LastDays(90),
+        createdAt: now,
+      ),
+      ReportDefinition(
+        id: Ids.newId(),
+        name: reportNames.creatineAndBloating,
+        series: [
+          ?series('bloating'),
+          ?series('creatine dose', DisplayStyle.bars),
+          ?series('creatine', null, 'bloating'),
+        ],
+        period: const LastDays(90),
+        createdAt: now,
+      ),
+      ReportDefinition(
+        id: Ids.newId(),
+        name: reportNames.byCycleDay,
+        series: [
+          ?series('bloating'),
+          ?series('irritability'),
+          ?series('appetite'),
+        ],
+        period: LastDays(days),
+        axis: ReportAxis.cycleDay,
+        createdAt: now,
+      ),
+      ReportDefinition(
+        id: Ids.newId(),
+        name: reportNames.weeklyRhythm,
+        series: [?series('mood'), ?series('urge to overeat')],
+        period: const LastDays(90),
+        axis: ReportAxis.grid,
+        createdAt: now,
+      ),
+    ];
+    for (final definition in definitions) {
+      await saveReport(definition);
+    }
+
+    await refresh();
     return profile;
   }
 
@@ -552,8 +675,7 @@ final class PatternsController extends ChangeNotifier {
     if (_profiles.length <= 1) return false;
     await profiles.softDelete(profileId, now: DateTime.now().toUtc());
     if (profileId == _activeProfileId) {
-      _activeProfileId =
-          _profiles.firstWhere((p) => p.id != profileId).id;
+      _activeProfileId = _profiles.firstWhere((p) => p.id != profileId).id;
     }
     await refresh();
     return true;
@@ -606,8 +728,7 @@ final class PatternsController extends ChangeNotifier {
   /// false reading would sit in the history looking like a recorded fact.
   Future<void> logPeriod({required bool start, required String dayKey}) async {
     final profile = activeProfile;
-    final id =
-        start ? profile.periodStartMetricId : profile.periodEndMetricId;
+    final id = start ? profile.periodStartMetricId : profile.periodEndMetricId;
     if (!cycleEnabled || id == null || byId(id) == null) return;
     await logOn(dayKey, id, const BooleanValue(true));
   }
@@ -680,8 +801,10 @@ final class PatternsController extends ChangeNotifier {
         metricIds: names.keys,
         kinds: kinds,
       ))
-        if (reading.value case TextValue(:final text, :final isPrivate)
-            when (includePrivate || !isPrivate) && matchesQuery(text, query))
+        if (reading.value case TextValue(
+          :final text,
+          :final isPrivate,
+        ) when (includePrivate || !isPrivate) && matchesQuery(text, query))
           SearchHit(
             dayKey: reading.dayKey,
             at: reading.recordedAt,

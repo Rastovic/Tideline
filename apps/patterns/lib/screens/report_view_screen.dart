@@ -6,6 +6,7 @@ import 'package:vitals_ui/vitals_ui.dart';
 import '../data/patterns_controller.dart';
 import 'day_detail_screen.dart';
 import 'day_grid_chart.dart';
+import 'panel.dart';
 import 'metric_labels.dart';
 import 'report_builder_screen.dart';
 import 'report_chart.dart';
@@ -171,7 +172,6 @@ class _ReportViewScreenState extends State<ReportViewScreen> {
                               ),
                             ),
                     ),
-                    const SizedBox(height: VitalsSpacing.xl),
                   ],
                 ],
               ),
@@ -215,50 +215,103 @@ class _RowBlock extends StatelessWidget {
     final theme = VitalsTheme.of(context);
     final color = markerColor(row.metric.colorHex) ?? theme.colors.accent;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Container(
-              width: 10,
-              height: 10,
-              decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+    final (headline, headlineLabel) = _headline(row, context.s);
+
+    return Panel(
+      label: row.metric.name,
+      color: color,
+      trailing: row.bandMetric == null
+          ? null
+          : Text(
+              context.s.behind(row.bandMetric!.name),
+              style: theme.typography.caption.copyWith(
+                color: theme.colors.inkFaint,
+              ),
             ),
-            const SizedBox(width: VitalsSpacing.sm),
-            Expanded(
-              child: Text(row.metric.name, style: theme.typography.body),
-            ),
-            if (row.bandMetric case final band?)
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // The one number worth reading first, big, with what it is and how
+          // much stands behind it right beside it. Never a grade: typical is a
+          // median, and the days logged sit next to it every time.
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
               Text(
-                context.s.behind(band.name),
-                style: theme.typography.caption.copyWith(
-                  color: theme.colors.inkFaint,
+                headline,
+                style: theme.typography.displayL.copyWith(
+                  fontFeatures: const [FontFeature.tabularFigures()],
+                  height: 1,
                 ),
               ),
-          ],
-        ),
-        const SizedBox(height: VitalsSpacing.sm),
-        // Same cells either way - the grid is a layout, not a different
-        // reading of the data.
-        if (report.definition.axis == ReportAxis.grid)
-          DayGridChart(
-            row: row,
-            dayKeys: report.dayKeys,
-            color: color,
-            onDayTap: onDayTap,
-          )
-        else
-          ReportRowChart(row: row, color: color, onDayTap: onDayTap),
-        const SizedBox(height: VitalsSpacing.xs),
-        Text(
-          _facts(row, context.s),
-          style: theme.typography.caption.copyWith(
-            color: theme.colors.inkMuted,
+              const SizedBox(width: VitalsSpacing.sm),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.only(bottom: 4),
+                  child: Text(
+                    headlineLabel,
+                    style: theme.typography.caption
+                        .copyWith(color: theme.colors.inkMuted),
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.only(bottom: 4),
+                child: Text(
+                  context.s.daysOf(row.stats.daysLogged, row.stats.daysInPeriod),
+                  style: theme.typography.caption.copyWith(
+                    color: theme.colors.inkMuted,
+                    fontFeatures: const [FontFeature.tabularFigures()],
+                  ),
+                ),
+              ),
+            ],
           ),
-        ),
-      ],
+          const SizedBox(height: VitalsSpacing.md),
+          // Same cells either way - the grid is a layout, not a different
+          // reading of the data.
+          if (report.definition.axis == ReportAxis.grid)
+            DayGridChart(
+              row: row,
+              dayKeys: report.dayKeys,
+              color: color,
+              onDayTap: onDayTap,
+            )
+          else
+            ReportRowChart(row: row, color: color, onDayTap: onDayTap),
+          if (_facts(row, context.s) case final facts
+              when facts.isNotEmpty) ...[
+            const SizedBox(height: VitalsSpacing.sm),
+            Text(
+              facts,
+              style: theme.typography.caption.copyWith(
+                color: theme.colors.inkMuted,
+              ),
+            ),
+          ],
+        ],
+      ),
     );
+  }
+
+  /// The big number on the card and its caption. The typical value where the
+  /// marker has one - as a clock time for a time marker - and otherwise the
+  /// days it was logged, since a tag row or a yes/no has no typical number.
+  static (String, String) _headline(ReportRow row, AppStrings s) {
+    final typical = row.stats.typical;
+    if (typical == null) {
+      return ('${row.stats.daysLogged}', s.daysLoggedLabel);
+    }
+    if (row.metric.kind == MetricKind.timeOfDay) {
+      final minute = typical.round() % 1440;
+      return (
+        '${(minute ~/ 60).toString().padLeft(2, '0')}:'
+            '${(minute % 60).toString().padLeft(2, '0')}',
+        s.typical,
+      );
+    }
+    final unit = row.metric.unit == null ? '' : ' ${row.metric.unit}';
+    return (_number(typical), '${s.typical}$unit');
   }
 
   /// Counts and ranges. **Coverage always travels with them**, because a
@@ -266,18 +319,18 @@ class _RowBlock extends StatelessWidget {
   /// twenty-eight, and hiding that is how a tracker quietly lies.
   static String _facts(ReportRow row, AppStrings s) {
     final stats = row.stats;
+    // Typical and days logged are the card's headline, so this line carries
+    // what is left: the spread and the typical week.
     final parts = <String>[];
-    if (stats.typical case final typical?) {
-      parts.add('${s.typical} ${_number(typical)}');
-    }
-    if (stats.lowest case final low?) {
+    if (stats.lowest case final low? when row.metric.kind != MetricKind.timeOfDay) {
       final high = stats.highest ?? low;
-      if (high != low) parts.add('${_number(low)}-${_number(high)}');
+      if (high != low) {
+        parts.add('${s.rangeLower} ${_number(low)}-${_number(high)}');
+      }
     }
     if (row.weeklyTypical case final weekly?) {
       parts.add('${s.weekly} ${_number(weekly)}');
     }
-    parts.add(s.daysOf(stats.daysLogged, stats.daysInPeriod));
     return parts.join(' · ');
   }
 

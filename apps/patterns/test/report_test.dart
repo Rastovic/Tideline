@@ -93,8 +93,9 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byType(ReportRowChart), findsNWidgets(2));
-    expect(find.text(mood.name), findsOneWidget);
-    expect(find.text(dose.name), findsOneWidget);
+    // Each row is a card headed by the marker's name.
+    expect(find.text(mood.name.toUpperCase()), findsOneWidget);
+    expect(find.text(dose.name.toUpperCase()), findsOneWidget);
     controller.dispose();
   });
 
@@ -115,7 +116,9 @@ void main() {
     // Coverage travels with the number: one day of thirty is a different
     // statement from twenty-eight, and hiding that is how a tracker lies.
     expect(find.textContaining('1/30 days'), findsOneWidget);
-    expect(find.textContaining('typical 6'), findsOneWidget);
+    // The headline: the typical value, big, labelled as what it is.
+    expect(find.text('6'), findsOneWidget);
+    expect(find.text('typical'), findsWidgets);
     for (final banned in ['dobro', 'lose', 'bolje', 'gore', 'ocjena', '%']) {
       expect(find.textContaining(banned), findsNothing, reason: banned);
     }

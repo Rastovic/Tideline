@@ -24,9 +24,13 @@ Future<void> showProfilePicker(
   final s = context.s;
   final choice = await showModalBottomSheet<String>(
     context: context,
+    // Scrolls, because profiles accumulate and a phone is short: a fixed
+    // column of them overflowed the sheet with only two profiles and the
+    // demo entry.
+    isScrollControlled: true,
     builder: (context) => SafeArea(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
+      child: ListView(
+        shrinkWrap: true,
         children: [
           for (final profile in controller.profileList)
             ListTile(
@@ -44,11 +48,21 @@ Future<void> showProfilePicker(
             title: Text(s.newProfile),
             onTap: () => Navigator.of(context).pop('new'),
           ),
+          ListTile(
+            leading: const Icon(Icons.auto_awesome_outlined),
+            title: Text(s.demoProfile),
+            subtitle: Text(s.demoProfileHint),
+            onTap: () => Navigator.of(context).pop('demo'),
+          ),
         ],
       ),
     ),
   );
   if (choice == null || !context.mounted) return;
+  if (choice == 'demo') {
+    await makeDemoProfile(context, controller);
+    return;
+  }
   if (choice == 'new') {
     await Navigator.of(context).push<void>(
       MaterialPageRoute(
@@ -58,6 +72,45 @@ Future<void> showProfilePicker(
     return;
   }
   await switchProfileTo(controller, choice);
+}
+
+/// Builds the demo profile behind a small progress dialog, then opens on it.
+Future<void> makeDemoProfile(
+  BuildContext context,
+  PatternsController controller,
+) async {
+  final s = context.s;
+  showDialog<void>(
+    context: context,
+    barrierDismissible: false,
+    builder: (context) => AlertDialog(
+      content: Row(
+        children: [
+          const SizedBox(
+            width: 20,
+            height: 20,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          ),
+          const SizedBox(width: VitalsSpacing.lg),
+          Expanded(child: Text(s.makingDemo)),
+        ],
+      ),
+    ),
+  );
+  try {
+    final profile = await controller.createDemoProfile(
+      name: s.demoProfileName,
+      reportNames: (
+        moodAndTiredness: s.demoMoodAndTiredness,
+        creatineAndBloating: s.demoCreatineAndBloating,
+        byCycleDay: s.demoByCycleDay,
+        weeklyRhythm: s.demoWeeklyRhythm,
+      ),
+    );
+    await ActiveProfile.save(profile.id);
+  } finally {
+    if (context.mounted) Navigator.of(context, rootNavigator: true).pop();
+  }
 }
 
 /// Making a profile: a name, and what it starts with.
@@ -222,49 +275,15 @@ class _ProfileSettingsSectionState extends State<ProfileSettingsSection> {
     if (mounted) setState(() {});
   }
 
-  Future<void> _delete() async {
-    final s = context.s;
-    final profile = controller.activeProfile;
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(s.deleteProfileQuestion(profile.name)),
-        content: Text(s.deleteProfileExplained),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: Text(s.cancel),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: Text(s.delete),
-          ),
-        ],
-      ),
-    );
-    if (ok != true) return;
-    await controller.deleteProfile(profile.id);
-    await ActiveProfile.save(controller.activeProfileId);
-    if (mounted) setState(() {});
-  }
-
   @override
   Widget build(BuildContext context) {
     final theme = VitalsTheme.of(context);
     final s = context.s;
     final profile = controller.activeProfile;
-    final onlyOne = controller.profileList.length <= 1;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          s.profileHeading,
-          style: theme.typography.label.copyWith(
-            color: theme.colors.inkFaint,
-            letterSpacing: 1.2,
-          ),
-        ),
         ListTile(
           contentPadding: EdgeInsets.zero,
           title: Text(profile.name, style: theme.typography.body),
@@ -284,16 +303,89 @@ class _ProfileSettingsSectionState extends State<ProfileSettingsSection> {
                 .copyWith(color: theme.colors.inkFaint),
           ),
         ),
-        TextButton(
-          onPressed: onlyOne ? null : _delete,
-          child: Text(
-            onlyOne ? s.lastProfile : s.deleteProfile,
-            style: TextStyle(
-              color: onlyOne ? theme.colors.inkFaint : theme.colors.danger,
+      ],
+    );
+  }
+}
+
+/// Removing the active profile, kept apart at the bottom of Settings.
+///
+/// **Far from everything else on purpose.** It sat under the cycle switch,
+/// one slip away from a tap meant for it, and it removes a person's whole
+/// record. It also asks for the profile's name to be typed, because a
+/// confirmation that is one more tap in the same place is a confirmation the
+/// thumb gives on its own.
+class DeleteProfileSection extends StatelessWidget {
+  const DeleteProfileSection({required this.controller, super.key});
+
+  final PatternsController controller;
+
+  Future<void> _delete(BuildContext context) async {
+    final s = context.s;
+    final profile = controller.activeProfile;
+    final typed = TextEditingController();
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: Text(s.deleteProfileQuestion(profile.name)),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(s.deleteProfileExplained),
+              const SizedBox(height: VitalsSpacing.lg),
+              Text(s.typeNameToConfirm(profile.name)),
+              TextField(
+                controller: typed,
+                autofocus: true,
+                onChanged: (_) => setState(() {}),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: Text(s.cancel),
             ),
+            TextButton(
+              onPressed: typed.text.trim() == profile.name
+                  ? () => Navigator.of(context).pop(true)
+                  : null,
+              child: Text(s.delete),
+            ),
+          ],
+        ),
+      ),
+    );
+    typed.dispose();
+    if (ok != true) return;
+    await controller.deleteProfile(profile.id);
+    await ActiveProfile.save(controller.activeProfileId);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = VitalsTheme.of(context);
+    final s = context.s;
+    final onlyOne = controller.profileList.length <= 1;
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: TextButton.icon(
+        onPressed: onlyOne ? null : () => _delete(context),
+        icon: Icon(
+          Icons.delete_outline,
+          color: onlyOne ? theme.colors.inkFaint : theme.colors.danger,
+        ),
+        label: Text(
+          onlyOne
+              ? s.lastProfile
+              : s.deleteNamedProfile(controller.activeProfile.name),
+          style: TextStyle(
+            color: onlyOne ? theme.colors.inkFaint : theme.colors.danger,
           ),
         ),
-      ],
+      ),
     );
   }
 }

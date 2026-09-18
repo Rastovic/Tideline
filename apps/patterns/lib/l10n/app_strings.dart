@@ -526,4 +526,47 @@ final class AppStrings {
   String get lastProfile => _t(
       'The only profile cannot be deleted.',
       'Jedini profil se ne moze obrisati.');
+
+  // --- Deleting a profile ------------------------------------------
+
+  String deleteNamedProfile(String name) =>
+      _t('Delete profile "$name"', 'Obrisi profil "$name"');
+  String typeNameToConfirm(String name) => _t(
+      'Type "$name" to confirm.', 'Ukucaj "$name" da potvrdis.');
+
+  // --- Settings headings -------------------------------------------
+
+  String get languageHeading => _t('LANGUAGE', 'JEZIK');
+  String get themeHeading => _t('THEME', 'TEMA');
+
+  // --- Demo profile ------------------------------------------------
+
+  String get demoProfile => _t('Demo profile', 'Demo profil');
+  String get demoProfileHint => _t(
+      'Four months of made-up data and a few reports, to see what reports can '
+          'show. Your own profiles are not touched; delete it when done.',
+      'Cetiri mjeseca izmisljenih podataka i nekoliko izvjestaja, da vidis sta '
+          'izvjestaji mogu da pokazu. Tvoji profili se ne diraju; obrisi ga kad '
+          'zavrsis.');
+  String get demoProfileName => _t('Demo', 'Demo');
+  String get demoMoodAndTiredness => _t('Mood and tiredness', 'Raspolozenje i umor');
+  String get demoCreatineAndBloating =>
+      _t('Creatine and bloating', 'Kreatin i nadutost');
+  String get demoByCycleDay => _t('Through the cycle', 'Kroz ciklus');
+  String get demoWeeklyRhythm => _t('Weekly rhythm', 'Nedjeljni ritam');
+  String get makingDemo => _t('Making the demo...', 'Pravim demo...');
+
+  // --- Themes ------------------------------------------------------
+
+  String get modeSystem => _t('System', 'Sistem');
+  String get modeLight => _t('Light', 'Svijetla');
+  String get modeDark => _t('Dark', 'Tamna');
+
+  // --- Report cards ------------------------------------------------
+
+  String get daysLoggedLabel => _t('days logged', 'dana upisano');
+
+  // --- Report cards 2 ----------------------------------------------
+
+  String get rangeLower => _t('range', 'raspon');
 }

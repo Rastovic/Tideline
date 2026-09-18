@@ -60,11 +60,14 @@ void main() {
 
     await tester.tap(find.byTooltip('Settings'));
     await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.text('Srpski'), 200);
     await tester.tap(find.text('Srpski'));
     await tester.pumpAndSettle();
 
     expect(find.text('Podesavanja'), findsOneWidget);
-    expect(find.text('PODSJETNIK'), findsOneWidget);
+    // One word in the chosen language, never both.
+    expect(find.text('JEZIK'), findsOneWidget);
+    expect(find.textContaining('LANGUAGE'), findsNothing);
     expect(await AppLanguage.load(), AppLanguage.sr);
 
     // The screen underneath changed too, not only the one in front.
@@ -92,6 +95,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.byTooltip('Settings'));
     await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.text('Srpski'), 200);
     await tester.tap(find.text('Srpski'));
     await tester.pumpAndSettle();
 

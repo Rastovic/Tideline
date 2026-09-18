@@ -188,6 +188,7 @@ void main() {
     )));
     await tester.pumpAndSettle();
 
+    await tester.scrollUntilVisible(find.text('Photos take up'), 150);
     expect(find.text('Photos take up'), findsOneWidget);
     expect(find.text('2 KB'), findsOneWidget);
     for (final banned in ['obrisi', 'oslobodi', 'previse', 'limit']) {

@@ -11,11 +11,42 @@
 library;
 
 import 'package:drift/drift.dart';
+import 'package:patterns_core/patterns_core.dart' show defaultProfileId;
 import 'package:vitals_archive/vitals_archive.dart';
+
+/// One person's record: whose markers, readings, photos and reports.
+///
+/// Everything else hangs off a profile by id. Nothing is shared between
+/// profiles, so removing one cannot reach into another's history.
+@DataClassName('ProfileRow')
+class Profiles extends Table with PortableTable {
+  TextColumn get name => text().withLength(min: 1, max: 120)();
+
+  /// Off unless turned on. Off hides the module; it never deletes a reading.
+  BoolColumn get cycleEnabled =>
+      boolean().withDefault(const Constant(false))();
+
+  /// The profile's two period markers, by id, so renaming either changes
+  /// nothing about what the cycle counts from.
+  TextColumn get periodStartMetricId => text().nullable()();
+  TextColumn get periodEndMetricId => text().nullable()();
+
+  IntColumn get sortOrder => integer().withDefault(const Constant(0))();
+
+  IntColumn get createdAt => integer()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
 
 /// A thing being tracked. Seeded markers and invented ones are the same row.
 @DataClassName('MetricRow')
 class Metrics extends Table with PortableTable {
+  /// Whose marker. Defaults to the first profile, which is what every row
+  /// written before profiles existed belongs to.
+  TextColumn get profileId =>
+      text().withDefault(const Constant(defaultProfileId))();
+
   TextColumn get name => text().withLength(min: 1, max: 120)();
 
   /// `mind` / `body` / `cycle`. Decides which section of the home list it sits
@@ -123,6 +154,11 @@ class Observations extends Table with PortableTable, DayScopedTable {
 /// own - "ovo je poslije treninga" needs no marker to belong to.
 @DataClassName('PhotoRow')
 class Photos extends Table with PortableTable, DayScopedTable {
+  /// Whose photo. A marker photo could find it through its marker, but a free
+  /// photo of the day has no marker, so every photo carries it.
+  TextColumn get profileId =>
+      text().withDefault(const Constant(defaultProfileId))();
+
   /// Null for a free photo that belongs to the day rather than to a marker.
   TextColumn get metricId => text().nullable()();
 
@@ -186,6 +222,9 @@ class AppMeta extends Table with PortableTable {
 /// table, and a persistence row is not a domain object.
 @DataClassName('SavedReportRow')
 class SavedReports extends Table with PortableTable {
+  TextColumn get profileId =>
+      text().withDefault(const Constant(defaultProfileId))();
+
   TextColumn get name => text().withLength(min: 1, max: 120)();
 
   /// The series, as JSON: marker id, display override, and which row a boolean

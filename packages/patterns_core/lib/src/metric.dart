@@ -1,6 +1,7 @@
 import 'aggregation.dart';
 import 'display.dart';
 import 'metric_kind.dart';
+import 'profile.dart';
 
 /// Which section of the home list a marker sits in. Nothing else.
 ///
@@ -103,6 +104,7 @@ final class Metric {
     required this.kind,
     required this.aggregation,
     required this.createdAt,
+    this.profileId = defaultProfileId,
     this.displayStyle,
     this.colorHex,
     this.unit,
@@ -135,9 +137,11 @@ final class Metric {
     String? highLabel,
     List<MetricOption> options = const [],
     int sortOrder = 0,
+    String profileId = defaultProfileId,
   }) =>
       Metric(
         id: id,
+        profileId: profileId,
         name: name,
         domain: domain,
         kind: kind,
@@ -155,6 +159,10 @@ final class Metric {
       );
 
   final String id;
+
+  /// Whose marker this is. Every profile has its own list, and nothing here
+  /// is shared: a child's "sleep" and a parent's "sleep" are two markers.
+  final String profileId;
 
   /// User-editable on every marker, seeded ones included.
   final String name;
@@ -212,6 +220,8 @@ final class Metric {
         ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
 
   Metric copyWith({
+    String? id,
+    String? profileId,
     String? name,
     MetricDomain? domain,
     DayAggregation? aggregation,
@@ -230,7 +240,8 @@ final class Metric {
     bool clearArchivedAt = false,
   }) =>
       Metric(
-        id: id,
+        id: id ?? this.id,
+        profileId: profileId ?? this.profileId,
         // Kind is absent on purpose: retyping a marker that already holds
         // readings is not an edit, it is "archive this and create a new one".
         // Reinterpreting a year of 1-10 ratings as percentages is a data-loss

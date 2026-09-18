@@ -490,4 +490,40 @@ final class AppStrings {
   String get noteHint => _t('anything worth remembering', 'sta god vrijedi zapamtiti');
   String notesHeldBack(int n) => _t('Notes on readings left out: $n.',
       'Biljeske uz unose izostavljene: $n.');
+
+  // --- Profiles ----------------------------------------------------
+
+  String get defaultProfileName => _t('Me', 'Ja');
+  String get profiles => _t('Profiles', 'Profili');
+  String get newProfile => _t('New profile', 'Novi profil');
+  String get profileHeading => _t('PROFILE', 'PROFIL');
+  String get startWith => _t('Start with', 'Pocni sa');
+  String get startEmpty => _t('Empty', 'Prazno');
+  String get startEmptyHint =>
+      _t('No markers. You add your own.', 'Bez markera. Dodajes svoje.');
+  String get startStarter => _t('Starter set', 'Osnovni set');
+  String get startStarterHint => _t(
+      'Mood, tiredness, sleep and the rest, without the cycle.',
+      'Raspolozenje, umor, san i ostalo, bez ciklusa.');
+  String get startCopy => _t('Copy markers from', 'Kopiraj markere od');
+  String get startCopyHint => _t(
+      'Markers only. No entry is ever copied.',
+      'Samo markeri. Nijedan unos se ne kopira.');
+  String get create => _t('Create', 'Napravi');
+  String get rename => _t('Rename', 'Preimenuj');
+  String get trackCycle => _t('Track the cycle', 'Prati ciklus');
+  String get trackCycleHint => _t(
+      'Off hides the cycle everywhere. Nothing recorded is deleted.',
+      'Iskljuceno sakriva ciklus svuda. Nista upisano se ne brise.');
+  String get deleteProfile => _t('Delete profile', 'Obrisi profil');
+  String deleteProfileQuestion(String name) =>
+      _t('Delete $name?', 'Obrisati profil $name?');
+  String get deleteProfileExplained => _t(
+      'Its markers, entries, photos and reports disappear from the app. Other '
+          'profiles are not touched.',
+      'Njegovi markeri, unosi, fotografije i izvjestaji nestaju iz aplikacije. '
+          'Ostali profili se ne diraju.');
+  String get lastProfile => _t(
+      'The only profile cannot be deleted.',
+      'Jedini profil se ne moze obrisati.');
 }

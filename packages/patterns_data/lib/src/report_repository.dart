@@ -17,9 +17,11 @@ final class ReportRepository {
   final PatternsDatabase _db;
   final String installId;
 
-  Future<List<ReportDefinition>> all() async {
+  Future<List<ReportDefinition>> all({
+    String profileId = defaultProfileId,
+  }) async {
     final rows = await (_db.select(_db.savedReports)
-          ..where((r) => r.deletedAt.isNull())
+          ..where((r) => r.deletedAt.isNull() & r.profileId.equals(profileId))
           ..orderBy([(r) => OrderingTerm(expression: r.sortOrder)]))
         .get();
     return [
@@ -35,7 +37,13 @@ final class ReportRepository {
     return rows.isEmpty ? null : _toDomain(rows.first);
   }
 
-  Future<void> save(ReportDefinition definition, {required DateTime now}) async {
+  /// [profileId] is only written when the report is first saved; an edit
+  /// never moves a report to another profile.
+  Future<void> save(
+    ReportDefinition definition, {
+    required DateTime now,
+    String profileId = defaultProfileId,
+  }) async {
     final millis = now.toUtc().millisecondsSinceEpoch;
     await _db.into(_db.savedReports).insertOnConflictUpdate(
           SavedReportsCompanion.insert(
@@ -43,6 +51,7 @@ final class ReportRepository {
             updatedAt: millis,
             installId: installId,
             name: definition.name,
+            profileId: Value(profileId),
             seriesJson: jsonEncode([
               for (final series in definition.series)
                 {

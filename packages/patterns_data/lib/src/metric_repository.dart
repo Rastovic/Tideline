@@ -21,9 +21,16 @@ final class MetricRepository {
   ///
   /// Archived markers are included by default because reports draw the months
   /// they were live: a supplement finished in May is still on the chart.
-  Future<List<Metric>> all({bool includeArchived = true}) async {
+  /// [profileId] null reads every profile's markers, which only backup-side
+  /// and cross-profile checks want; every screen passes one.
+  Future<List<Metric>> all({
+    bool includeArchived = true,
+    String? profileId,
+  }) async {
     final metricRows = await (_db.select(_db.metrics)
-          ..where((m) => m.deletedAt.isNull())
+          ..where((m) => profileId == null
+              ? m.deletedAt.isNull()
+              : m.deletedAt.isNull() & m.profileId.equals(profileId))
           ..orderBy([(m) => OrderingTerm(expression: m.sortOrder)]))
         .get();
     final optionRows = await (_db.select(_db.metricOptions)
@@ -72,6 +79,7 @@ final class MetricRepository {
               id: metric.id,
               updatedAt: millis,
               installId: installId,
+              profileId: Value(metric.profileId),
               name: metric.name,
               domain: metric.domain.wireName,
               kind: metric.kind.wireName,
@@ -177,6 +185,7 @@ final class MetricRepository {
 
   Metric _toDomain(MetricRow row, List<MetricOption> options) => Metric(
         id: row.id,
+        profileId: row.profileId,
         name: row.name,
         // A row written by a later version can carry a domain or kind this
         // build has never heard of. It reads as the nearest safe thing rather

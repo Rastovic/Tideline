@@ -41,17 +41,17 @@ class ReportViewScreen extends StatefulWidget {
     required Metric metric,
     Key? key,
   }) : this(
-          controller: controller,
-          definition: ReportDefinition(
-            id: Ids.newId(),
-            name: metric.name,
-            series: [ReportSeries(metricId: metric.id)],
-            period: const LastDays(30),
-            createdAt: DateTime.now().toUtc(),
-          ),
-          isSaved: false,
-          key: key,
-        );
+         controller: controller,
+         definition: ReportDefinition(
+           id: Ids.newId(),
+           name: metric.name,
+           series: [ReportSeries(metricId: metric.id)],
+           period: const LastDays(30),
+           createdAt: DateTime.now().toUtc(),
+         ),
+         isSaved: false,
+         key: key,
+       );
 
   final PatternsController controller;
   final ReportDefinition definition;
@@ -142,8 +142,9 @@ class _ReportViewScreenState extends State<ReportViewScreen> {
                 children: [
                   Text(
                     '${report.from} - ${report.to}',
-                    style: theme.typography.caption
-                        .copyWith(color: theme.colors.inkMuted),
+                    style: theme.typography.caption.copyWith(
+                      color: theme.colors.inkMuted,
+                    ),
                   ),
                   const SizedBox(height: VitalsSpacing.md),
                   _axisPicker(theme),
@@ -151,8 +152,9 @@ class _ReportViewScreenState extends State<ReportViewScreen> {
                   if (report.rows.isEmpty)
                     Text(
                       context.s.reportMarkersGone,
-                      style: theme.typography.body
-                          .copyWith(color: theme.colors.inkMuted),
+                      style: theme.typography.body.copyWith(
+                        color: theme.colors.inkMuted,
+                      ),
                     ),
                   for (final row in report.rows) ...[
                     _RowBlock(
@@ -161,13 +163,13 @@ class _ReportViewScreenState extends State<ReportViewScreen> {
                       onDayTap: report.definition.axis == ReportAxis.cycleDay
                           ? null
                           : (dayKey) => Navigator.of(context).push(
-                                MaterialPageRoute<void>(
-                                  builder: (_) => DayDetailScreen(
-                                    controller: widget.controller,
-                                    dayKey: dayKey,
-                                  ),
+                              MaterialPageRoute<void>(
+                                builder: (_) => DayDetailScreen(
+                                  controller: widget.controller,
+                                  dayKey: dayKey,
                                 ),
                               ),
+                            ),
                     ),
                     const SizedBox(height: VitalsSpacing.xl),
                   ],
@@ -178,25 +180,27 @@ class _ReportViewScreenState extends State<ReportViewScreen> {
   }
 
   Widget _axisPicker(VitalsThemeData theme) => Wrap(
-        spacing: VitalsSpacing.sm,
-        children: [
-          ChoiceChip(
-            label: Text(context.s.byDate),
-            selected: _definition.axis == ReportAxis.date,
-            onSelected: (_) => _setAxis(ReportAxis.date),
-          ),
-          ChoiceChip(
-            label: Text(context.s.byCycleDay),
-            selected: _definition.axis == ReportAxis.cycleDay,
-            onSelected: (_) => _setAxis(ReportAxis.cycleDay),
-          ),
-          ChoiceChip(
-            label: Text(context.s.grid),
-            selected: _definition.axis == ReportAxis.grid,
-            onSelected: (_) => _setAxis(ReportAxis.grid),
-          ),
-        ],
-      );
+    spacing: VitalsSpacing.sm,
+    children: [
+      ChoiceChip(
+        label: Text(context.s.byDate),
+        selected: _definition.axis == ReportAxis.date,
+        onSelected: (_) => _setAxis(ReportAxis.date),
+      ),
+      if (widget.controller.cycleEnabled ||
+          _definition.axis == ReportAxis.cycleDay)
+        ChoiceChip(
+          label: Text(context.s.byCycleDay),
+          selected: _definition.axis == ReportAxis.cycleDay,
+          onSelected: (_) => _setAxis(ReportAxis.cycleDay),
+        ),
+      ChoiceChip(
+        label: Text(context.s.grid),
+        selected: _definition.axis == ReportAxis.grid,
+        onSelected: (_) => _setAxis(ReportAxis.grid),
+      ),
+    ],
+  );
 }
 
 class _RowBlock extends StatelessWidget {
@@ -228,8 +232,9 @@ class _RowBlock extends StatelessWidget {
             if (row.bandMetric case final band?)
               Text(
                 context.s.behind(band.name),
-                style: theme.typography.caption
-                    .copyWith(color: theme.colors.inkFaint),
+                style: theme.typography.caption.copyWith(
+                  color: theme.colors.inkFaint,
+                ),
               ),
           ],
         ),
@@ -248,8 +253,9 @@ class _RowBlock extends StatelessWidget {
         const SizedBox(height: VitalsSpacing.xs),
         Text(
           _facts(row, context.s),
-          style:
-              theme.typography.caption.copyWith(color: theme.colors.inkMuted),
+          style: theme.typography.caption.copyWith(
+            color: theme.colors.inkMuted,
+          ),
         ),
       ],
     );
@@ -275,6 +281,7 @@ class _RowBlock extends StatelessWidget {
     return parts.join(' · ');
   }
 
-  static String _number(num value) =>
-      value == value.roundToDouble() ? '${value.round()}' : value.toStringAsFixed(1);
+  static String _number(num value) => value == value.roundToDouble()
+      ? '${value.round()}'
+      : value.toStringAsFixed(1);
 }

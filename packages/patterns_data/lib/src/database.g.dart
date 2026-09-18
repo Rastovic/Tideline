@@ -3,6 +3,675 @@
 part of 'database.dart';
 
 // ignore_for_file: type=lint
+class $ProfilesTable extends Profiles
+    with TableInfo<$ProfilesTable, ProfileRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ProfilesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    additionalChecks: GeneratedColumn.checkTextLength(
+      minTextLength: 36,
+      maxTextLength: 36,
+    ),
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<int> updatedAt = GeneratedColumn<int>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _deletedAtMeta = const VerificationMeta(
+    'deletedAt',
+  );
+  @override
+  late final GeneratedColumn<int> deletedAt = GeneratedColumn<int>(
+    'deleted_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _installIdMeta = const VerificationMeta(
+    'installId',
+  );
+  @override
+  late final GeneratedColumn<String> installId = GeneratedColumn<String>(
+    'install_id',
+    aliasedName,
+    false,
+    additionalChecks: GeneratedColumn.checkTextLength(
+      minTextLength: 36,
+      maxTextLength: 36,
+    ),
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _nameMeta = const VerificationMeta('name');
+  @override
+  late final GeneratedColumn<String> name = GeneratedColumn<String>(
+    'name',
+    aliasedName,
+    false,
+    additionalChecks: GeneratedColumn.checkTextLength(
+      minTextLength: 1,
+      maxTextLength: 120,
+    ),
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _cycleEnabledMeta = const VerificationMeta(
+    'cycleEnabled',
+  );
+  @override
+  late final GeneratedColumn<bool> cycleEnabled = GeneratedColumn<bool>(
+    'cycle_enabled',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("cycle_enabled" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _periodStartMetricIdMeta =
+      const VerificationMeta('periodStartMetricId');
+  @override
+  late final GeneratedColumn<String> periodStartMetricId =
+      GeneratedColumn<String>(
+        'period_start_metric_id',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _periodEndMetricIdMeta = const VerificationMeta(
+    'periodEndMetricId',
+  );
+  @override
+  late final GeneratedColumn<String> periodEndMetricId =
+      GeneratedColumn<String>(
+        'period_end_metric_id',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _sortOrderMeta = const VerificationMeta(
+    'sortOrder',
+  );
+  @override
+  late final GeneratedColumn<int> sortOrder = GeneratedColumn<int>(
+    'sort_order',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<int> createdAt = GeneratedColumn<int>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    updatedAt,
+    deletedAt,
+    installId,
+    name,
+    cycleEnabled,
+    periodStartMetricId,
+    periodEndMetricId,
+    sortOrder,
+    createdAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'profiles';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<ProfileRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
+    }
+    if (data.containsKey('deleted_at')) {
+      context.handle(
+        _deletedAtMeta,
+        deletedAt.isAcceptableOrUnknown(data['deleted_at']!, _deletedAtMeta),
+      );
+    }
+    if (data.containsKey('install_id')) {
+      context.handle(
+        _installIdMeta,
+        installId.isAcceptableOrUnknown(data['install_id']!, _installIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_installIdMeta);
+    }
+    if (data.containsKey('name')) {
+      context.handle(
+        _nameMeta,
+        name.isAcceptableOrUnknown(data['name']!, _nameMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_nameMeta);
+    }
+    if (data.containsKey('cycle_enabled')) {
+      context.handle(
+        _cycleEnabledMeta,
+        cycleEnabled.isAcceptableOrUnknown(
+          data['cycle_enabled']!,
+          _cycleEnabledMeta,
+        ),
+      );
+    }
+    if (data.containsKey('period_start_metric_id')) {
+      context.handle(
+        _periodStartMetricIdMeta,
+        periodStartMetricId.isAcceptableOrUnknown(
+          data['period_start_metric_id']!,
+          _periodStartMetricIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('period_end_metric_id')) {
+      context.handle(
+        _periodEndMetricIdMeta,
+        periodEndMetricId.isAcceptableOrUnknown(
+          data['period_end_metric_id']!,
+          _periodEndMetricIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('sort_order')) {
+      context.handle(
+        _sortOrderMeta,
+        sortOrder.isAcceptableOrUnknown(data['sort_order']!, _sortOrderMeta),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  ProfileRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ProfileRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}updated_at'],
+      )!,
+      deletedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}deleted_at'],
+      ),
+      installId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}install_id'],
+      )!,
+      name: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}name'],
+      )!,
+      cycleEnabled: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}cycle_enabled'],
+      )!,
+      periodStartMetricId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}period_start_metric_id'],
+      ),
+      periodEndMetricId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}period_end_metric_id'],
+      ),
+      sortOrder: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}sort_order'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}created_at'],
+      )!,
+    );
+  }
+
+  @override
+  $ProfilesTable createAlias(String alias) {
+    return $ProfilesTable(attachedDatabase, alias);
+  }
+}
+
+class ProfileRow extends DataClass implements Insertable<ProfileRow> {
+  /// UUID v7. **Never an autoincrement integer.**
+  ///
+  /// Two devices both minting `id = 47` cannot be merged, and merge is the
+  /// whole reason this format is also a future sync protocol.
+  final String id;
+
+  /// UTC epoch millis of the last change. The merge key.
+  ///
+  /// Without it, last-writer-wins is impossible and every conflict is a coin
+  /// flip.
+  final int updatedAt;
+
+  /// Soft delete. A deleted row that leaves no tombstone comes back to life on
+  /// the next merge.
+  ///
+  /// Hard-delete only in an explicit purge, never in normal use.
+  final int? deletedAt;
+
+  /// Which install created this row. Tells a future merge which device said
+  /// what.
+  final String installId;
+  final String name;
+
+  /// Off unless turned on. Off hides the module; it never deletes a reading.
+  final bool cycleEnabled;
+
+  /// The profile's two period markers, by id, so renaming either changes
+  /// nothing about what the cycle counts from.
+  final String? periodStartMetricId;
+  final String? periodEndMetricId;
+  final int sortOrder;
+  final int createdAt;
+  const ProfileRow({
+    required this.id,
+    required this.updatedAt,
+    this.deletedAt,
+    required this.installId,
+    required this.name,
+    required this.cycleEnabled,
+    this.periodStartMetricId,
+    this.periodEndMetricId,
+    required this.sortOrder,
+    required this.createdAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['updated_at'] = Variable<int>(updatedAt);
+    if (!nullToAbsent || deletedAt != null) {
+      map['deleted_at'] = Variable<int>(deletedAt);
+    }
+    map['install_id'] = Variable<String>(installId);
+    map['name'] = Variable<String>(name);
+    map['cycle_enabled'] = Variable<bool>(cycleEnabled);
+    if (!nullToAbsent || periodStartMetricId != null) {
+      map['period_start_metric_id'] = Variable<String>(periodStartMetricId);
+    }
+    if (!nullToAbsent || periodEndMetricId != null) {
+      map['period_end_metric_id'] = Variable<String>(periodEndMetricId);
+    }
+    map['sort_order'] = Variable<int>(sortOrder);
+    map['created_at'] = Variable<int>(createdAt);
+    return map;
+  }
+
+  ProfilesCompanion toCompanion(bool nullToAbsent) {
+    return ProfilesCompanion(
+      id: Value(id),
+      updatedAt: Value(updatedAt),
+      deletedAt: deletedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(deletedAt),
+      installId: Value(installId),
+      name: Value(name),
+      cycleEnabled: Value(cycleEnabled),
+      periodStartMetricId: periodStartMetricId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(periodStartMetricId),
+      periodEndMetricId: periodEndMetricId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(periodEndMetricId),
+      sortOrder: Value(sortOrder),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory ProfileRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ProfileRow(
+      id: serializer.fromJson<String>(json['id']),
+      updatedAt: serializer.fromJson<int>(json['updatedAt']),
+      deletedAt: serializer.fromJson<int?>(json['deletedAt']),
+      installId: serializer.fromJson<String>(json['installId']),
+      name: serializer.fromJson<String>(json['name']),
+      cycleEnabled: serializer.fromJson<bool>(json['cycleEnabled']),
+      periodStartMetricId: serializer.fromJson<String?>(
+        json['periodStartMetricId'],
+      ),
+      periodEndMetricId: serializer.fromJson<String?>(
+        json['periodEndMetricId'],
+      ),
+      sortOrder: serializer.fromJson<int>(json['sortOrder']),
+      createdAt: serializer.fromJson<int>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'updatedAt': serializer.toJson<int>(updatedAt),
+      'deletedAt': serializer.toJson<int?>(deletedAt),
+      'installId': serializer.toJson<String>(installId),
+      'name': serializer.toJson<String>(name),
+      'cycleEnabled': serializer.toJson<bool>(cycleEnabled),
+      'periodStartMetricId': serializer.toJson<String?>(periodStartMetricId),
+      'periodEndMetricId': serializer.toJson<String?>(periodEndMetricId),
+      'sortOrder': serializer.toJson<int>(sortOrder),
+      'createdAt': serializer.toJson<int>(createdAt),
+    };
+  }
+
+  ProfileRow copyWith({
+    String? id,
+    int? updatedAt,
+    Value<int?> deletedAt = const Value.absent(),
+    String? installId,
+    String? name,
+    bool? cycleEnabled,
+    Value<String?> periodStartMetricId = const Value.absent(),
+    Value<String?> periodEndMetricId = const Value.absent(),
+    int? sortOrder,
+    int? createdAt,
+  }) => ProfileRow(
+    id: id ?? this.id,
+    updatedAt: updatedAt ?? this.updatedAt,
+    deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
+    installId: installId ?? this.installId,
+    name: name ?? this.name,
+    cycleEnabled: cycleEnabled ?? this.cycleEnabled,
+    periodStartMetricId: periodStartMetricId.present
+        ? periodStartMetricId.value
+        : this.periodStartMetricId,
+    periodEndMetricId: periodEndMetricId.present
+        ? periodEndMetricId.value
+        : this.periodEndMetricId,
+    sortOrder: sortOrder ?? this.sortOrder,
+    createdAt: createdAt ?? this.createdAt,
+  );
+  ProfileRow copyWithCompanion(ProfilesCompanion data) {
+    return ProfileRow(
+      id: data.id.present ? data.id.value : this.id,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
+      installId: data.installId.present ? data.installId.value : this.installId,
+      name: data.name.present ? data.name.value : this.name,
+      cycleEnabled: data.cycleEnabled.present
+          ? data.cycleEnabled.value
+          : this.cycleEnabled,
+      periodStartMetricId: data.periodStartMetricId.present
+          ? data.periodStartMetricId.value
+          : this.periodStartMetricId,
+      periodEndMetricId: data.periodEndMetricId.present
+          ? data.periodEndMetricId.value
+          : this.periodEndMetricId,
+      sortOrder: data.sortOrder.present ? data.sortOrder.value : this.sortOrder,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ProfileRow(')
+          ..write('id: $id, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('installId: $installId, ')
+          ..write('name: $name, ')
+          ..write('cycleEnabled: $cycleEnabled, ')
+          ..write('periodStartMetricId: $periodStartMetricId, ')
+          ..write('periodEndMetricId: $periodEndMetricId, ')
+          ..write('sortOrder: $sortOrder, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    updatedAt,
+    deletedAt,
+    installId,
+    name,
+    cycleEnabled,
+    periodStartMetricId,
+    periodEndMetricId,
+    sortOrder,
+    createdAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ProfileRow &&
+          other.id == this.id &&
+          other.updatedAt == this.updatedAt &&
+          other.deletedAt == this.deletedAt &&
+          other.installId == this.installId &&
+          other.name == this.name &&
+          other.cycleEnabled == this.cycleEnabled &&
+          other.periodStartMetricId == this.periodStartMetricId &&
+          other.periodEndMetricId == this.periodEndMetricId &&
+          other.sortOrder == this.sortOrder &&
+          other.createdAt == this.createdAt);
+}
+
+class ProfilesCompanion extends UpdateCompanion<ProfileRow> {
+  final Value<String> id;
+  final Value<int> updatedAt;
+  final Value<int?> deletedAt;
+  final Value<String> installId;
+  final Value<String> name;
+  final Value<bool> cycleEnabled;
+  final Value<String?> periodStartMetricId;
+  final Value<String?> periodEndMetricId;
+  final Value<int> sortOrder;
+  final Value<int> createdAt;
+  final Value<int> rowid;
+  const ProfilesCompanion({
+    this.id = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.deletedAt = const Value.absent(),
+    this.installId = const Value.absent(),
+    this.name = const Value.absent(),
+    this.cycleEnabled = const Value.absent(),
+    this.periodStartMetricId = const Value.absent(),
+    this.periodEndMetricId = const Value.absent(),
+    this.sortOrder = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  ProfilesCompanion.insert({
+    required String id,
+    required int updatedAt,
+    this.deletedAt = const Value.absent(),
+    required String installId,
+    required String name,
+    this.cycleEnabled = const Value.absent(),
+    this.periodStartMetricId = const Value.absent(),
+    this.periodEndMetricId = const Value.absent(),
+    this.sortOrder = const Value.absent(),
+    required int createdAt,
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       updatedAt = Value(updatedAt),
+       installId = Value(installId),
+       name = Value(name),
+       createdAt = Value(createdAt);
+  static Insertable<ProfileRow> custom({
+    Expression<String>? id,
+    Expression<int>? updatedAt,
+    Expression<int>? deletedAt,
+    Expression<String>? installId,
+    Expression<String>? name,
+    Expression<bool>? cycleEnabled,
+    Expression<String>? periodStartMetricId,
+    Expression<String>? periodEndMetricId,
+    Expression<int>? sortOrder,
+    Expression<int>? createdAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (deletedAt != null) 'deleted_at': deletedAt,
+      if (installId != null) 'install_id': installId,
+      if (name != null) 'name': name,
+      if (cycleEnabled != null) 'cycle_enabled': cycleEnabled,
+      if (periodStartMetricId != null)
+        'period_start_metric_id': periodStartMetricId,
+      if (periodEndMetricId != null) 'period_end_metric_id': periodEndMetricId,
+      if (sortOrder != null) 'sort_order': sortOrder,
+      if (createdAt != null) 'created_at': createdAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  ProfilesCompanion copyWith({
+    Value<String>? id,
+    Value<int>? updatedAt,
+    Value<int?>? deletedAt,
+    Value<String>? installId,
+    Value<String>? name,
+    Value<bool>? cycleEnabled,
+    Value<String?>? periodStartMetricId,
+    Value<String?>? periodEndMetricId,
+    Value<int>? sortOrder,
+    Value<int>? createdAt,
+    Value<int>? rowid,
+  }) {
+    return ProfilesCompanion(
+      id: id ?? this.id,
+      updatedAt: updatedAt ?? this.updatedAt,
+      deletedAt: deletedAt ?? this.deletedAt,
+      installId: installId ?? this.installId,
+      name: name ?? this.name,
+      cycleEnabled: cycleEnabled ?? this.cycleEnabled,
+      periodStartMetricId: periodStartMetricId ?? this.periodStartMetricId,
+      periodEndMetricId: periodEndMetricId ?? this.periodEndMetricId,
+      sortOrder: sortOrder ?? this.sortOrder,
+      createdAt: createdAt ?? this.createdAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<int>(updatedAt.value);
+    }
+    if (deletedAt.present) {
+      map['deleted_at'] = Variable<int>(deletedAt.value);
+    }
+    if (installId.present) {
+      map['install_id'] = Variable<String>(installId.value);
+    }
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
+    if (cycleEnabled.present) {
+      map['cycle_enabled'] = Variable<bool>(cycleEnabled.value);
+    }
+    if (periodStartMetricId.present) {
+      map['period_start_metric_id'] = Variable<String>(
+        periodStartMetricId.value,
+      );
+    }
+    if (periodEndMetricId.present) {
+      map['period_end_metric_id'] = Variable<String>(periodEndMetricId.value);
+    }
+    if (sortOrder.present) {
+      map['sort_order'] = Variable<int>(sortOrder.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<int>(createdAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ProfilesCompanion(')
+          ..write('id: $id, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('installId: $installId, ')
+          ..write('name: $name, ')
+          ..write('cycleEnabled: $cycleEnabled, ')
+          ..write('periodStartMetricId: $periodStartMetricId, ')
+          ..write('periodEndMetricId: $periodEndMetricId, ')
+          ..write('sortOrder: $sortOrder, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $MetricsTable extends Metrics with TableInfo<$MetricsTable, MetricRow> {
   @override
   final GeneratedDatabase attachedDatabase;
@@ -57,6 +726,18 @@ class $MetricsTable extends Metrics with TableInfo<$MetricsTable, MetricRow> {
     ),
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+  );
+  static const VerificationMeta _profileIdMeta = const VerificationMeta(
+    'profileId',
+  );
+  @override
+  late final GeneratedColumn<String> profileId = GeneratedColumn<String>(
+    'profile_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(defaultProfileId),
   );
   static const VerificationMeta _nameMeta = const VerificationMeta('name');
   @override
@@ -217,6 +898,7 @@ class $MetricsTable extends Metrics with TableInfo<$MetricsTable, MetricRow> {
     updatedAt,
     deletedAt,
     installId,
+    profileId,
     name,
     domain,
     kind,
@@ -270,6 +952,12 @@ class $MetricsTable extends Metrics with TableInfo<$MetricsTable, MetricRow> {
       );
     } else if (isInserting) {
       context.missing(_installIdMeta);
+    }
+    if (data.containsKey('profile_id')) {
+      context.handle(
+        _profileIdMeta,
+        profileId.isAcceptableOrUnknown(data['profile_id']!, _profileIdMeta),
+      );
     }
     if (data.containsKey('name')) {
       context.handle(
@@ -396,6 +1084,10 @@ class $MetricsTable extends Metrics with TableInfo<$MetricsTable, MetricRow> {
         DriftSqlType.string,
         data['${effectivePrefix}install_id'],
       )!,
+      profileId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}profile_id'],
+      )!,
       name: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}name'],
@@ -483,6 +1175,10 @@ class MetricRow extends DataClass implements Insertable<MetricRow> {
   /// Which install created this row. Tells a future merge which device said
   /// what.
   final String installId;
+
+  /// Whose marker. Defaults to the first profile, which is what every row
+  /// written before profiles existed belongs to.
+  final String profileId;
   final String name;
 
   /// `mind` / `body` / `cycle`. Decides which section of the home list it sits
@@ -520,6 +1216,7 @@ class MetricRow extends DataClass implements Insertable<MetricRow> {
     required this.updatedAt,
     this.deletedAt,
     required this.installId,
+    required this.profileId,
     required this.name,
     required this.domain,
     required this.kind,
@@ -544,6 +1241,7 @@ class MetricRow extends DataClass implements Insertable<MetricRow> {
       map['deleted_at'] = Variable<int>(deletedAt);
     }
     map['install_id'] = Variable<String>(installId);
+    map['profile_id'] = Variable<String>(profileId);
     map['name'] = Variable<String>(name);
     map['domain'] = Variable<String>(domain);
     map['kind'] = Variable<String>(kind);
@@ -581,6 +1279,7 @@ class MetricRow extends DataClass implements Insertable<MetricRow> {
           ? const Value.absent()
           : Value(deletedAt),
       installId: Value(installId),
+      profileId: Value(profileId),
       name: Value(name),
       domain: Value(domain),
       kind: Value(kind),
@@ -618,6 +1317,7 @@ class MetricRow extends DataClass implements Insertable<MetricRow> {
       updatedAt: serializer.fromJson<int>(json['updatedAt']),
       deletedAt: serializer.fromJson<int?>(json['deletedAt']),
       installId: serializer.fromJson<String>(json['installId']),
+      profileId: serializer.fromJson<String>(json['profileId']),
       name: serializer.fromJson<String>(json['name']),
       domain: serializer.fromJson<String>(json['domain']),
       kind: serializer.fromJson<String>(json['kind']),
@@ -642,6 +1342,7 @@ class MetricRow extends DataClass implements Insertable<MetricRow> {
       'updatedAt': serializer.toJson<int>(updatedAt),
       'deletedAt': serializer.toJson<int?>(deletedAt),
       'installId': serializer.toJson<String>(installId),
+      'profileId': serializer.toJson<String>(profileId),
       'name': serializer.toJson<String>(name),
       'domain': serializer.toJson<String>(domain),
       'kind': serializer.toJson<String>(kind),
@@ -664,6 +1365,7 @@ class MetricRow extends DataClass implements Insertable<MetricRow> {
     int? updatedAt,
     Value<int?> deletedAt = const Value.absent(),
     String? installId,
+    String? profileId,
     String? name,
     String? domain,
     String? kind,
@@ -683,6 +1385,7 @@ class MetricRow extends DataClass implements Insertable<MetricRow> {
     updatedAt: updatedAt ?? this.updatedAt,
     deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
     installId: installId ?? this.installId,
+    profileId: profileId ?? this.profileId,
     name: name ?? this.name,
     domain: domain ?? this.domain,
     kind: kind ?? this.kind,
@@ -704,6 +1407,7 @@ class MetricRow extends DataClass implements Insertable<MetricRow> {
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
       deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
       installId: data.installId.present ? data.installId.value : this.installId,
+      profileId: data.profileId.present ? data.profileId.value : this.profileId,
       name: data.name.present ? data.name.value : this.name,
       domain: data.domain.present ? data.domain.value : this.domain,
       kind: data.kind.present ? data.kind.value : this.kind,
@@ -734,6 +1438,7 @@ class MetricRow extends DataClass implements Insertable<MetricRow> {
           ..write('updatedAt: $updatedAt, ')
           ..write('deletedAt: $deletedAt, ')
           ..write('installId: $installId, ')
+          ..write('profileId: $profileId, ')
           ..write('name: $name, ')
           ..write('domain: $domain, ')
           ..write('kind: $kind, ')
@@ -758,6 +1463,7 @@ class MetricRow extends DataClass implements Insertable<MetricRow> {
     updatedAt,
     deletedAt,
     installId,
+    profileId,
     name,
     domain,
     kind,
@@ -781,6 +1487,7 @@ class MetricRow extends DataClass implements Insertable<MetricRow> {
           other.updatedAt == this.updatedAt &&
           other.deletedAt == this.deletedAt &&
           other.installId == this.installId &&
+          other.profileId == this.profileId &&
           other.name == this.name &&
           other.domain == this.domain &&
           other.kind == this.kind &&
@@ -802,6 +1509,7 @@ class MetricsCompanion extends UpdateCompanion<MetricRow> {
   final Value<int> updatedAt;
   final Value<int?> deletedAt;
   final Value<String> installId;
+  final Value<String> profileId;
   final Value<String> name;
   final Value<String> domain;
   final Value<String> kind;
@@ -822,6 +1530,7 @@ class MetricsCompanion extends UpdateCompanion<MetricRow> {
     this.updatedAt = const Value.absent(),
     this.deletedAt = const Value.absent(),
     this.installId = const Value.absent(),
+    this.profileId = const Value.absent(),
     this.name = const Value.absent(),
     this.domain = const Value.absent(),
     this.kind = const Value.absent(),
@@ -843,6 +1552,7 @@ class MetricsCompanion extends UpdateCompanion<MetricRow> {
     required int updatedAt,
     this.deletedAt = const Value.absent(),
     required String installId,
+    this.profileId = const Value.absent(),
     required String name,
     required String domain,
     required String kind,
@@ -871,6 +1581,7 @@ class MetricsCompanion extends UpdateCompanion<MetricRow> {
     Expression<int>? updatedAt,
     Expression<int>? deletedAt,
     Expression<String>? installId,
+    Expression<String>? profileId,
     Expression<String>? name,
     Expression<String>? domain,
     Expression<String>? kind,
@@ -892,6 +1603,7 @@ class MetricsCompanion extends UpdateCompanion<MetricRow> {
       if (updatedAt != null) 'updated_at': updatedAt,
       if (deletedAt != null) 'deleted_at': deletedAt,
       if (installId != null) 'install_id': installId,
+      if (profileId != null) 'profile_id': profileId,
       if (name != null) 'name': name,
       if (domain != null) 'domain': domain,
       if (kind != null) 'kind': kind,
@@ -915,6 +1627,7 @@ class MetricsCompanion extends UpdateCompanion<MetricRow> {
     Value<int>? updatedAt,
     Value<int?>? deletedAt,
     Value<String>? installId,
+    Value<String>? profileId,
     Value<String>? name,
     Value<String>? domain,
     Value<String>? kind,
@@ -936,6 +1649,7 @@ class MetricsCompanion extends UpdateCompanion<MetricRow> {
       updatedAt: updatedAt ?? this.updatedAt,
       deletedAt: deletedAt ?? this.deletedAt,
       installId: installId ?? this.installId,
+      profileId: profileId ?? this.profileId,
       name: name ?? this.name,
       domain: domain ?? this.domain,
       kind: kind ?? this.kind,
@@ -968,6 +1682,9 @@ class MetricsCompanion extends UpdateCompanion<MetricRow> {
     }
     if (installId.present) {
       map['install_id'] = Variable<String>(installId.value);
+    }
+    if (profileId.present) {
+      map['profile_id'] = Variable<String>(profileId.value);
     }
     if (name.present) {
       map['name'] = Variable<String>(name.value);
@@ -1024,6 +1741,7 @@ class MetricsCompanion extends UpdateCompanion<MetricRow> {
           ..write('updatedAt: $updatedAt, ')
           ..write('deletedAt: $deletedAt, ')
           ..write('installId: $installId, ')
+          ..write('profileId: $profileId, ')
           ..write('name: $name, ')
           ..write('domain: $domain, ')
           ..write('kind: $kind, ')
@@ -2481,6 +3199,18 @@ class $PhotosTable extends Photos with TableInfo<$PhotosTable, PhotoRow> {
     type: DriftSqlType.int,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _profileIdMeta = const VerificationMeta(
+    'profileId',
+  );
+  @override
+  late final GeneratedColumn<String> profileId = GeneratedColumn<String>(
+    'profile_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(defaultProfileId),
+  );
   static const VerificationMeta _metricIdMeta = const VerificationMeta(
     'metricId',
   );
@@ -2566,6 +3296,7 @@ class $PhotosTable extends Photos with TableInfo<$PhotosTable, PhotoRow> {
     installId,
     dayKey,
     tzOffsetMinutes,
+    profileId,
     metricId,
     observationId,
     fileName,
@@ -2631,6 +3362,12 @@ class $PhotosTable extends Photos with TableInfo<$PhotosTable, PhotoRow> {
       );
     } else if (isInserting) {
       context.missing(_tzOffsetMinutesMeta);
+    }
+    if (data.containsKey('profile_id')) {
+      context.handle(
+        _profileIdMeta,
+        profileId.isAcceptableOrUnknown(data['profile_id']!, _profileIdMeta),
+      );
     }
     if (data.containsKey('metric_id')) {
       context.handle(
@@ -2721,6 +3458,10 @@ class $PhotosTable extends Photos with TableInfo<$PhotosTable, PhotoRow> {
         DriftSqlType.int,
         data['${effectivePrefix}tz_offset_minutes'],
       )!,
+      profileId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}profile_id'],
+      )!,
       metricId: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}metric_id'],
@@ -2790,6 +3531,10 @@ class PhotoRow extends DataClass implements Insertable<PhotoRow> {
   /// genuine duplicate from two rows written in different zones.
   final int tzOffsetMinutes;
 
+  /// Whose photo. A marker photo could find it through its marker, but a free
+  /// photo of the day has no marker, so every photo carries it.
+  final String profileId;
+
   /// Null for a free photo that belongs to the day rather than to a marker.
   final String? metricId;
 
@@ -2817,6 +3562,7 @@ class PhotoRow extends DataClass implements Insertable<PhotoRow> {
     required this.installId,
     required this.dayKey,
     required this.tzOffsetMinutes,
+    required this.profileId,
     this.metricId,
     this.observationId,
     required this.fileName,
@@ -2836,6 +3582,7 @@ class PhotoRow extends DataClass implements Insertable<PhotoRow> {
     map['install_id'] = Variable<String>(installId);
     map['day_key'] = Variable<String>(dayKey);
     map['tz_offset_minutes'] = Variable<int>(tzOffsetMinutes);
+    map['profile_id'] = Variable<String>(profileId);
     if (!nullToAbsent || metricId != null) {
       map['metric_id'] = Variable<String>(metricId);
     }
@@ -2862,6 +3609,7 @@ class PhotoRow extends DataClass implements Insertable<PhotoRow> {
       installId: Value(installId),
       dayKey: Value(dayKey),
       tzOffsetMinutes: Value(tzOffsetMinutes),
+      profileId: Value(profileId),
       metricId: metricId == null && nullToAbsent
           ? const Value.absent()
           : Value(metricId),
@@ -2890,6 +3638,7 @@ class PhotoRow extends DataClass implements Insertable<PhotoRow> {
       installId: serializer.fromJson<String>(json['installId']),
       dayKey: serializer.fromJson<String>(json['dayKey']),
       tzOffsetMinutes: serializer.fromJson<int>(json['tzOffsetMinutes']),
+      profileId: serializer.fromJson<String>(json['profileId']),
       metricId: serializer.fromJson<String?>(json['metricId']),
       observationId: serializer.fromJson<String?>(json['observationId']),
       fileName: serializer.fromJson<String>(json['fileName']),
@@ -2909,6 +3658,7 @@ class PhotoRow extends DataClass implements Insertable<PhotoRow> {
       'installId': serializer.toJson<String>(installId),
       'dayKey': serializer.toJson<String>(dayKey),
       'tzOffsetMinutes': serializer.toJson<int>(tzOffsetMinutes),
+      'profileId': serializer.toJson<String>(profileId),
       'metricId': serializer.toJson<String?>(metricId),
       'observationId': serializer.toJson<String?>(observationId),
       'fileName': serializer.toJson<String>(fileName),
@@ -2926,6 +3676,7 @@ class PhotoRow extends DataClass implements Insertable<PhotoRow> {
     String? installId,
     String? dayKey,
     int? tzOffsetMinutes,
+    String? profileId,
     Value<String?> metricId = const Value.absent(),
     Value<String?> observationId = const Value.absent(),
     String? fileName,
@@ -2940,6 +3691,7 @@ class PhotoRow extends DataClass implements Insertable<PhotoRow> {
     installId: installId ?? this.installId,
     dayKey: dayKey ?? this.dayKey,
     tzOffsetMinutes: tzOffsetMinutes ?? this.tzOffsetMinutes,
+    profileId: profileId ?? this.profileId,
     metricId: metricId.present ? metricId.value : this.metricId,
     observationId: observationId.present
         ? observationId.value
@@ -2960,6 +3712,7 @@ class PhotoRow extends DataClass implements Insertable<PhotoRow> {
       tzOffsetMinutes: data.tzOffsetMinutes.present
           ? data.tzOffsetMinutes.value
           : this.tzOffsetMinutes,
+      profileId: data.profileId.present ? data.profileId.value : this.profileId,
       metricId: data.metricId.present ? data.metricId.value : this.metricId,
       observationId: data.observationId.present
           ? data.observationId.value
@@ -2985,6 +3738,7 @@ class PhotoRow extends DataClass implements Insertable<PhotoRow> {
           ..write('installId: $installId, ')
           ..write('dayKey: $dayKey, ')
           ..write('tzOffsetMinutes: $tzOffsetMinutes, ')
+          ..write('profileId: $profileId, ')
           ..write('metricId: $metricId, ')
           ..write('observationId: $observationId, ')
           ..write('fileName: $fileName, ')
@@ -3004,6 +3758,7 @@ class PhotoRow extends DataClass implements Insertable<PhotoRow> {
     installId,
     dayKey,
     tzOffsetMinutes,
+    profileId,
     metricId,
     observationId,
     fileName,
@@ -3022,6 +3777,7 @@ class PhotoRow extends DataClass implements Insertable<PhotoRow> {
           other.installId == this.installId &&
           other.dayKey == this.dayKey &&
           other.tzOffsetMinutes == this.tzOffsetMinutes &&
+          other.profileId == this.profileId &&
           other.metricId == this.metricId &&
           other.observationId == this.observationId &&
           other.fileName == this.fileName &&
@@ -3038,6 +3794,7 @@ class PhotosCompanion extends UpdateCompanion<PhotoRow> {
   final Value<String> installId;
   final Value<String> dayKey;
   final Value<int> tzOffsetMinutes;
+  final Value<String> profileId;
   final Value<String?> metricId;
   final Value<String?> observationId;
   final Value<String> fileName;
@@ -3053,6 +3810,7 @@ class PhotosCompanion extends UpdateCompanion<PhotoRow> {
     this.installId = const Value.absent(),
     this.dayKey = const Value.absent(),
     this.tzOffsetMinutes = const Value.absent(),
+    this.profileId = const Value.absent(),
     this.metricId = const Value.absent(),
     this.observationId = const Value.absent(),
     this.fileName = const Value.absent(),
@@ -3069,6 +3827,7 @@ class PhotosCompanion extends UpdateCompanion<PhotoRow> {
     required String installId,
     required String dayKey,
     required int tzOffsetMinutes,
+    this.profileId = const Value.absent(),
     this.metricId = const Value.absent(),
     this.observationId = const Value.absent(),
     required String fileName,
@@ -3093,6 +3852,7 @@ class PhotosCompanion extends UpdateCompanion<PhotoRow> {
     Expression<String>? installId,
     Expression<String>? dayKey,
     Expression<int>? tzOffsetMinutes,
+    Expression<String>? profileId,
     Expression<String>? metricId,
     Expression<String>? observationId,
     Expression<String>? fileName,
@@ -3109,6 +3869,7 @@ class PhotosCompanion extends UpdateCompanion<PhotoRow> {
       if (installId != null) 'install_id': installId,
       if (dayKey != null) 'day_key': dayKey,
       if (tzOffsetMinutes != null) 'tz_offset_minutes': tzOffsetMinutes,
+      if (profileId != null) 'profile_id': profileId,
       if (metricId != null) 'metric_id': metricId,
       if (observationId != null) 'observation_id': observationId,
       if (fileName != null) 'file_name': fileName,
@@ -3127,6 +3888,7 @@ class PhotosCompanion extends UpdateCompanion<PhotoRow> {
     Value<String>? installId,
     Value<String>? dayKey,
     Value<int>? tzOffsetMinutes,
+    Value<String>? profileId,
     Value<String?>? metricId,
     Value<String?>? observationId,
     Value<String>? fileName,
@@ -3143,6 +3905,7 @@ class PhotosCompanion extends UpdateCompanion<PhotoRow> {
       installId: installId ?? this.installId,
       dayKey: dayKey ?? this.dayKey,
       tzOffsetMinutes: tzOffsetMinutes ?? this.tzOffsetMinutes,
+      profileId: profileId ?? this.profileId,
       metricId: metricId ?? this.metricId,
       observationId: observationId ?? this.observationId,
       fileName: fileName ?? this.fileName,
@@ -3174,6 +3937,9 @@ class PhotosCompanion extends UpdateCompanion<PhotoRow> {
     }
     if (tzOffsetMinutes.present) {
       map['tz_offset_minutes'] = Variable<int>(tzOffsetMinutes.value);
+    }
+    if (profileId.present) {
+      map['profile_id'] = Variable<String>(profileId.value);
     }
     if (metricId.present) {
       map['metric_id'] = Variable<String>(metricId.value);
@@ -3211,6 +3977,7 @@ class PhotosCompanion extends UpdateCompanion<PhotoRow> {
           ..write('installId: $installId, ')
           ..write('dayKey: $dayKey, ')
           ..write('tzOffsetMinutes: $tzOffsetMinutes, ')
+          ..write('profileId: $profileId, ')
           ..write('metricId: $metricId, ')
           ..write('observationId: $observationId, ')
           ..write('fileName: $fileName, ')
@@ -3279,6 +4046,18 @@ class $SavedReportsTable extends SavedReports
     ),
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+  );
+  static const VerificationMeta _profileIdMeta = const VerificationMeta(
+    'profileId',
+  );
+  @override
+  late final GeneratedColumn<String> profileId = GeneratedColumn<String>(
+    'profile_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(defaultProfileId),
   );
   static const VerificationMeta _nameMeta = const VerificationMeta('name');
   @override
@@ -3351,6 +4130,7 @@ class $SavedReportsTable extends SavedReports
     updatedAt,
     deletedAt,
     installId,
+    profileId,
     name,
     seriesJson,
     period,
@@ -3396,6 +4176,12 @@ class $SavedReportsTable extends SavedReports
       );
     } else if (isInserting) {
       context.missing(_installIdMeta);
+    }
+    if (data.containsKey('profile_id')) {
+      context.handle(
+        _profileIdMeta,
+        profileId.isAcceptableOrUnknown(data['profile_id']!, _profileIdMeta),
+      );
     }
     if (data.containsKey('name')) {
       context.handle(
@@ -3468,6 +4254,10 @@ class $SavedReportsTable extends SavedReports
         DriftSqlType.string,
         data['${effectivePrefix}install_id'],
       )!,
+      profileId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}profile_id'],
+      )!,
       name: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}name'],
@@ -3523,6 +4313,7 @@ class SavedReportRow extends DataClass implements Insertable<SavedReportRow> {
   /// Which install created this row. Tells a future merge which device said
   /// what.
   final String installId;
+  final String profileId;
   final String name;
 
   /// The series, as JSON: marker id, display override, and which row a boolean
@@ -3544,6 +4335,7 @@ class SavedReportRow extends DataClass implements Insertable<SavedReportRow> {
     required this.updatedAt,
     this.deletedAt,
     required this.installId,
+    required this.profileId,
     required this.name,
     required this.seriesJson,
     required this.period,
@@ -3560,6 +4352,7 @@ class SavedReportRow extends DataClass implements Insertable<SavedReportRow> {
       map['deleted_at'] = Variable<int>(deletedAt);
     }
     map['install_id'] = Variable<String>(installId);
+    map['profile_id'] = Variable<String>(profileId);
     map['name'] = Variable<String>(name);
     map['series_json'] = Variable<String>(seriesJson);
     map['period'] = Variable<String>(period);
@@ -3577,6 +4370,7 @@ class SavedReportRow extends DataClass implements Insertable<SavedReportRow> {
           ? const Value.absent()
           : Value(deletedAt),
       installId: Value(installId),
+      profileId: Value(profileId),
       name: Value(name),
       seriesJson: Value(seriesJson),
       period: Value(period),
@@ -3596,6 +4390,7 @@ class SavedReportRow extends DataClass implements Insertable<SavedReportRow> {
       updatedAt: serializer.fromJson<int>(json['updatedAt']),
       deletedAt: serializer.fromJson<int?>(json['deletedAt']),
       installId: serializer.fromJson<String>(json['installId']),
+      profileId: serializer.fromJson<String>(json['profileId']),
       name: serializer.fromJson<String>(json['name']),
       seriesJson: serializer.fromJson<String>(json['seriesJson']),
       period: serializer.fromJson<String>(json['period']),
@@ -3612,6 +4407,7 @@ class SavedReportRow extends DataClass implements Insertable<SavedReportRow> {
       'updatedAt': serializer.toJson<int>(updatedAt),
       'deletedAt': serializer.toJson<int?>(deletedAt),
       'installId': serializer.toJson<String>(installId),
+      'profileId': serializer.toJson<String>(profileId),
       'name': serializer.toJson<String>(name),
       'seriesJson': serializer.toJson<String>(seriesJson),
       'period': serializer.toJson<String>(period),
@@ -3626,6 +4422,7 @@ class SavedReportRow extends DataClass implements Insertable<SavedReportRow> {
     int? updatedAt,
     Value<int?> deletedAt = const Value.absent(),
     String? installId,
+    String? profileId,
     String? name,
     String? seriesJson,
     String? period,
@@ -3637,6 +4434,7 @@ class SavedReportRow extends DataClass implements Insertable<SavedReportRow> {
     updatedAt: updatedAt ?? this.updatedAt,
     deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
     installId: installId ?? this.installId,
+    profileId: profileId ?? this.profileId,
     name: name ?? this.name,
     seriesJson: seriesJson ?? this.seriesJson,
     period: period ?? this.period,
@@ -3650,6 +4448,7 @@ class SavedReportRow extends DataClass implements Insertable<SavedReportRow> {
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
       deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
       installId: data.installId.present ? data.installId.value : this.installId,
+      profileId: data.profileId.present ? data.profileId.value : this.profileId,
       name: data.name.present ? data.name.value : this.name,
       seriesJson: data.seriesJson.present
           ? data.seriesJson.value
@@ -3668,6 +4467,7 @@ class SavedReportRow extends DataClass implements Insertable<SavedReportRow> {
           ..write('updatedAt: $updatedAt, ')
           ..write('deletedAt: $deletedAt, ')
           ..write('installId: $installId, ')
+          ..write('profileId: $profileId, ')
           ..write('name: $name, ')
           ..write('seriesJson: $seriesJson, ')
           ..write('period: $period, ')
@@ -3684,6 +4484,7 @@ class SavedReportRow extends DataClass implements Insertable<SavedReportRow> {
     updatedAt,
     deletedAt,
     installId,
+    profileId,
     name,
     seriesJson,
     period,
@@ -3699,6 +4500,7 @@ class SavedReportRow extends DataClass implements Insertable<SavedReportRow> {
           other.updatedAt == this.updatedAt &&
           other.deletedAt == this.deletedAt &&
           other.installId == this.installId &&
+          other.profileId == this.profileId &&
           other.name == this.name &&
           other.seriesJson == this.seriesJson &&
           other.period == this.period &&
@@ -3712,6 +4514,7 @@ class SavedReportsCompanion extends UpdateCompanion<SavedReportRow> {
   final Value<int> updatedAt;
   final Value<int?> deletedAt;
   final Value<String> installId;
+  final Value<String> profileId;
   final Value<String> name;
   final Value<String> seriesJson;
   final Value<String> period;
@@ -3724,6 +4527,7 @@ class SavedReportsCompanion extends UpdateCompanion<SavedReportRow> {
     this.updatedAt = const Value.absent(),
     this.deletedAt = const Value.absent(),
     this.installId = const Value.absent(),
+    this.profileId = const Value.absent(),
     this.name = const Value.absent(),
     this.seriesJson = const Value.absent(),
     this.period = const Value.absent(),
@@ -3737,6 +4541,7 @@ class SavedReportsCompanion extends UpdateCompanion<SavedReportRow> {
     required int updatedAt,
     this.deletedAt = const Value.absent(),
     required String installId,
+    this.profileId = const Value.absent(),
     required String name,
     required String seriesJson,
     required String period,
@@ -3757,6 +4562,7 @@ class SavedReportsCompanion extends UpdateCompanion<SavedReportRow> {
     Expression<int>? updatedAt,
     Expression<int>? deletedAt,
     Expression<String>? installId,
+    Expression<String>? profileId,
     Expression<String>? name,
     Expression<String>? seriesJson,
     Expression<String>? period,
@@ -3770,6 +4576,7 @@ class SavedReportsCompanion extends UpdateCompanion<SavedReportRow> {
       if (updatedAt != null) 'updated_at': updatedAt,
       if (deletedAt != null) 'deleted_at': deletedAt,
       if (installId != null) 'install_id': installId,
+      if (profileId != null) 'profile_id': profileId,
       if (name != null) 'name': name,
       if (seriesJson != null) 'series_json': seriesJson,
       if (period != null) 'period': period,
@@ -3785,6 +4592,7 @@ class SavedReportsCompanion extends UpdateCompanion<SavedReportRow> {
     Value<int>? updatedAt,
     Value<int?>? deletedAt,
     Value<String>? installId,
+    Value<String>? profileId,
     Value<String>? name,
     Value<String>? seriesJson,
     Value<String>? period,
@@ -3798,6 +4606,7 @@ class SavedReportsCompanion extends UpdateCompanion<SavedReportRow> {
       updatedAt: updatedAt ?? this.updatedAt,
       deletedAt: deletedAt ?? this.deletedAt,
       installId: installId ?? this.installId,
+      profileId: profileId ?? this.profileId,
       name: name ?? this.name,
       seriesJson: seriesJson ?? this.seriesJson,
       period: period ?? this.period,
@@ -3822,6 +4631,9 @@ class SavedReportsCompanion extends UpdateCompanion<SavedReportRow> {
     }
     if (installId.present) {
       map['install_id'] = Variable<String>(installId.value);
+    }
+    if (profileId.present) {
+      map['profile_id'] = Variable<String>(profileId.value);
     }
     if (name.present) {
       map['name'] = Variable<String>(name.value);
@@ -3854,6 +4666,7 @@ class SavedReportsCompanion extends UpdateCompanion<SavedReportRow> {
           ..write('updatedAt: $updatedAt, ')
           ..write('deletedAt: $deletedAt, ')
           ..write('installId: $installId, ')
+          ..write('profileId: $profileId, ')
           ..write('name: $name, ')
           ..write('seriesJson: $seriesJson, ')
           ..write('period: $period, ')
@@ -4751,6 +5564,7 @@ class AppMetaCompanion extends UpdateCompanion<AppMetaRow> {
 abstract class _$PatternsDatabase extends GeneratedDatabase {
   _$PatternsDatabase(QueryExecutor e) : super(e);
   $PatternsDatabaseManager get managers => $PatternsDatabaseManager(this);
+  late final $ProfilesTable profiles = $ProfilesTable(this);
   late final $MetricsTable metrics = $MetricsTable(this);
   late final $MetricOptionsTable metricOptions = $MetricOptionsTable(this);
   late final $ObservationsTable observations = $ObservationsTable(this);
@@ -4763,6 +5577,7 @@ abstract class _$PatternsDatabase extends GeneratedDatabase {
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
   @override
   List<DatabaseSchemaEntity> get allSchemaEntities => [
+    profiles,
     metrics,
     metricOptions,
     observations,
@@ -4773,12 +5588,314 @@ abstract class _$PatternsDatabase extends GeneratedDatabase {
   ];
 }
 
+typedef $$ProfilesTableCreateCompanionBuilder =
+    ProfilesCompanion Function({
+      required String id,
+      required int updatedAt,
+      Value<int?> deletedAt,
+      required String installId,
+      required String name,
+      Value<bool> cycleEnabled,
+      Value<String?> periodStartMetricId,
+      Value<String?> periodEndMetricId,
+      Value<int> sortOrder,
+      required int createdAt,
+      Value<int> rowid,
+    });
+typedef $$ProfilesTableUpdateCompanionBuilder =
+    ProfilesCompanion Function({
+      Value<String> id,
+      Value<int> updatedAt,
+      Value<int?> deletedAt,
+      Value<String> installId,
+      Value<String> name,
+      Value<bool> cycleEnabled,
+      Value<String?> periodStartMetricId,
+      Value<String?> periodEndMetricId,
+      Value<int> sortOrder,
+      Value<int> createdAt,
+      Value<int> rowid,
+    });
+
+class $$ProfilesTableFilterComposer
+    extends Composer<_$PatternsDatabase, $ProfilesTable> {
+  $$ProfilesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get deletedAt => $composableBuilder(
+    column: $table.deletedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get installId => $composableBuilder(
+    column: $table.installId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get cycleEnabled => $composableBuilder(
+    column: $table.cycleEnabled,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get periodStartMetricId => $composableBuilder(
+    column: $table.periodStartMetricId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get periodEndMetricId => $composableBuilder(
+    column: $table.periodEndMetricId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get sortOrder => $composableBuilder(
+    column: $table.sortOrder,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$ProfilesTableOrderingComposer
+    extends Composer<_$PatternsDatabase, $ProfilesTable> {
+  $$ProfilesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get deletedAt => $composableBuilder(
+    column: $table.deletedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get installId => $composableBuilder(
+    column: $table.installId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get cycleEnabled => $composableBuilder(
+    column: $table.cycleEnabled,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get periodStartMetricId => $composableBuilder(
+    column: $table.periodStartMetricId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get periodEndMetricId => $composableBuilder(
+    column: $table.periodEndMetricId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get sortOrder => $composableBuilder(
+    column: $table.sortOrder,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$ProfilesTableAnnotationComposer
+    extends Composer<_$PatternsDatabase, $ProfilesTable> {
+  $$ProfilesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<int> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<int> get deletedAt =>
+      $composableBuilder(column: $table.deletedAt, builder: (column) => column);
+
+  GeneratedColumn<String> get installId =>
+      $composableBuilder(column: $table.installId, builder: (column) => column);
+
+  GeneratedColumn<String> get name =>
+      $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumn<bool> get cycleEnabled => $composableBuilder(
+    column: $table.cycleEnabled,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get periodStartMetricId => $composableBuilder(
+    column: $table.periodStartMetricId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get periodEndMetricId => $composableBuilder(
+    column: $table.periodEndMetricId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get sortOrder =>
+      $composableBuilder(column: $table.sortOrder, builder: (column) => column);
+
+  GeneratedColumn<int> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+}
+
+class $$ProfilesTableTableManager
+    extends
+        RootTableManager<
+          _$PatternsDatabase,
+          $ProfilesTable,
+          ProfileRow,
+          $$ProfilesTableFilterComposer,
+          $$ProfilesTableOrderingComposer,
+          $$ProfilesTableAnnotationComposer,
+          $$ProfilesTableCreateCompanionBuilder,
+          $$ProfilesTableUpdateCompanionBuilder,
+          (
+            ProfileRow,
+            BaseReferences<_$PatternsDatabase, $ProfilesTable, ProfileRow>,
+          ),
+          ProfileRow,
+          PrefetchHooks Function()
+        > {
+  $$ProfilesTableTableManager(_$PatternsDatabase db, $ProfilesTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ProfilesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$ProfilesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$ProfilesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<int> updatedAt = const Value.absent(),
+                Value<int?> deletedAt = const Value.absent(),
+                Value<String> installId = const Value.absent(),
+                Value<String> name = const Value.absent(),
+                Value<bool> cycleEnabled = const Value.absent(),
+                Value<String?> periodStartMetricId = const Value.absent(),
+                Value<String?> periodEndMetricId = const Value.absent(),
+                Value<int> sortOrder = const Value.absent(),
+                Value<int> createdAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ProfilesCompanion(
+                id: id,
+                updatedAt: updatedAt,
+                deletedAt: deletedAt,
+                installId: installId,
+                name: name,
+                cycleEnabled: cycleEnabled,
+                periodStartMetricId: periodStartMetricId,
+                periodEndMetricId: periodEndMetricId,
+                sortOrder: sortOrder,
+                createdAt: createdAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required int updatedAt,
+                Value<int?> deletedAt = const Value.absent(),
+                required String installId,
+                required String name,
+                Value<bool> cycleEnabled = const Value.absent(),
+                Value<String?> periodStartMetricId = const Value.absent(),
+                Value<String?> periodEndMetricId = const Value.absent(),
+                Value<int> sortOrder = const Value.absent(),
+                required int createdAt,
+                Value<int> rowid = const Value.absent(),
+              }) => ProfilesCompanion.insert(
+                id: id,
+                updatedAt: updatedAt,
+                deletedAt: deletedAt,
+                installId: installId,
+                name: name,
+                cycleEnabled: cycleEnabled,
+                periodStartMetricId: periodStartMetricId,
+                periodEndMetricId: periodEndMetricId,
+                sortOrder: sortOrder,
+                createdAt: createdAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$ProfilesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$PatternsDatabase,
+      $ProfilesTable,
+      ProfileRow,
+      $$ProfilesTableFilterComposer,
+      $$ProfilesTableOrderingComposer,
+      $$ProfilesTableAnnotationComposer,
+      $$ProfilesTableCreateCompanionBuilder,
+      $$ProfilesTableUpdateCompanionBuilder,
+      (
+        ProfileRow,
+        BaseReferences<_$PatternsDatabase, $ProfilesTable, ProfileRow>,
+      ),
+      ProfileRow,
+      PrefetchHooks Function()
+    >;
 typedef $$MetricsTableCreateCompanionBuilder =
     MetricsCompanion Function({
       required String id,
       required int updatedAt,
       Value<int?> deletedAt,
       required String installId,
+      Value<String> profileId,
       required String name,
       required String domain,
       required String kind,
@@ -4801,6 +5918,7 @@ typedef $$MetricsTableUpdateCompanionBuilder =
       Value<int> updatedAt,
       Value<int?> deletedAt,
       Value<String> installId,
+      Value<String> profileId,
       Value<String> name,
       Value<String> domain,
       Value<String> kind,
@@ -4844,6 +5962,11 @@ class $$MetricsTableFilterComposer
 
   ColumnFilters<String> get installId => $composableBuilder(
     column: $table.installId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get profileId => $composableBuilder(
+    column: $table.profileId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -4947,6 +6070,11 @@ class $$MetricsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get profileId => $composableBuilder(
+    column: $table.profileId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get name => $composableBuilder(
     column: $table.name,
     builder: (column) => ColumnOrderings(column),
@@ -5039,6 +6167,9 @@ class $$MetricsTableAnnotationComposer
   GeneratedColumn<String> get installId =>
       $composableBuilder(column: $table.installId, builder: (column) => column);
 
+  GeneratedColumn<String> get profileId =>
+      $composableBuilder(column: $table.profileId, builder: (column) => column);
+
   GeneratedColumn<String> get name =>
       $composableBuilder(column: $table.name, builder: (column) => column);
 
@@ -5123,6 +6254,7 @@ class $$MetricsTableTableManager
                 Value<int> updatedAt = const Value.absent(),
                 Value<int?> deletedAt = const Value.absent(),
                 Value<String> installId = const Value.absent(),
+                Value<String> profileId = const Value.absent(),
                 Value<String> name = const Value.absent(),
                 Value<String> domain = const Value.absent(),
                 Value<String> kind = const Value.absent(),
@@ -5143,6 +6275,7 @@ class $$MetricsTableTableManager
                 updatedAt: updatedAt,
                 deletedAt: deletedAt,
                 installId: installId,
+                profileId: profileId,
                 name: name,
                 domain: domain,
                 kind: kind,
@@ -5165,6 +6298,7 @@ class $$MetricsTableTableManager
                 required int updatedAt,
                 Value<int?> deletedAt = const Value.absent(),
                 required String installId,
+                Value<String> profileId = const Value.absent(),
                 required String name,
                 required String domain,
                 required String kind,
@@ -5185,6 +6319,7 @@ class $$MetricsTableTableManager
                 updatedAt: updatedAt,
                 deletedAt: deletedAt,
                 installId: installId,
+                profileId: profileId,
                 name: name,
                 domain: domain,
                 kind: kind,
@@ -5862,6 +6997,7 @@ typedef $$PhotosTableCreateCompanionBuilder =
       required String installId,
       required String dayKey,
       required int tzOffsetMinutes,
+      Value<String> profileId,
       Value<String?> metricId,
       Value<String?> observationId,
       required String fileName,
@@ -5879,6 +7015,7 @@ typedef $$PhotosTableUpdateCompanionBuilder =
       Value<String> installId,
       Value<String> dayKey,
       Value<int> tzOffsetMinutes,
+      Value<String> profileId,
       Value<String?> metricId,
       Value<String?> observationId,
       Value<String> fileName,
@@ -5925,6 +7062,11 @@ class $$PhotosTableFilterComposer
 
   ColumnFilters<int> get tzOffsetMinutes => $composableBuilder(
     column: $table.tzOffsetMinutes,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get profileId => $composableBuilder(
+    column: $table.profileId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -6003,6 +7145,11 @@ class $$PhotosTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get profileId => $composableBuilder(
+    column: $table.profileId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get metricId => $composableBuilder(
     column: $table.metricId,
     builder: (column) => ColumnOrderings(column),
@@ -6067,6 +7214,9 @@ class $$PhotosTableAnnotationComposer
     column: $table.tzOffsetMinutes,
     builder: (column) => column,
   );
+
+  GeneratedColumn<String> get profileId =>
+      $composableBuilder(column: $table.profileId, builder: (column) => column);
 
   GeneratedColumn<String> get metricId =>
       $composableBuilder(column: $table.metricId, builder: (column) => column);
@@ -6133,6 +7283,7 @@ class $$PhotosTableTableManager
                 Value<String> installId = const Value.absent(),
                 Value<String> dayKey = const Value.absent(),
                 Value<int> tzOffsetMinutes = const Value.absent(),
+                Value<String> profileId = const Value.absent(),
                 Value<String?> metricId = const Value.absent(),
                 Value<String?> observationId = const Value.absent(),
                 Value<String> fileName = const Value.absent(),
@@ -6148,6 +7299,7 @@ class $$PhotosTableTableManager
                 installId: installId,
                 dayKey: dayKey,
                 tzOffsetMinutes: tzOffsetMinutes,
+                profileId: profileId,
                 metricId: metricId,
                 observationId: observationId,
                 fileName: fileName,
@@ -6165,6 +7317,7 @@ class $$PhotosTableTableManager
                 required String installId,
                 required String dayKey,
                 required int tzOffsetMinutes,
+                Value<String> profileId = const Value.absent(),
                 Value<String?> metricId = const Value.absent(),
                 Value<String?> observationId = const Value.absent(),
                 required String fileName,
@@ -6180,6 +7333,7 @@ class $$PhotosTableTableManager
                 installId: installId,
                 dayKey: dayKey,
                 tzOffsetMinutes: tzOffsetMinutes,
+                profileId: profileId,
                 metricId: metricId,
                 observationId: observationId,
                 fileName: fileName,
@@ -6217,6 +7371,7 @@ typedef $$SavedReportsTableCreateCompanionBuilder =
       required int updatedAt,
       Value<int?> deletedAt,
       required String installId,
+      Value<String> profileId,
       required String name,
       required String seriesJson,
       required String period,
@@ -6231,6 +7386,7 @@ typedef $$SavedReportsTableUpdateCompanionBuilder =
       Value<int> updatedAt,
       Value<int?> deletedAt,
       Value<String> installId,
+      Value<String> profileId,
       Value<String> name,
       Value<String> seriesJson,
       Value<String> period,
@@ -6266,6 +7422,11 @@ class $$SavedReportsTableFilterComposer
 
   ColumnFilters<String> get installId => $composableBuilder(
     column: $table.installId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get profileId => $composableBuilder(
+    column: $table.profileId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -6329,6 +7490,11 @@ class $$SavedReportsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get profileId => $composableBuilder(
+    column: $table.profileId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get name => $composableBuilder(
     column: $table.name,
     builder: (column) => ColumnOrderings(column),
@@ -6380,6 +7546,9 @@ class $$SavedReportsTableAnnotationComposer
 
   GeneratedColumn<String> get installId =>
       $composableBuilder(column: $table.installId, builder: (column) => column);
+
+  GeneratedColumn<String> get profileId =>
+      $composableBuilder(column: $table.profileId, builder: (column) => column);
 
   GeneratedColumn<String> get name =>
       $composableBuilder(column: $table.name, builder: (column) => column);
@@ -6443,6 +7612,7 @@ class $$SavedReportsTableTableManager
                 Value<int> updatedAt = const Value.absent(),
                 Value<int?> deletedAt = const Value.absent(),
                 Value<String> installId = const Value.absent(),
+                Value<String> profileId = const Value.absent(),
                 Value<String> name = const Value.absent(),
                 Value<String> seriesJson = const Value.absent(),
                 Value<String> period = const Value.absent(),
@@ -6455,6 +7625,7 @@ class $$SavedReportsTableTableManager
                 updatedAt: updatedAt,
                 deletedAt: deletedAt,
                 installId: installId,
+                profileId: profileId,
                 name: name,
                 seriesJson: seriesJson,
                 period: period,
@@ -6469,6 +7640,7 @@ class $$SavedReportsTableTableManager
                 required int updatedAt,
                 Value<int?> deletedAt = const Value.absent(),
                 required String installId,
+                Value<String> profileId = const Value.absent(),
                 required String name,
                 required String seriesJson,
                 required String period,
@@ -6481,6 +7653,7 @@ class $$SavedReportsTableTableManager
                 updatedAt: updatedAt,
                 deletedAt: deletedAt,
                 installId: installId,
+                profileId: profileId,
                 name: name,
                 seriesJson: seriesJson,
                 period: period,
@@ -6957,6 +8130,8 @@ typedef $$AppMetaTableProcessedTableManager =
 class $PatternsDatabaseManager {
   final _$PatternsDatabase _db;
   $PatternsDatabaseManager(this._db);
+  $$ProfilesTableTableManager get profiles =>
+      $$ProfilesTableTableManager(_db, _db.profiles);
   $$MetricsTableTableManager get metrics =>
       $$MetricsTableTableManager(_db, _db.metrics);
   $$MetricOptionsTableTableManager get metricOptions =>

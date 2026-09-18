@@ -1,4 +1,6 @@
 import 'package:drift/drift.dart';
+// Used by the generated column defaults in database.g.dart.
+import 'package:patterns_core/patterns_core.dart' show defaultProfileId;
 
 import 'tables.dart';
 
@@ -16,6 +18,7 @@ part 'database.g.dart';
 /// written with that in mind.
 @DriftDatabase(
   tables: [
+    Profiles,
     Metrics,
     MetricOptions,
     Observations,
@@ -29,7 +32,7 @@ class PatternsDatabase extends _$PatternsDatabase {
   PatternsDatabase(super.e);
 
   /// Bumped for every schema change, and written into every archive manifest.
-  static const currentSchemaVersion = 3;
+  static const currentSchemaVersion = 4;
 
   @override
   int get schemaVersion => currentSchemaVersion;
@@ -51,6 +54,17 @@ class PatternsDatabase extends _$PatternsDatabase {
           // v2 -> v3: a note on a reading. Additive: every existing reading
           // has none, which is what it always had.
           if (from < 3) await m.addColumn(observations, observations.note);
+          // v3 -> v4: profiles. Additive: every existing marker, photo and
+          // report takes the default profile's id from the column default,
+          // which is exactly who they belonged to. The profile row itself is
+          // written by ProfileRepository.ensureDefault, because its name is
+          // a user-facing word and migrations do not know the language.
+          if (from < 4) {
+            await m.createTable(profiles);
+            await m.addColumn(metrics, metrics.profileId);
+            await m.addColumn(photos, photos.profileId);
+            await m.addColumn(savedReports, savedReports.profileId);
+          }
           await _createIndexes();
         },
         beforeOpen: (details) async {
@@ -78,6 +92,8 @@ class PatternsDatabase extends _$PatternsDatabase {
           'ON metric_options (metric_id)',
       'CREATE INDEX IF NOT EXISTS idx_photos_day ON photos (day_key)',
       'CREATE INDEX IF NOT EXISTS idx_photos_metric ON photos (metric_id)',
+      'CREATE INDEX IF NOT EXISTS idx_metrics_profile ON metrics (profile_id)',
+      'CREATE INDEX IF NOT EXISTS idx_photos_profile ON photos (profile_id)',
     ];
     for (final statement in statements) {
       await customStatement(statement);

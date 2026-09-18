@@ -49,10 +49,12 @@ final class PatternsBackup {
   /// Tables that travel, in a fixed order, so two exports of the same data
   /// produce comparable archives.
   static const exportedTables = [
+    'profiles',
     'metrics',
     'metric_options',
     'observations',
     'photos',
+    'saved_reports',
     'settings',
     'meta',
   ];

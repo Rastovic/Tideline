@@ -37,8 +37,9 @@ class _ReportBuilderScreenState extends State<ReportBuilderScreen> {
   late final String _id = widget.definition?.id ?? Ids.newId();
   late final DateTime _createdAt =
       widget.definition?.createdAt ?? DateTime.now().toUtc();
-  late final TextEditingController _name =
-      TextEditingController(text: widget.definition?.name ?? '');
+  late final TextEditingController _name = TextEditingController(
+    text: widget.definition?.name ?? '',
+  );
 
   late List<ReportSeries> _series = [...?widget.definition?.series];
   late ReportPeriod _period = widget.definition?.period ?? const LastDays(30);
@@ -60,17 +61,14 @@ class _ReportBuilderScreenState extends State<ReportBuilderScreen> {
     super.dispose();
   }
 
-  bool _isPicked(String metricId) =>
-      _series.any((s) => s.metricId == metricId);
+  bool _isPicked(String metricId) => _series.any((s) => s.metricId == metricId);
 
   void _toggle(Metric metric) {
     setState(() {
       if (_isPicked(metric.id)) {
         _series = [
           for (final s in _series)
-            if (s.metricId != metric.id &&
-                s.bandBehindMetricId != metric.id)
-              s,
+            if (s.metricId != metric.id && s.bandBehindMetricId != metric.id) s,
         ];
       } else {
         _series = [..._series, ReportSeries(metricId: metric.id)];
@@ -81,7 +79,10 @@ class _ReportBuilderScreenState extends State<ReportBuilderScreen> {
   /// Rows the band can sit behind: every picked series that is not itself a
   /// band. A band behind a band would be two overlays in one frame, which is
   /// the thing the single-overlay rule exists to prevent.
-  List<ReportSeries> get _rows => [for (final s in _series) if (!s.isBand) s];
+  List<ReportSeries> get _rows => [
+    for (final s in _series)
+      if (!s.isBand) s,
+  ];
 
   /// Picks a fixed stretch, which does not move.
   ///
@@ -115,7 +116,11 @@ class _ReportBuilderScreenState extends State<ReportBuilderScreen> {
 
     setState(() {
       _period = FixedPeriod(
-        from: formatDayKey(picked.start.year, picked.start.month, picked.start.day),
+        from: formatDayKey(
+          picked.start.year,
+          picked.start.month,
+          picked.start.day,
+        ),
         to: formatDayKey(picked.end.year, picked.end.month, picked.end.day),
       );
     });
@@ -153,9 +158,7 @@ class _ReportBuilderScreenState extends State<ReportBuilderScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(_isNew ? context.s.newReport : context.s.report),
-        actions: [
-          TextButton(onPressed: _save, child: Text(context.s.save)),
-        ],
+        actions: [TextButton(onPressed: _save, child: Text(context.s.save))],
       ),
       body: SafeArea(
         child: ListView(
@@ -194,10 +197,10 @@ class _ReportBuilderScreenState extends State<ReportBuilderScreen> {
                 for (final days in _windows)
                   ChoiceChip(
                     label: Text(context.s.window(days)),
-                    selected: _period is LastDays &&
+                    selected:
+                        _period is LastDays &&
                         (_period as LastDays).days == days,
-                    onSelected: (_) =>
-                        setState(() => _period = LastDays(days)),
+                    onSelected: (_) => setState(() => _period = LastDays(days)),
                   ),
                 ChoiceChip(
                   label: Text(switch (_period) {
@@ -219,12 +222,15 @@ class _ReportBuilderScreenState extends State<ReportBuilderScreen> {
                   selected: _axis == ReportAxis.date,
                   onSelected: (_) => setState(() => _axis = ReportAxis.date),
                 ),
-                ChoiceChip(
-                  label: Text(context.s.byCycleDay),
-                  selected: _axis == ReportAxis.cycleDay,
-                  onSelected: (_) =>
-                      setState(() => _axis = ReportAxis.cycleDay),
-                ),
+                // No cycle axis for a profile that does not track one.
+                if (widget.controller.cycleEnabled ||
+                    _axis == ReportAxis.cycleDay)
+                  ChoiceChip(
+                    label: Text(context.s.byCycleDay),
+                    selected: _axis == ReportAxis.cycleDay,
+                    onSelected: (_) =>
+                        setState(() => _axis = ReportAxis.cycleDay),
+                  ),
                 ChoiceChip(
                   label: Text(context.s.grid),
                   selected: _axis == ReportAxis.grid,
@@ -238,8 +244,7 @@ class _ReportBuilderScreenState extends State<ReportBuilderScreen> {
               _RowOrder(
                 rows: [
                   for (final row in _rows)
-                    if (widget.controller.byId(row.metricId)
-                        case final metric?)
+                    if (widget.controller.byId(row.metricId) case final metric?)
                       metric,
                 ],
                 onReorder: _reorder,
@@ -324,15 +329,15 @@ class _ReportBuilderScreenState extends State<ReportBuilderScreen> {
   }
 
   Widget _heading(VitalsThemeData theme, String label) => Padding(
-        padding: const EdgeInsets.only(bottom: VitalsSpacing.sm),
-        child: Text(
-          label.toUpperCase(),
-          style: theme.typography.label.copyWith(
-            color: theme.colors.inkFaint,
-            letterSpacing: 1.2,
-          ),
-        ),
-      );
+    padding: const EdgeInsets.only(bottom: VitalsSpacing.sm),
+    child: Text(
+      label.toUpperCase(),
+      style: theme.typography.label.copyWith(
+        color: theme.colors.inkFaint,
+        letterSpacing: 1.2,
+      ),
+    ),
+  );
 
   /// `1.8. - 31.8.`, with the year only when it is not this one.
   ///
@@ -349,7 +354,6 @@ class _ReportBuilderScreenState extends State<ReportBuilderScreen> {
         showYear ? '${d.day}.${d.month}.${d.year}.' : '${d.day}.${d.month}.';
     return '${one(from)} - ${one(to)}';
   }
-
 }
 
 /// The picked rows in drawing order, each with a handle to drag.
@@ -435,8 +439,9 @@ class _MarkerPick extends StatelessWidget {
           title: Text(metric.name, style: theme.typography.body),
           subtitle: Text(
             context.s.kindName(metric.kind),
-            style:
-                theme.typography.caption.copyWith(color: theme.colors.inkFaint),
+            style: theme.typography.caption.copyWith(
+              color: theme.colors.inkFaint,
+            ),
           ),
         ),
         if (picked) ...[
@@ -456,8 +461,8 @@ class _MarkerPick extends StatelessWidget {
                       for (final style in DisplayStyle.allowedFor(metric.kind))
                         ChoiceChip(
                           label: Text(context.s.displayName(style)),
-                          selected: (series?.displayStyle ??
-                                  metric.displayStyle) ==
+                          selected:
+                              (series?.displayStyle ?? metric.displayStyle) ==
                               style,
                           onSelected: (_) => onStyle(style),
                         ),
@@ -474,9 +479,7 @@ class _MarkerPick extends StatelessWidget {
                     hint: Text(context.s.asBandBehind),
                     isExpanded: true,
                     items: [
-                      DropdownMenuItem(
-                        child: Text(context.s.ownRow),
-                      ),
+                      DropdownMenuItem(child: Text(context.s.ownRow)),
                       for (final row in rows)
                         DropdownMenuItem(
                           value: row.id,

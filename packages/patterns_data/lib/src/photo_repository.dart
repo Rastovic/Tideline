@@ -1,4 +1,5 @@
 import 'package:drift/drift.dart';
+import 'package:patterns_core/patterns_core.dart' show defaultProfileId;
 import 'package:vitals_core/vitals_core.dart';
 
 import 'database.dart';
@@ -58,6 +59,7 @@ final class PhotoRepository {
     String? metricId,
     String? observationId,
     String? caption,
+    String profileId = defaultProfileId,
   }) async {
     final id = Ids.newId();
     final millis = capturedAt.toUtc().millisecondsSinceEpoch;
@@ -75,6 +77,7 @@ final class PhotoRepository {
             metricId: Value(metricId),
             observationId: Value(observationId),
             caption: Value(caption),
+            profileId: Value(profileId),
           ),
         );
     return StoredPhoto(
@@ -91,9 +94,15 @@ final class PhotoRepository {
   }
 
   /// Every photo of one day, marker photos and free ones alike.
-  Future<List<StoredPhoto>> onDay(String dayKey) async {
+  Future<List<StoredPhoto>> onDay(
+    String dayKey, {
+    String profileId = defaultProfileId,
+  }) async {
     final rows = await (_db.select(_db.photos)
-          ..where((p) => p.dayKey.equals(dayKey) & p.deletedAt.isNull())
+          ..where((p) =>
+              p.dayKey.equals(dayKey) &
+              p.deletedAt.isNull() &
+              p.profileId.equals(profileId))
           ..orderBy([(p) => OrderingTerm(expression: p.capturedAt)]))
         .get();
     return [for (final row in rows) _toDomain(row)];
@@ -127,10 +136,13 @@ final class PhotoRepository {
   }
 
   /// Every live photo carrying a caption, newest first. Search reads this.
-  Future<List<StoredPhoto>> captioned() async {
+  Future<List<StoredPhoto>> captioned({
+    String profileId = defaultProfileId,
+  }) async {
     final rows = await (_db.select(_db.photos)
           ..where((p) =>
               p.deletedAt.isNull() &
+              p.profileId.equals(profileId) &
               p.caption.isNotNull() &
               p.caption.equals('').not())
           ..orderBy([

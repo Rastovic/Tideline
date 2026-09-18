@@ -27,6 +27,8 @@ export 'src/metric_change.dart';
 export 'src/metric_kind.dart';
 export 'src/metric_value.dart';
 export 'src/observation.dart';
+export 'src/profile.dart';
+export 'src/profile_setup.dart';
 export 'src/report.dart';
 export 'src/search.dart';
 export 'src/seed.dart';

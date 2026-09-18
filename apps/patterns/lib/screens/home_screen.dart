@@ -16,6 +16,7 @@ import 'metric_labels.dart';
 import 'cycle_card.dart';
 import 'metrics_screen.dart';
 import 'photo_timeline_screen.dart';
+import 'profile_screens.dart';
 import 'report_view_screen.dart';
 import 'reports_screen.dart';
 import 'search_screen.dart';
@@ -116,8 +117,17 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   String _widgetEmptyText = '';
 
   /// A widget tap: straight to that marker's log sheet.
-  void _logById(String id) {
-    final metric = controller.byId(id);
+  ///
+  /// The widget may hold a marker from a profile the app has since switched
+  /// away from, so the tap switches to that profile first.
+  Future<void> _logById(String id) async {
+    var metric = controller.byId(id);
+    if (metric == null) {
+      final elsewhere = await controller.findMarkerAnywhere(id);
+      if (elsewhere == null || !elsewhere.isActive) return;
+      await switchProfileTo(controller, elsewhere.profileId);
+      metric = controller.byId(id);
+    }
     if (!mounted || metric == null || !metric.isActive) return;
     _log(metric);
   }
@@ -283,6 +293,39 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                             ),
                           ),
                       ],
+                    ),
+                    // Whose record this is, always one tap from any other.
+                    // Shown with a single profile too, because that is where
+                    // the second one gets made.
+                    InkWell(
+                      onTap: () => showProfilePicker(context, controller),
+                      borderRadius: VitalsRadius.pillAll,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          vertical: VitalsSpacing.xs,
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.person_outline,
+                              size: 18,
+                              color: colors.inkMuted,
+                            ),
+                            const SizedBox(width: VitalsSpacing.xs),
+                            Text(
+                              controller.activeProfile.name,
+                              style: theme.typography.body
+                                  .copyWith(color: colors.inkMuted),
+                            ),
+                            Icon(
+                              Icons.expand_more,
+                              size: 18,
+                              color: colors.inkMuted,
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
                     Text(
                       context.s.humanDate(controller.today),

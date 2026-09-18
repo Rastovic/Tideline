@@ -31,6 +31,23 @@ final class InstallId {
   }
 }
 
+/// Which profile the app opens on: the last one used.
+final class ActiveProfile {
+  const ActiveProfile._();
+
+  static const _key = 'patterns.activeProfile';
+
+  static Future<String?> load() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_key);
+  }
+
+  static Future<void> save(String profileId) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_key, profileId);
+  }
+}
+
 /// The local hour a new day starts.
 ///
 /// 04:00 by default: a reading at 01:30 belongs to the day that just ended,

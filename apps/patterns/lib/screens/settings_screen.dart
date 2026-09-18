@@ -9,6 +9,7 @@ import '../data/evening_reminder.dart';
 import '../data/patterns_controller.dart';
 import '../data/quick_log_widget.dart';
 import 'backup_screen.dart';
+import 'profile_screens.dart';
 import '../l10n/app_language.dart';
 
 /// Settings, which for now is the one reminder.
@@ -232,6 +233,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 color: theme.colors.inkMuted,
               ),
             ),
+            if (widget.controller case final controller?) ...[
+              const SizedBox(height: VitalsSpacing.huge),
+              ProfileSettingsSection(controller: controller),
+            ],
             if (widget.lock case final lock?) ...[
               const SizedBox(height: VitalsSpacing.huge),
               Text(

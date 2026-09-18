@@ -319,6 +319,7 @@ void main() {
       )));
       await tester.pumpAndSettle();
 
+      await tester.scrollUntilVisible(find.text('04:00'), 150);
       await tester.tap(find.text('04:00'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('02:00').last);

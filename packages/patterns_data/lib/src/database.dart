@@ -29,7 +29,7 @@ class PatternsDatabase extends _$PatternsDatabase {
   PatternsDatabase(super.e);
 
   /// Bumped for every schema change, and written into every archive manifest.
-  static const currentSchemaVersion = 2;
+  static const currentSchemaVersion = 3;
 
   @override
   int get schemaVersion => currentSchemaVersion;
@@ -48,6 +48,9 @@ class PatternsDatabase extends _$PatternsDatabase {
           // v1 -> v2: saved reports. Purely additive - a v1 archive restores
           // with no reports, which is exactly what a v1 phone had.
           if (from < 2) await m.createTable(savedReports);
+          // v2 -> v3: a note on a reading. Additive: every existing reading
+          // has none, which is what it always had.
+          if (from < 3) await m.addColumn(observations, observations.note);
           await _createIndexes();
         },
         beforeOpen: (details) async {

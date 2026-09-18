@@ -29,6 +29,7 @@ final class SearchHit {
     required this.at,
     required this.text,
     this.markerName,
+    this.isNote = false,
     this.isPrivate = false,
   });
 
@@ -36,9 +37,12 @@ final class SearchHit {
   final DateTime at;
   final String text;
 
-  /// The diary marker's name, or null for a photo caption. The screen words
-  /// the null in the current language.
+  /// The diary marker's name, the noted marker's name, or null for a photo
+  /// caption. The screen words the null in the current language.
   final String? markerName;
+
+  /// A note written under a reading rather than a diary entry of its own.
+  final bool isNote;
 
   final bool isPrivate;
 }
@@ -380,13 +384,19 @@ final class PatternsController extends ChangeNotifier {
   }
 
   /// Records one reading, now.
-  Future<void> log(String metricId, MetricValue value, {DateTime? now}) async {
+  Future<void> log(
+    String metricId,
+    MetricValue value, {
+    DateTime? now,
+    String? note,
+  }) async {
     final at = now ?? DateTime.now();
     await observations.log(
       metricId: metricId,
       value: value,
       at: at.toUtc(),
       utcOffsetMinutes: at.timeZoneOffset.inMinutes,
+      note: note,
     );
     await refresh(now: at);
   }
@@ -396,12 +406,17 @@ final class PatternsController extends ChangeNotifier {
   ///
   /// Today is re-read first, because a screen opened before the day boundary
   /// can still be holding yesterday as "today".
-  Future<void> logOn(String dayKey, String metricId, MetricValue value) async {
+  Future<void> logOn(
+    String dayKey,
+    String metricId,
+    MetricValue value, {
+    String? note,
+  }) async {
     await refresh();
     if (dayKey == _today) {
-      await log(metricId, value);
+      await log(metricId, value, note: note);
     } else {
-      await logForDay(metricId, value, dayKey);
+      await logForDay(metricId, value, dayKey, note: note);
     }
   }
 
@@ -427,8 +442,9 @@ final class PatternsController extends ChangeNotifier {
   Future<void> logForDay(
     String metricId,
     MetricValue value,
-    String dayKey,
-  ) async {
+    String dayKey, {
+    String? note,
+  }) async {
     final now = DateTime.now();
     await observations.logForDay(
       metricId: metricId,
@@ -436,14 +452,20 @@ final class PatternsController extends ChangeNotifier {
       dayKey: dayKey,
       now: now.toUtc(),
       utcOffsetMinutes: now.timeZoneOffset.inMinutes,
+      note: note,
     );
     await refresh();
   }
 
-  Future<void> updateValue(String observationId, MetricValue value) async {
+  Future<void> updateValue(
+    String observationId,
+    MetricValue value, {
+    String? note,
+  }) async {
     await observations.updateValue(
       observationId,
       value,
+      note: note,
       now: DateTime.now().toUtc(),
     );
     await refresh();
@@ -488,6 +510,15 @@ final class PatternsController extends ChangeNotifier {
             text: text,
             markerName: names[reading.metricId]!,
             isPrivate: isPrivate,
+          ),
+      for (final reading in await observations.noted(kinds: kinds))
+        if (reading.note case final note? when matchesQuery(note, query))
+          SearchHit(
+            dayKey: reading.dayKey,
+            at: reading.recordedAt,
+            text: note,
+            markerName: byId(reading.metricId)?.name,
+            isNote: true,
           ),
       for (final photo in await photos.captioned())
         if (matchesQuery(photo.caption!, query))

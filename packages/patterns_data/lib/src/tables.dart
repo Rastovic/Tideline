@@ -101,6 +101,13 @@ class Observations extends Table with PortableTable, DayScopedTable {
   /// few thousand rows a year.
   TextColumn get valueJson => text()();
 
+  /// A sentence about this reading: "7, after the pizza".
+  ///
+  /// Free text, so it follows the diary's rules wherever anything leaves the
+  /// app: never on the doctor page, and in an export only when the diary is
+  /// ticked. Null is the normal case - a note is offered, never asked for.
+  TextColumn get note => text().nullable()();
+
   /// Filled in after the fact rather than as it happened. Marked, not hidden.
   BoolColumn get enteredLate => boolean().withDefault(const Constant(false))();
 

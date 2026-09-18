@@ -120,6 +120,7 @@ class _SearchScreenState extends State<SearchScreen> {
                           [
                             _dayLabel(hit.dayKey),
                             hit.markerName ?? context.s.photoLower,
+                            if (hit.isNote) context.s.note.toLowerCase(),
                             if (hit.isPrivate) context.s.privateLower,
                           ].join(' · '),
                           style: theme.typography.caption

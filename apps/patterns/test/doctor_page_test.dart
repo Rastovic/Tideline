@@ -252,7 +252,7 @@ void main() {
 
       expect(transfer.sentName, endsWith('.csv'));
       expect(utf8.decode(transfer.sent!),
-          startsWith('date,time,marker,kind,value,unit,entered_late'));
+          startsWith('date,time,marker,kind,value,unit,note,entered_late'));
       controller.dispose();
     });
   });

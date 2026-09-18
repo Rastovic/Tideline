@@ -1747,6 +1747,15 @@ class $ObservationsTable extends Observations
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _noteMeta = const VerificationMeta('note');
+  @override
+  late final GeneratedColumn<String> note = GeneratedColumn<String>(
+    'note',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _enteredLateMeta = const VerificationMeta(
     'enteredLate',
   );
@@ -1784,6 +1793,7 @@ class $ObservationsTable extends Observations
     metricId,
     recordedAt,
     valueJson,
+    note,
     enteredLate,
     createdAt,
   ];
@@ -1869,6 +1879,12 @@ class $ObservationsTable extends Observations
     } else if (isInserting) {
       context.missing(_valueJsonMeta);
     }
+    if (data.containsKey('note')) {
+      context.handle(
+        _noteMeta,
+        note.isAcceptableOrUnknown(data['note']!, _noteMeta),
+      );
+    }
     if (data.containsKey('entered_late')) {
       context.handle(
         _enteredLateMeta,
@@ -1931,6 +1947,10 @@ class $ObservationsTable extends Observations
         DriftSqlType.string,
         data['${effectivePrefix}value_json'],
       )!,
+      note: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}note'],
+      ),
       enteredLate: attachedDatabase.typeMapping.read(
         DriftSqlType.bool,
         data['${effectivePrefix}entered_late'],
@@ -1994,6 +2014,13 @@ class ObservationRow extends DataClass implements Insertable<ObservationRow> {
   /// few thousand rows a year.
   final String valueJson;
 
+  /// A sentence about this reading: "7, after the pizza".
+  ///
+  /// Free text, so it follows the diary's rules wherever anything leaves the
+  /// app: never on the doctor page, and in an export only when the diary is
+  /// ticked. Null is the normal case - a note is offered, never asked for.
+  final String? note;
+
   /// Filled in after the fact rather than as it happened. Marked, not hidden.
   final bool enteredLate;
   final int createdAt;
@@ -2007,6 +2034,7 @@ class ObservationRow extends DataClass implements Insertable<ObservationRow> {
     required this.metricId,
     required this.recordedAt,
     required this.valueJson,
+    this.note,
     required this.enteredLate,
     required this.createdAt,
   });
@@ -2024,6 +2052,9 @@ class ObservationRow extends DataClass implements Insertable<ObservationRow> {
     map['metric_id'] = Variable<String>(metricId);
     map['recorded_at'] = Variable<int>(recordedAt);
     map['value_json'] = Variable<String>(valueJson);
+    if (!nullToAbsent || note != null) {
+      map['note'] = Variable<String>(note);
+    }
     map['entered_late'] = Variable<bool>(enteredLate);
     map['created_at'] = Variable<int>(createdAt);
     return map;
@@ -2042,6 +2073,7 @@ class ObservationRow extends DataClass implements Insertable<ObservationRow> {
       metricId: Value(metricId),
       recordedAt: Value(recordedAt),
       valueJson: Value(valueJson),
+      note: note == null && nullToAbsent ? const Value.absent() : Value(note),
       enteredLate: Value(enteredLate),
       createdAt: Value(createdAt),
     );
@@ -2062,6 +2094,7 @@ class ObservationRow extends DataClass implements Insertable<ObservationRow> {
       metricId: serializer.fromJson<String>(json['metricId']),
       recordedAt: serializer.fromJson<int>(json['recordedAt']),
       valueJson: serializer.fromJson<String>(json['valueJson']),
+      note: serializer.fromJson<String?>(json['note']),
       enteredLate: serializer.fromJson<bool>(json['enteredLate']),
       createdAt: serializer.fromJson<int>(json['createdAt']),
     );
@@ -2079,6 +2112,7 @@ class ObservationRow extends DataClass implements Insertable<ObservationRow> {
       'metricId': serializer.toJson<String>(metricId),
       'recordedAt': serializer.toJson<int>(recordedAt),
       'valueJson': serializer.toJson<String>(valueJson),
+      'note': serializer.toJson<String?>(note),
       'enteredLate': serializer.toJson<bool>(enteredLate),
       'createdAt': serializer.toJson<int>(createdAt),
     };
@@ -2094,6 +2128,7 @@ class ObservationRow extends DataClass implements Insertable<ObservationRow> {
     String? metricId,
     int? recordedAt,
     String? valueJson,
+    Value<String?> note = const Value.absent(),
     bool? enteredLate,
     int? createdAt,
   }) => ObservationRow(
@@ -2106,6 +2141,7 @@ class ObservationRow extends DataClass implements Insertable<ObservationRow> {
     metricId: metricId ?? this.metricId,
     recordedAt: recordedAt ?? this.recordedAt,
     valueJson: valueJson ?? this.valueJson,
+    note: note.present ? note.value : this.note,
     enteredLate: enteredLate ?? this.enteredLate,
     createdAt: createdAt ?? this.createdAt,
   );
@@ -2124,6 +2160,7 @@ class ObservationRow extends DataClass implements Insertable<ObservationRow> {
           ? data.recordedAt.value
           : this.recordedAt,
       valueJson: data.valueJson.present ? data.valueJson.value : this.valueJson,
+      note: data.note.present ? data.note.value : this.note,
       enteredLate: data.enteredLate.present
           ? data.enteredLate.value
           : this.enteredLate,
@@ -2143,6 +2180,7 @@ class ObservationRow extends DataClass implements Insertable<ObservationRow> {
           ..write('metricId: $metricId, ')
           ..write('recordedAt: $recordedAt, ')
           ..write('valueJson: $valueJson, ')
+          ..write('note: $note, ')
           ..write('enteredLate: $enteredLate, ')
           ..write('createdAt: $createdAt')
           ..write(')'))
@@ -2160,6 +2198,7 @@ class ObservationRow extends DataClass implements Insertable<ObservationRow> {
     metricId,
     recordedAt,
     valueJson,
+    note,
     enteredLate,
     createdAt,
   );
@@ -2176,6 +2215,7 @@ class ObservationRow extends DataClass implements Insertable<ObservationRow> {
           other.metricId == this.metricId &&
           other.recordedAt == this.recordedAt &&
           other.valueJson == this.valueJson &&
+          other.note == this.note &&
           other.enteredLate == this.enteredLate &&
           other.createdAt == this.createdAt);
 }
@@ -2190,6 +2230,7 @@ class ObservationsCompanion extends UpdateCompanion<ObservationRow> {
   final Value<String> metricId;
   final Value<int> recordedAt;
   final Value<String> valueJson;
+  final Value<String?> note;
   final Value<bool> enteredLate;
   final Value<int> createdAt;
   final Value<int> rowid;
@@ -2203,6 +2244,7 @@ class ObservationsCompanion extends UpdateCompanion<ObservationRow> {
     this.metricId = const Value.absent(),
     this.recordedAt = const Value.absent(),
     this.valueJson = const Value.absent(),
+    this.note = const Value.absent(),
     this.enteredLate = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -2217,6 +2259,7 @@ class ObservationsCompanion extends UpdateCompanion<ObservationRow> {
     required String metricId,
     required int recordedAt,
     required String valueJson,
+    this.note = const Value.absent(),
     this.enteredLate = const Value.absent(),
     required int createdAt,
     this.rowid = const Value.absent(),
@@ -2239,6 +2282,7 @@ class ObservationsCompanion extends UpdateCompanion<ObservationRow> {
     Expression<String>? metricId,
     Expression<int>? recordedAt,
     Expression<String>? valueJson,
+    Expression<String>? note,
     Expression<bool>? enteredLate,
     Expression<int>? createdAt,
     Expression<int>? rowid,
@@ -2253,6 +2297,7 @@ class ObservationsCompanion extends UpdateCompanion<ObservationRow> {
       if (metricId != null) 'metric_id': metricId,
       if (recordedAt != null) 'recorded_at': recordedAt,
       if (valueJson != null) 'value_json': valueJson,
+      if (note != null) 'note': note,
       if (enteredLate != null) 'entered_late': enteredLate,
       if (createdAt != null) 'created_at': createdAt,
       if (rowid != null) 'rowid': rowid,
@@ -2269,6 +2314,7 @@ class ObservationsCompanion extends UpdateCompanion<ObservationRow> {
     Value<String>? metricId,
     Value<int>? recordedAt,
     Value<String>? valueJson,
+    Value<String?>? note,
     Value<bool>? enteredLate,
     Value<int>? createdAt,
     Value<int>? rowid,
@@ -2283,6 +2329,7 @@ class ObservationsCompanion extends UpdateCompanion<ObservationRow> {
       metricId: metricId ?? this.metricId,
       recordedAt: recordedAt ?? this.recordedAt,
       valueJson: valueJson ?? this.valueJson,
+      note: note ?? this.note,
       enteredLate: enteredLate ?? this.enteredLate,
       createdAt: createdAt ?? this.createdAt,
       rowid: rowid ?? this.rowid,
@@ -2319,6 +2366,9 @@ class ObservationsCompanion extends UpdateCompanion<ObservationRow> {
     if (valueJson.present) {
       map['value_json'] = Variable<String>(valueJson.value);
     }
+    if (note.present) {
+      map['note'] = Variable<String>(note.value);
+    }
     if (enteredLate.present) {
       map['entered_late'] = Variable<bool>(enteredLate.value);
     }
@@ -2343,6 +2393,7 @@ class ObservationsCompanion extends UpdateCompanion<ObservationRow> {
           ..write('metricId: $metricId, ')
           ..write('recordedAt: $recordedAt, ')
           ..write('valueJson: $valueJson, ')
+          ..write('note: $note, ')
           ..write('enteredLate: $enteredLate, ')
           ..write('createdAt: $createdAt, ')
           ..write('rowid: $rowid')
@@ -5469,6 +5520,7 @@ typedef $$ObservationsTableCreateCompanionBuilder =
       required String metricId,
       required int recordedAt,
       required String valueJson,
+      Value<String?> note,
       Value<bool> enteredLate,
       required int createdAt,
       Value<int> rowid,
@@ -5484,6 +5536,7 @@ typedef $$ObservationsTableUpdateCompanionBuilder =
       Value<String> metricId,
       Value<int> recordedAt,
       Value<String> valueJson,
+      Value<String?> note,
       Value<bool> enteredLate,
       Value<int> createdAt,
       Value<int> rowid,
@@ -5540,6 +5593,11 @@ class $$ObservationsTableFilterComposer
 
   ColumnFilters<String> get valueJson => $composableBuilder(
     column: $table.valueJson,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get note => $composableBuilder(
+    column: $table.note,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -5608,6 +5666,11 @@ class $$ObservationsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get note => $composableBuilder(
+    column: $table.note,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<bool> get enteredLate => $composableBuilder(
     column: $table.enteredLate,
     builder: (column) => ColumnOrderings(column),
@@ -5658,6 +5721,9 @@ class $$ObservationsTableAnnotationComposer
 
   GeneratedColumn<String> get valueJson =>
       $composableBuilder(column: $table.valueJson, builder: (column) => column);
+
+  GeneratedColumn<String> get note =>
+      $composableBuilder(column: $table.note, builder: (column) => column);
 
   GeneratedColumn<bool> get enteredLate => $composableBuilder(
     column: $table.enteredLate,
@@ -5714,6 +5780,7 @@ class $$ObservationsTableTableManager
                 Value<String> metricId = const Value.absent(),
                 Value<int> recordedAt = const Value.absent(),
                 Value<String> valueJson = const Value.absent(),
+                Value<String?> note = const Value.absent(),
                 Value<bool> enteredLate = const Value.absent(),
                 Value<int> createdAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
@@ -5727,6 +5794,7 @@ class $$ObservationsTableTableManager
                 metricId: metricId,
                 recordedAt: recordedAt,
                 valueJson: valueJson,
+                note: note,
                 enteredLate: enteredLate,
                 createdAt: createdAt,
                 rowid: rowid,
@@ -5742,6 +5810,7 @@ class $$ObservationsTableTableManager
                 required String metricId,
                 required int recordedAt,
                 required String valueJson,
+                Value<String?> note = const Value.absent(),
                 Value<bool> enteredLate = const Value.absent(),
                 required int createdAt,
                 Value<int> rowid = const Value.absent(),
@@ -5755,6 +5824,7 @@ class $$ObservationsTableTableManager
                 metricId: metricId,
                 recordedAt: recordedAt,
                 valueJson: valueJson,
+                note: note,
                 enteredLate: enteredLate,
                 createdAt: createdAt,
                 rowid: rowid,

@@ -15,28 +15,39 @@ import '../l10n/app_language.dart';
 /// [onCapture] is supplied for photo markers. The sheet closes as soon as it is
 /// called: capture is its own flow, and a sheet waiting behind a camera is a
 /// sheet the user comes back to and cannot remember the purpose of.
-Future<MetricValue?> showLogSheet(
+/// What the sheet hands back: the reading, and the sentence about it.
+typedef LoggedEntry = ({MetricValue value, String? note});
+
+Future<LoggedEntry?> showLogSheet(
   BuildContext context, {
   required Metric metric,
   MetricValue? initial,
+  String? initialNote,
   Future<void> Function(PhotoSource source)? onCapture,
 }) =>
-    showModalBottomSheet<MetricValue>(
+    showModalBottomSheet<LoggedEntry>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => _LogSheet(
         metric: metric,
         initial: initial,
+        initialNote: initialNote,
         onCapture: onCapture,
       ),
     );
 
 class _LogSheet extends StatefulWidget {
-  const _LogSheet({required this.metric, this.initial, this.onCapture});
+  const _LogSheet({
+    required this.metric,
+    this.initial,
+    this.initialNote,
+    this.onCapture,
+  });
 
   final Metric metric;
   final MetricValue? initial;
+  final String? initialNote;
   final Future<void> Function(PhotoSource source)? onCapture;
 
   @override
@@ -51,6 +62,9 @@ class _LogSheetState extends State<_LogSheet> {
 
   /// The amount as typed. Starts from the reading being edited, so an edit
   /// shows the number it is changing instead of a blank field.
+  late final TextEditingController _note =
+      TextEditingController(text: widget.initialNote ?? '');
+
   late final TextEditingController _amountText = TextEditingController(
     text: switch (widget.initial) {
       NumberValue(:final number) => _plain(number),
@@ -115,12 +129,44 @@ class _LogSheetState extends State<_LogSheet> {
 
   @override
   void dispose() {
+    _note.dispose();
     _amountText.dispose();
     _text.dispose();
     super.dispose();
   }
 
-  void _submit(MetricValue value) => Navigator.of(context).pop(value);
+  void _submit(MetricValue value) => Navigator.of(context).pop(
+        (value: value, note: _note.text.trim().isEmpty ? null : _note.text.trim()),
+      );
+
+  /// Slots the note in front of the sheet's last widget, which is the button
+  /// that records the reading in every kind that takes a note.
+  static List<Widget> _withNote(List<Widget> body, List<Widget> note) =>
+      note.isEmpty || body.isEmpty
+          ? body
+          : [...body.take(body.length - 1), ...note, body.last];
+
+  /// Offered under every reading that is not itself free text, and never
+  /// asked for. A rating of 7 with "after the pizza" is worth more in March
+  /// than the 7 alone, and an empty field costs nothing.
+  List<Widget> _noteField(VitalsThemeData theme) {
+    if (metric.kind == MetricKind.text || metric.kind == MetricKind.photo) {
+      return const [];
+    }
+    return [
+      const SizedBox(height: VitalsSpacing.lg),
+      TextField(
+        controller: _note,
+        minLines: 1,
+        maxLines: 3,
+        style: theme.typography.body,
+        decoration: InputDecoration(
+          labelText: context.s.note,
+          hintText: context.s.noteHint,
+        ),
+      ),
+    ];
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -161,7 +207,9 @@ class _LogSheetState extends State<_LogSheet> {
               const SizedBox(height: VitalsSpacing.lg),
               Text(metric.name, style: theme.typography.title),
               const SizedBox(height: VitalsSpacing.lg),
-              ..._body(context, theme),
+              // The note sits above the action, never below it: a field
+              // under the button is a field nobody sees before tapping it.
+              ..._withNote(_body(context, theme), _noteField(theme)),
             ],
           ),
         ),

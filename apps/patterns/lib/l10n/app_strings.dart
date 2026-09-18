@@ -483,4 +483,11 @@ final class AppStrings {
   String get today => _t('Today', 'Danas');
   String get yesterday => _t('Yesterday', 'Juce');
   String get pickADate => _t('Pick a date', 'Odaberi datum');
+
+  // --- Notes on a reading ------------------------------------------
+
+  String get note => _t('Note', 'Biljeska');
+  String get noteHint => _t('anything worth remembering', 'sta god vrijedi zapamtiti');
+  String notesHeldBack(int n) => _t('Notes on readings left out: $n.',
+      'Biljeske uz unose izostavljene: $n.');
 }

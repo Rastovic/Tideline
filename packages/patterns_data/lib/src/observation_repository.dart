@@ -37,6 +37,7 @@ final class ObservationRepository {
     required MetricValue value,
     required DateTime at,
     required int utcOffsetMinutes,
+    String? note,
     bool enteredLate = false,
     String? id,
   }) async {
@@ -52,6 +53,7 @@ final class ObservationRepository {
       recordedAt: utc,
       utcOffsetMinutes: utcOffsetMinutes,
       value: value,
+      note: _clean(note),
       enteredLate: enteredLate,
       createdAt: utc,
     );
@@ -70,6 +72,7 @@ final class ObservationRepository {
     required String dayKey,
     required DateTime now,
     required int utcOffsetMinutes,
+    String? note,
   }) async {
     final utc = now.toUtc();
     final observation = Observation(
@@ -79,6 +82,7 @@ final class ObservationRepository {
       recordedAt: utc,
       utcOffsetMinutes: utcOffsetMinutes,
       value: value,
+      note: _clean(note),
       enteredLate: true,
       createdAt: utc,
     );
@@ -97,6 +101,7 @@ final class ObservationRepository {
             metricId: observation.metricId,
             recordedAt: observation.recordedAt.toUtc().millisecondsSinceEpoch,
             valueJson: jsonEncode(observation.value.toWire()),
+            note: Value(observation.note),
             enteredLate: Value(observation.enteredLate),
             createdAt: (observation.createdAt ?? observation.recordedAt)
                 .toUtc()
@@ -105,18 +110,28 @@ final class ObservationRepository {
         );
   }
 
-  /// Changes the value of one reading, keeping its place in the day.
+  /// Changes the value and the note of one reading, keeping its place in the
+  /// day. A cleared note is stored as null rather than as an empty string, so
+  /// "has a note" is one question and not two.
   Future<void> updateValue(
     String observationId,
     MetricValue value, {
     required DateTime now,
+    String? note,
   }) async {
     await (_db.update(_db.observations)
           ..where((o) => o.id.equals(observationId)))
         .write(ObservationsCompanion(
       valueJson: Value(jsonEncode(value.toWire())),
+      note: Value(_clean(note)),
       updatedAt: Value(now.toUtc().millisecondsSinceEpoch),
     ));
+  }
+
+  /// Blank is no note. Whitespace typed and left behind is not a sentence.
+  static String? _clean(String? note) {
+    final trimmed = note?.trim();
+    return trimmed == null || trimmed.isEmpty ? null : trimmed;
   }
 
   /// Soft-deletes a reading. The tombstone stays, so a restore cannot bring it
@@ -168,6 +183,25 @@ final class ObservationRepository {
     if (ids.isEmpty) return const [];
     final rows = await (_db.select(_db.observations)
           ..where((o) => o.metricId.isIn(ids) & o.deletedAt.isNull())
+          ..orderBy([
+            (o) => OrderingTerm(
+                  expression: o.recordedAt,
+                  mode: OrderingMode.desc,
+                ),
+          ]))
+        .get();
+    return _toDomain(rows, kinds);
+  }
+
+  /// Every live reading carrying a note, newest first. Search reads this.
+  Future<List<Observation>> noted({
+    required Map<String, MetricKind> kinds,
+  }) async {
+    final rows = await (_db.select(_db.observations)
+          ..where((o) =>
+              o.deletedAt.isNull() &
+              o.note.isNotNull() &
+              o.note.equals('').not())
           ..orderBy([
             (o) => OrderingTerm(
                   expression: o.recordedAt,
@@ -290,6 +324,7 @@ final class ObservationRepository {
               DateTime.fromMillisecondsSinceEpoch(row.recordedAt, isUtc: true),
           utcOffsetMinutes: row.tzOffsetMinutes,
           value: value,
+          note: row.note,
           enteredLate: row.enteredLate,
           createdAt:
               DateTime.fromMillisecondsSinceEpoch(row.createdAt, isUtc: true),

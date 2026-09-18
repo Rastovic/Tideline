@@ -17,6 +17,7 @@ final class Observation {
     required this.recordedAt,
     required this.utcOffsetMinutes,
     required this.value,
+    this.note,
     this.enteredLate = false,
     this.createdAt,
     this.updatedAt,
@@ -43,6 +44,11 @@ final class Observation {
 
   final MetricValue value;
 
+  /// A sentence about this one reading, or null. Free text, so it travels
+  /// under the diary's rules: never on the doctor page, and out of an export
+  /// unless the diary is ticked.
+  final String? note;
+
   /// Filled in after the fact rather than as it happened.
   ///
   /// Marked rather than hidden: retro-filling is allowed and normal, and it is
@@ -68,6 +74,7 @@ final class Observation {
     DateTime? recordedAt,
     int? utcOffsetMinutes,
     MetricValue? value,
+    String? note,
     bool? enteredLate,
     DateTime? updatedAt,
     DateTime? deletedAt,
@@ -79,6 +86,7 @@ final class Observation {
         recordedAt: recordedAt ?? this.recordedAt,
         utcOffsetMinutes: utcOffsetMinutes ?? this.utcOffsetMinutes,
         value: value ?? this.value,
+        note: note ?? this.note,
         enteredLate: enteredLate ?? this.enteredLate,
         createdAt: createdAt,
         updatedAt: updatedAt ?? this.updatedAt,

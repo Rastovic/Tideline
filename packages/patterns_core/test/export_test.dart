@@ -18,7 +18,7 @@ Metric marker(String id, MetricKind kind,
 
 var _n = 0;
 Observation reading(String metricId, String dayKey, MetricValue value,
-        {int hourUtc = 18, bool late = false}) =>
+        {int hourUtc = 18, bool late = false, String? note}) =>
     Observation(
       id: 'o${_n++}',
       metricId: metricId,
@@ -26,6 +26,7 @@ Observation reading(String metricId, String dayKey, MetricValue value,
       recordedAt: DateTime.parse('${dayKey}T${hourUtc.toString().padLeft(2, '0')}:05:00Z'),
       utcOffsetMinutes: 120,
       value: value,
+      note: note,
       enteredLate: late,
     );
 
@@ -42,7 +43,8 @@ void main() {
   final observations = [
     reading('raspolozenje', '2026-09-01', const NumberValue(6, kind: MetricKind.scale)),
     reading('raspolozenje', '2026-09-01', const NumberValue(4, kind: MetricKind.scale), hourUtc: 20),
-    reading('kreatin doza', '2026-09-02', const NumberValue(2.5, kind: MetricKind.amount), late: true),
+    reading('kreatin doza', '2026-09-02', const NumberValue(2.5, kind: MetricKind.amount),
+        late: true, note: 'poslije treninga'),
     reading('osjecanja', '2026-09-02', TagsValue(const ['t1', 't2'])),
     reading('osjecanja', '2026-09-03', TagsValue(const [])),
     reading('dnevnik', '2026-09-02', const TextValue('rekla je "dosta", pa, tisina')),
@@ -100,10 +102,16 @@ void main() {
       includeDiary: true,
     );
     final lines = exportCsv(data).split('\r\n');
-    expect(lines.first, 'date,time,marker,kind,value,unit,entered_late');
-    expect(lines, contains('2026-09-02,20:05,kreatin doza,amount,2.5,g,true'));
+    expect(lines.first,
+        'date,time,marker,kind,value,unit,note,entered_late');
     expect(lines,
-        contains('2026-09-02,20:05,dnevnik,text,"rekla je ""dosta"", pa, tisina",,false'));
+        contains('2026-09-02,20:05,kreatin doza,amount,2.5,g,poslije treninga,true'));
+    expect(
+      lines,
+      contains(
+        '2026-09-02,20:05,dnevnik,text,"rekla je ""dosta"", pa, tisina",,,false',
+      ),
+    );
   });
 
   test('the AI export carries its schema, its gaps, and valid JSON', () {
@@ -144,5 +152,44 @@ void main() {
       from: '2026-09-01',
       to: '2026-09-30',
     )), contains('**raspolozenje**'));
+  });
+  group('a note on a reading', () {
+    test('travels with the diary tick, and is counted when it does not', () {
+      final without = buildExport(
+        metrics: all,
+        observations: observations,
+        from: '2026-09-01',
+        to: '2026-09-30',
+      );
+      expect(without.rows[2].note, isNull);
+      expect(without.heldBackNotes, 1);
+      expect(exportCsv(without), isNot(contains('poslije treninga')));
+
+      final with_ = buildExport(
+        metrics: all,
+        observations: observations,
+        from: '2026-09-01',
+        to: '2026-09-30',
+        includeDiary: true,
+      );
+      expect(with_.rows[2].note, 'poslije treninga');
+      expect(with_.heldBackNotes, 0);
+      expect(exportCsv(with_), contains('poslije treninga'));
+      expect(exportAiMarkdown(with_), contains('poslije treninga'));
+    });
+
+    test('the CSV keeps its column even when every note is held back', () {
+      final data = buildExport(
+        metrics: all,
+        observations: observations,
+        from: '2026-09-01',
+        to: '2026-09-30',
+      );
+      final lines = exportCsv(data).split('\r\n');
+      expect(lines.first,
+          'date,time,marker,kind,value,unit,note,entered_late');
+      // The dose row: unit filled, note blank because it was held back.
+      expect(lines, contains('2026-09-02,20:05,kreatin doza,amount,2.5,g,,true'));
+    });
   });
 }

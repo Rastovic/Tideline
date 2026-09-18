@@ -136,15 +136,15 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
 
   Future<void> _log(Metric metric) async {
-    final value = await showLogSheet(
+    final entry = await showLogSheet(
       context,
       metric: metric,
       onCapture: metric.kind == MetricKind.photo
           ? (source) => _capture(metric.id, source)
           : null,
     );
-    if (value == null) return;
-    await controller.log(metric.id, value);
+    if (entry == null) return;
+    await controller.log(metric.id, entry.value, note: entry.note);
   }
 
   void _openTimeline(Metric metric) {

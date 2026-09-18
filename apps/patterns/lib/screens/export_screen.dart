@@ -235,6 +235,8 @@ class _ExportScreenState extends State<ExportScreen> {
                           context.s.privateHeldBack(data.heldBackPrivate),
                           if (data.heldBackDiary > 0)
                             context.s.diaryHeldBack(data.heldBackDiary),
+                          if (data.heldBackNotes > 0)
+                            context.s.notesHeldBack(data.heldBackNotes),
                         ].join('\n'),
                         style: theme.typography.caption,
                       ),

@@ -20,6 +20,7 @@ final class ExportRow {
     required this.kind,
     required this.value,
     this.unit,
+    this.note,
     this.enteredLate = false,
   });
 
@@ -31,6 +32,11 @@ final class ExportRow {
   final String kind;
   final String value;
   final String? unit;
+
+  /// Free text about this reading. Present only when the diary was ticked,
+  /// because a note is the same kind of thing as a diary entry.
+  final String? note;
+
   final bool enteredLate;
 
   Map<String, Object?> toJson() => {
@@ -40,6 +46,7 @@ final class ExportRow {
         'kind': kind,
         'value': value,
         if (unit != null) 'unit': unit,
+        if (note != null) 'note': note,
         if (enteredLate) 'enteredLate': true,
       };
 }
@@ -53,6 +60,7 @@ final class ExportData {
     required this.rows,
     required this.heldBackPrivate,
     required this.heldBackDiary,
+    this.heldBackNotes = 0,
   });
 
   final String from;
@@ -68,6 +76,10 @@ final class ExportData {
 
   /// Diary entries left out because the diary was not ticked.
   final int heldBackDiary;
+
+  /// Notes on other markers, left out by the same tick. Counted apart, since
+  /// losing a note is a different surprise from losing a whole entry.
+  final int heldBackNotes;
 }
 
 /// Flattens readings of [metrics] between [from] and [to] for export.
@@ -99,6 +111,7 @@ ExportData buildExport({
 
   var heldBackPrivate = 0;
   var heldBackDiary = 0;
+  var heldBackNotes = 0;
   final used = <String>{};
   final rows = <ExportRow>[];
 
@@ -116,6 +129,7 @@ ExportData buildExport({
       }
     }
     used.add(metric.id);
+    if (o.note != null && !includeDiary) heldBackNotes++;
     final minute = o.localMinuteOfDay;
     rows.add(ExportRow(
       date: o.dayKey,
@@ -124,6 +138,7 @@ ExportData buildExport({
       kind: metric.kind.wireName,
       value: _value(metric, o.value, language),
       unit: metric.unit,
+      note: includeDiary ? o.note : null,
       enteredLate: o.enteredLate,
     ));
   }
@@ -135,13 +150,23 @@ ExportData buildExport({
     rows: rows,
     heldBackPrivate: heldBackPrivate,
     heldBackDiary: heldBackDiary,
+    heldBackNotes: heldBackNotes,
   );
 }
 
 /// RFC 4180, with a header, `\r\n` line ends, and every field that needs it
 /// quoted. Opens in a spreadsheet and in pandas without a setting changed.
 String exportCsv(ExportData data) {
-  const header = ['date', 'time', 'marker', 'kind', 'value', 'unit', 'entered_late'];
+  const header = [
+    'date',
+    'time',
+    'marker',
+    'kind',
+    'value',
+    'unit',
+    'note',
+    'entered_late',
+  ];
   final lines = [
     header.join(','),
     for (final row in data.rows)
@@ -152,6 +177,7 @@ String exportCsv(ExportData data) {
         row.kind,
         row.value,
         row.unit ?? '',
+        row.note ?? '',
         row.enteredLate ? 'true' : 'false',
       ].map(_csvField).join(','),
   ];
@@ -217,6 +243,12 @@ String exportAiMarkdown(
     buffer.writeln(t(
       '- Diary entries left out: ${data.heldBackDiary}.',
       '- Unosi dnevnika izostavljeni: ${data.heldBackDiary}.',
+    ));
+  }
+  if (data.heldBackNotes > 0) {
+    buffer.writeln(t(
+      '- Notes on readings left out: ${data.heldBackNotes}.',
+      '- Biljeske uz unose izostavljene: ${data.heldBackNotes}.',
     ));
   }
 

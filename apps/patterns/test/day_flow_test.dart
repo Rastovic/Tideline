@@ -40,12 +40,12 @@ Widget wrap(Widget child) => MaterialApp(
 
 /// Opens the log sheet for [metric] from a bare button, and hands back what
 /// it returned.
-Future<List<MetricValue?>> openSheet(
+Future<List<LoggedEntry?>> openSheet(
   WidgetTester tester,
   Metric metric, {
   MetricValue? initial,
 }) async {
-  final results = <MetricValue?>[];
+  final results = <LoggedEntry?>[];
   await tester.pumpWidget(wrap(Builder(
     builder: (context) => Scaffold(
       body: TextButton(
@@ -73,18 +73,18 @@ void main() {
       final results = await openSheet(tester, dose);
 
       expect(primary(tester, 'Log').onPressed, isNull);
-      await tester.enterText(find.byType(TextField), 'abc');
+      await tester.enterText(find.byType(TextField).first, 'abc');
       await tester.pump();
       expect(primary(tester, 'Log').onPressed, isNull);
-      await tester.enterText(find.byType(TextField), '-2');
+      await tester.enterText(find.byType(TextField).first, '-2');
       await tester.pump();
       expect(primary(tester, 'Log').onPressed, isNull);
 
-      await tester.enterText(find.byType(TextField), '2,5');
+      await tester.enterText(find.byType(TextField).first, '2,5');
       await tester.pump();
       await tester.tap(find.text('Log'));
       await tester.pumpAndSettle();
-      expect(results.single,
+      expect(results.single!.value,
           const NumberValue(2.5, kind: MetricKind.amount));
       controller.dispose();
     });
@@ -121,7 +121,7 @@ void main() {
       // The explicit answer is still one tap away.
       await tester.tap(find.text('None of these'));
       await tester.pumpAndSettle();
-      expect((results.single! as TagsValue).isExplicitNone, isTrue);
+      expect((results.single!.value as TagsValue).isExplicitNone, isTrue);
       controller.dispose();
     });
   });

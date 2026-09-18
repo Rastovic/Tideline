@@ -131,7 +131,7 @@ class _DayDetailScreenState extends State<DayDetailScreen> {
       return;
     }
     final metric = choice as Metric;
-    final value = await showLogSheet(
+    final entry = await showLogSheet(
       context,
       metric: metric,
       onCapture: metric.kind == MetricKind.photo
@@ -153,8 +153,9 @@ class _DayDetailScreenState extends State<DayDetailScreen> {
             }
           : null,
     );
-    if (value == null) return;
-    await widget.controller.logOn(_dayKey, metric.id, value);
+    if (entry == null) return;
+    await widget.controller
+        .logOn(_dayKey, metric.id, entry.value, note: entry.note);
     _reload();
   }
 
@@ -197,13 +198,15 @@ class _DayDetailScreenState extends State<DayDetailScreen> {
   Future<void> _edit(Observation observation) async {
     final metric = widget.controller.byId(observation.metricId);
     if (metric == null) return;
-    final value = await showLogSheet(
+    final entry = await showLogSheet(
       context,
       metric: metric,
       initial: observation.value,
+      initialNote: observation.note,
     );
-    if (value == null) return;
-    await widget.controller.updateValue(observation.id, value);
+    if (entry == null) return;
+    await widget.controller
+        .updateValue(observation.id, entry.value, note: entry.note);
     _reload();
   }
 
@@ -402,6 +405,15 @@ class _ReadingCard extends StatelessWidget {
                     describeValue(observation.value, metric, context.s),
                     style: theme.typography.body,
                   ),
+                  if (observation.note case final note?)
+                    Padding(
+                      padding: const EdgeInsets.only(top: VitalsSpacing.xs),
+                      child: Text(
+                        note,
+                        style: theme.typography.caption
+                            .copyWith(color: colors.inkMuted),
+                      ),
+                    ),
                   if (observation.value case TextValue(isPrivate: true))
                     Padding(
                       padding: const EdgeInsets.only(top: VitalsSpacing.xs),

@@ -255,4 +255,40 @@ void main() {
     }
     expect(crashes, isEmpty, reason: '${crashes.length} positions threw');
   });
+  test('a note on a reading survives the round trip, and an older archive '
+      'restores without one', () async {
+    await readings.log(
+      metricId: seedIds['bloating']!,
+      value: const NumberValue(7, kind: MetricKind.scale),
+      at: DateTime.utc(2026, 8, 19, 19),
+      utcOffsetMinutes: 120,
+      note: 'after the pizza',
+    );
+    final bytes = await exportAll();
+
+    final restoredDb = PatternsDatabase(NativeDatabase.memory());
+    final result = await PatternsBackup(restoredDb).import(
+      bytes,
+      writePhoto: FakePhotoStore().write,
+    );
+    expect(result.error, isNull);
+
+    final metrics = MetricRepository(restoredDb, installId: install);
+    final all = await metrics.all();
+    final kinds = {for (final m in all) m.id: m.kind};
+    final restored = ObservationRepository(restoredDb, installId: install);
+    final day = await restored.onDay('2026-08-19', kinds: kinds);
+
+    expect(
+      day.firstWhere((o) => o.metricId == seedIds['bloating']).note,
+      'after the pizza',
+    );
+    // Everything written before the column existed reads as no note, which is
+    // what those rows always meant.
+    expect(
+      day.firstWhere((o) => o.metricId == seedIds['diary']).note,
+      isNull,
+    );
+    await restoredDb.close();
+  });
 }

@@ -153,9 +153,21 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       onCapture: metric.kind == MetricKind.photo
           ? (source) => _capture(metric.id, source)
           : null,
+      // A photo marker's photo is its reading; on every other marker a photo
+      // rides along with the reading, like the note.
+      pickPhoto: metric.kind == MetricKind.photo
+          ? null
+          : (source) => widget.picker.pick(source, context: context),
     );
     if (entry == null) return;
     await controller.log(metric.id, entry.value, note: entry.note);
+    if (entry.photo case final bytes?) {
+      await controller.attachPhoto(
+        bytes,
+        metricId: metric.id,
+        dayKey: controller.today,
+      );
+    }
   }
 
   void _openTimeline(Metric metric) {

@@ -1,5 +1,6 @@
 import 'package:vitals_core/vitals_core.dart';
 
+import 'comparison.dart';
 import 'cycle.dart';
 import 'day_summary.dart';
 import 'metric.dart';
@@ -81,6 +82,7 @@ final class DoctorPage {
     required this.entries,
     required this.daysWithAnyEntry,
     this.periodStarts = const [],
+    this.comparison,
   });
 
   final String from;
@@ -95,6 +97,12 @@ final class DoctorPage {
   /// Period start dates inside the stretch. Dates only: **counting yes,
   /// predicting never**, so there is no cycle length estimate and no next date.
   final List<String> periodStarts;
+
+  /// Two of the printed markers read against each other, when the page was
+  /// asked for one. Counted groups and the days behind them - the page still
+  /// claims nothing, it just stops making the reader hold two grids in their
+  /// head at once.
+  final Comparison? comparison;
 
   int get daysInPeriod => dayKeyRange(from, to).length;
 }
@@ -111,6 +119,7 @@ DoctorPage buildDoctorPage({
   required String from,
   required String to,
   List<CyclePeriod> cyclePeriods = const [],
+  ComparePairing? compare,
 }) {
   final printable = [
     for (final metric in metrics)
@@ -128,10 +137,25 @@ DoctorPage buildDoctorPage({
     entries.add(_entryFor(metric, days, observations, from: from, to: to));
   }
 
+  // The first two printable markers, in the order they were picked: the
+  // first splits the days, the second is read on them. Same rule as a report,
+  // so a page and a report never disagree about which is which.
+  final comparison = compare == null || printable.length < 2
+      ? null
+      : buildComparison(
+          condition: printable[0],
+          outcome: printable[1],
+          observations: observations,
+          from: from,
+          to: to,
+          pairing: compare,
+        );
+
   return DoctorPage(
     from: from,
     to: to,
     entries: entries,
+    comparison: comparison?.isEmpty ?? true ? null : comparison,
     daysWithAnyEntry: loggedDays.length,
     periodStarts: [
       for (final period in cyclePeriods)

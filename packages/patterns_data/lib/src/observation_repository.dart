@@ -212,6 +212,24 @@ final class ObservationRepository {
     return _toDomain(rows, kinds);
   }
 
+  /// The days in a range where a marker's reading carries a note.
+  Future<Set<String>> daysWithNote({
+    required String metricId,
+    required String from,
+    required String to,
+  }) async {
+    final rows = await (_db.select(_db.observations)
+          ..where((o) =>
+              o.metricId.equals(metricId) &
+              o.deletedAt.isNull() &
+              o.note.isNotNull() &
+              o.note.equals('').not() &
+              o.dayKey.isBiggerOrEqualValue(from) &
+              o.dayKey.isSmallerOrEqualValue(to)))
+        .get();
+    return {for (final row in rows) row.dayKey};
+  }
+
   /// Everything recorded on one day, for the day detail screen.
   Future<List<Observation>> onDay(
     String dayKey, {

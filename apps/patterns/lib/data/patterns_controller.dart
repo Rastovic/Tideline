@@ -387,8 +387,9 @@ final class PatternsController extends ChangeNotifier {
   /// The doctor page for [metricIds], in that order, over [period].
   Future<DoctorPage> doctorPage(
     List<String> metricIds,
-    ReportPeriod period,
-  ) async {
+    ReportPeriod period, {
+    ComparePairing? compare,
+  }) async {
     final (from, to) = period.resolve(_today);
     final all = await metrics.all(profileId: activeProfileId);
     final byId = {for (final m in all) m.id: m};
@@ -406,6 +407,7 @@ final class PatternsController extends ChangeNotifier {
       from: from,
       to: to,
       cyclePeriods: await cyclePeriods(),
+      compare: compare,
     );
   }
 
@@ -866,6 +868,57 @@ final class PatternsController extends ChangeNotifier {
     hits.sort((a, b) => b.at.compareTo(a.at));
     return hits;
   }
+
+  /// Attaches a photo to a marker's day without recording a reading.
+  ///
+  /// The photo marker path writes an observation of its own, because there the
+  /// photo **is** the reading. Here it is a note in pictures next to one, so
+  /// nothing is added to the numbers.
+  Future<StoredPhoto?> attachPhoto(
+    Uint8List bytes, {
+    required String metricId,
+    required String dayKey,
+    String? caption,
+  }) async {
+    final store = _photoStore;
+    if (store == null) return null;
+    final saved = await store.save(bytes);
+    if (saved == null) return null;
+    final now = DateTime.now();
+    final photo = await photos.add(
+      dayKey: dayKey,
+      utcOffsetMinutes: now.timeZoneOffset.inMinutes,
+      fileName: saved.fileName,
+      thumbFileName: saved.thumbFileName,
+      byteSize: saved.byteSize,
+      capturedAt: now.toUtc(),
+      metricId: metricId,
+      caption: caption,
+      profileId: activeProfileId,
+    );
+    await refresh();
+    return photo;
+  }
+
+  /// The days in a report's window where a marker carries a note or a photo,
+  /// for the strip under its row.
+  Future<({Set<String> notes, Set<String> photos})> markedDays(
+    String metricId, {
+    required String from,
+    required String to,
+  }) async =>
+      (
+        notes: await observations.daysWithNote(
+          metricId: metricId,
+          from: from,
+          to: to,
+        ),
+        photos: await photos.daysWithPhoto(
+          metricId: metricId,
+          from: from,
+          to: to,
+        ),
+      );
 
   /// What every photo occupies on disk, for the size shown in Settings.
   Future<int> photoBytes() => photos.totalBytes();

@@ -134,6 +134,9 @@ class _DayDetailScreenState extends State<DayDetailScreen> {
     final entry = await showLogSheet(
       context,
       metric: metric,
+      pickPhoto: metric.kind == MetricKind.photo
+          ? null
+          : (source) => widget.picker.pick(source, context: context),
       onCapture: metric.kind == MetricKind.photo
           ? (source) async {
               final ghost = await widget.controller.ghostPathFor(metric.id);
@@ -156,6 +159,13 @@ class _DayDetailScreenState extends State<DayDetailScreen> {
     if (entry == null) return;
     await widget.controller
         .logOn(_dayKey, metric.id, entry.value, note: entry.note);
+    if (entry.photo case final bytes?) {
+      await widget.controller.attachPhoto(
+        bytes,
+        metricId: metric.id,
+        dayKey: _dayKey,
+      );
+    }
     _reload();
   }
 
@@ -203,10 +213,20 @@ class _DayDetailScreenState extends State<DayDetailScreen> {
       metric: metric,
       initial: observation.value,
       initialNote: observation.note,
+      pickPhoto: metric.kind == MetricKind.photo
+          ? null
+          : (source) => widget.picker.pick(source, context: context),
     );
     if (entry == null) return;
     await widget.controller
         .updateValue(observation.id, entry.value, note: entry.note);
+    if (entry.photo case final bytes?) {
+      await widget.controller.attachPhoto(
+        bytes,
+        metricId: observation.metricId,
+        dayKey: _dayKey,
+      );
+    }
     _reload();
   }
 

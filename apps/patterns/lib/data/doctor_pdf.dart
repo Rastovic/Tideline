@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:math';
 
 import 'package:flutter/foundation.dart';
 import 'package:patterns_core/patterns_core.dart';
@@ -123,6 +124,15 @@ Future<Uint8List> renderDoctorPdf(
             _entry(entry, page, s, t: t, body: body, small: small),
             pw.SizedBox(height: 8),
           ],
+          // The one place on the page where two markers are read against
+          // each other rather than side by side. A clinician reading a
+          // printed page should not have to hold two grids in their head.
+          if (page.comparison case final comparison?) ...[
+            pw.SizedBox(height: 4),
+            pw.Divider(color: stroke, thickness: 0.5),
+            pw.SizedBox(height: 4),
+            _comparison(comparison, s, t: t, body: body, small: small),
+          ],
           pw.Spacer(),
           pw.Divider(color: stroke, thickness: 0.5),
           pw.Text(
@@ -185,6 +195,203 @@ pw.Widget _entry(
       pw.Expanded(child: _grid(entry, color, s.weekdays)),
     ],
   );
+}
+
+/// Two markers against each other: a dot per day, and the groups counted.
+///
+/// **The same numbers as the app's card, and the same silence about why.**
+/// Nothing is fitted through the dots, and the caption says so, because a
+/// line through a cloud of days is a claim and this page makes none.
+pw.Widget _comparison(
+  Comparison comparison,
+  AppStrings s, {
+  required String Function(String) t,
+  required pw.TextStyle body,
+  required pw.TextStyle small,
+}) {
+  final color = _color(comparison.outcome.colorHex);
+  final points = [
+    for (final p in comparison.points)
+      if (p.outcome != null) p,
+  ];
+  final values = [for (final p in points) p.outcome!]..sort();
+  final (low, high) = switch (comparison.outcome.kind) {
+    MetricKind.scale => (
+        comparison.outcome.scaleMin as num,
+        comparison.outcome.scaleMax as num,
+      ),
+    MetricKind.percent => (0 as num, 100 as num),
+    _ => values.isEmpty
+        ? (0 as num, 1 as num)
+        : (values.first, values.last == values.first
+            ? values.first + 1
+            : values.last),
+  };
+  final groups = comparison.buckets.map((b) => b.label).toList();
+  final scatter = points.isNotEmpty && points.first.condition != null;
+  final conditions = [
+    for (final p in points)
+      if (p.condition case final c?) c,
+  ]..sort();
+
+  return pw.Column(
+    crossAxisAlignment: pw.CrossAxisAlignment.start,
+    children: [
+      pw.Text(
+        t(s.compareTitle(comparison.outcome.name, comparison.condition.name)),
+        style: body.copyWith(fontWeight: pw.FontWeight.bold),
+      ),
+      pw.SizedBox(height: 2),
+      pw.Text(
+        t('${s.comparePairedDays(comparison.pairedDays)}'
+            '${comparison.pairing == ComparePairing.nextDay ? ' · ${s.compareNextDayNote}' : ''}'),
+        style: small,
+      ),
+      pw.SizedBox(height: 4),
+      pw.Row(
+        crossAxisAlignment: pw.CrossAxisAlignment.start,
+        children: [
+          pw.SizedBox(
+            width: 150,
+            child: pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              children: [
+                for (final bucket in comparison.buckets)
+                  pw.Padding(
+                    padding: const pw.EdgeInsets.only(bottom: 2),
+                    child: pw.Row(
+                      children: [
+                        pw.Expanded(
+                          child: pw.Text(
+                            t(_bucketLabel(bucket.label, s)),
+                            style: small,
+                          ),
+                        ),
+                        pw.Text(
+                          bucket.typical == null
+                              ? '-'
+                              : _number(bucket.typical!),
+                          style: body,
+                        ),
+                        pw.SizedBox(width: 6),
+                        pw.Text('${bucket.days} d', style: small),
+                      ],
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          pw.SizedBox(width: 10),
+          pw.Expanded(
+            child: pw.SizedBox(
+              height: 78,
+              child: pw.CustomPaint(
+                painter: (canvas, size) => _paintComparison(
+                  canvas,
+                  size,
+                  points: points,
+                  groups: groups,
+                  buckets: comparison.buckets,
+                  scatter: scatter,
+                  low: low,
+                  high: high,
+                  conditionLow: conditions.isEmpty ? 0 : conditions.first,
+                  conditionHigh: conditions.isEmpty ? 1 : conditions.last,
+                  color: color,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+      pw.SizedBox(height: 2),
+      pw.Text(t('${s.compareChartHint} ${s.compareNoClaim}'), style: small),
+    ],
+  );
+}
+
+String _bucketLabel(String raw, AppStrings s) => switch (raw) {
+      'yes' => s.compareYes,
+      'no' => s.compareNo,
+      'high' => s.compareHigh,
+      'low' => s.compareLow,
+      _ => raw,
+    };
+
+/// One dot per day, in PDF coordinates - which run from the bottom up, unlike
+/// the screen's.
+void _paintComparison(
+  PdfGraphics canvas,
+  PdfPoint size, {
+  required List<ComparePoint> points,
+  required List<String> groups,
+  required List<CompareBucket> buckets,
+  required bool scatter,
+  required num low,
+  required num high,
+  required num conditionLow,
+  required num conditionHigh,
+  required PdfColor color,
+}) {
+  const inset = 3.0;
+  double y(num value) {
+    final span = high - low;
+    final t = span == 0 ? 0.5 : (value - low) / span;
+    return inset + t.clamp(0.0, 1.0) * (size.y - inset * 2);
+  }
+
+  canvas
+    ..setStrokeColor(const PdfColor.fromInt(0xFFC9CED6))
+    ..setLineWidth(0.5)
+    ..drawLine(0, 0, size.x, 0)
+    ..drawLine(0, 0, 0, size.y)
+    ..strokePath();
+
+  canvas.setFillColor(color);
+
+  if (scatter) {
+    final random = Random(5);
+    for (final point in points) {
+      final span = conditionHigh - conditionLow;
+      final t = span == 0
+          ? 0.5
+          : (point.condition! - conditionLow) / span;
+      final jitter = (random.nextDouble() - 0.5) * 8;
+      final x = (inset + t.clamp(0.0, 1.0) * (size.x - inset * 2) + jitter)
+          .clamp(inset, size.x - inset);
+      canvas.drawEllipse(x, y(point.outcome!), 1.4, 1.4);
+    }
+    canvas.fillPath();
+    return;
+  }
+
+  final step = groups.isEmpty ? size.x : size.x / groups.length;
+  final random = Random(11);
+  for (var i = 0; i < groups.length; i++) {
+    final centre = step * (i + 0.5);
+    for (final point in points.where((p) => p.bucket == groups[i])) {
+      final jitter = (random.nextDouble() - 0.5) * (step * 0.5);
+      canvas.drawEllipse(centre + jitter, y(point.outcome!), 1.4, 1.4);
+    }
+  }
+  canvas.fillPath();
+
+  // The median of each group, drawn where its dots are.
+  canvas
+    ..setStrokeColor(const PdfColor.fromInt(0xFF1A1D23))
+    ..setLineWidth(0.8);
+  for (var i = 0; i < groups.length; i++) {
+    if (buckets[i].typical case final typical?) {
+      final centre = step * (i + 0.5);
+      canvas.drawLine(
+        centre - step * 0.3,
+        y(typical),
+        centre + step * 0.3,
+        y(typical),
+      );
+    }
+  }
+  canvas.strokePath();
 }
 
 /// The lines printed under a marker's name. Public so a test can hold the

@@ -621,4 +621,12 @@ final class AppStrings {
   String get shareDiaryIncluded =>
       _t('Include diary and notes', 'Ukljuci dnevnik i biljeske');
   String get sharePreparing => _t('Preparing...', 'Pripremam...');
+
+  // --- Photos on any entry -----------------------------------------
+
+  String get addPhoto => _t('Photo', 'Slika');
+  String get photoAdded => _t('Photo added', 'Slika dodata');
+  String markedDaysLine(int notes, int photos) => _t(
+      '$notes with a note, $photos with a photo',
+      '$notes sa biljeskom, $photos sa slikom');
 }

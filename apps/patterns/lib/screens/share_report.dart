@@ -126,6 +126,7 @@ Future<void> shareReport(
       final page = await controller.doctorPage(
         metricIds,
         FixedPeriod(from: from, to: to),
+        compare: definition.compare,
       );
       // The phone's own font, so diacritics survive. A test hands none.
       final loaded = fonts == null ? await loadSystemFonts() : await fonts();

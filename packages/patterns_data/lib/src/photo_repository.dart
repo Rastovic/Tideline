@@ -93,6 +93,22 @@ final class PhotoRepository {
     );
   }
 
+  /// The days in a range that hold a photo of one marker.
+  Future<Set<String>> daysWithPhoto({
+    required String metricId,
+    required String from,
+    required String to,
+  }) async {
+    final rows = await (_db.select(_db.photos)
+          ..where((p) =>
+              p.metricId.equals(metricId) &
+              p.deletedAt.isNull() &
+              p.dayKey.isBiggerOrEqualValue(from) &
+              p.dayKey.isSmallerOrEqualValue(to)))
+        .get();
+    return {for (final row in rows) row.dayKey};
+  }
+
   /// Every photo of one day, marker photos and free ones alike.
   Future<List<StoredPhoto>> onDay(
     String dayKey, {

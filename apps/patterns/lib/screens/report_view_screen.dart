@@ -8,6 +8,7 @@ import '../data/patterns_controller.dart';
 import 'day_detail_screen.dart';
 import 'comparison_panel.dart';
 import 'day_grid_chart.dart';
+import 'marked_days_strip.dart';
 import 'panel.dart';
 import 'metric_labels.dart';
 import 'report_builder_screen.dart';
@@ -77,6 +78,9 @@ class _ReportViewScreenState extends State<ReportViewScreen> {
   Report? _report;
   Comparison? _comparison;
 
+  /// Per marker: the days in the window carrying a note or a photo.
+  Map<String, ({Set<String> notes, Set<String> photos})> _marked = const {};
+
   @override
   void initState() {
     super.initState();
@@ -86,10 +90,19 @@ class _ReportViewScreenState extends State<ReportViewScreen> {
   Future<void> _rebuild() async {
     final report = await widget.controller.buildSavedReport(_definition);
     final comparison = await widget.controller.comparisonFor(_definition);
+    final marked = <String, ({Set<String> notes, Set<String> photos})>{};
+    for (final row in report.rows) {
+      marked[row.metric.id] = await widget.controller.markedDays(
+        row.metric.id,
+        from: report.from,
+        to: report.to,
+      );
+    }
     if (mounted) {
       setState(() {
         _report = report;
         _comparison = comparison;
+        _marked = marked;
       });
     }
   }
@@ -189,6 +202,7 @@ class _ReportViewScreenState extends State<ReportViewScreen> {
                     _RowBlock(
                       row: row,
                       report: report,
+                      marked: _marked[row.metric.id],
                       onDayTap: report.definition.axis == ReportAxis.cycleDay
                           ? null
                           : (dayKey) => Navigator.of(context).push(
@@ -232,7 +246,15 @@ class _ReportViewScreenState extends State<ReportViewScreen> {
 }
 
 class _RowBlock extends StatelessWidget {
-  const _RowBlock({required this.row, required this.report, this.onDayTap});
+  const _RowBlock({
+    required this.row,
+    required this.report,
+    this.marked,
+    this.onDayTap,
+  });
+
+  /// Days in this row's window that carry a note or a photo.
+  final ({Set<String> notes, Set<String> photos})? marked;
 
   final ReportRow row;
   final Report report;
@@ -307,6 +329,27 @@ class _RowBlock extends StatelessWidget {
             )
           else
             ReportRowChart(row: row, color: color, onDayTap: onDayTap),
+          if (marked case final marked?
+              when report.definition.axis != ReportAxis.cycleDay &&
+                  report.definition.axis != ReportAxis.grid) ...[
+            const SizedBox(height: VitalsSpacing.xs),
+            MarkedDaysStrip(
+              cells: row.cells,
+              notes: marked.notes,
+              photos: marked.photos,
+              onDayTap: onDayTap,
+            ),
+            if (marked.notes.isNotEmpty || marked.photos.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(top: VitalsSpacing.xs),
+                child: Text(
+                  context.s
+                      .markedDaysLine(marked.notes.length, marked.photos.length),
+                  style: theme.typography.caption
+                      .copyWith(color: theme.colors.inkFaint),
+                ),
+              ),
+          ],
           if (_facts(row, context.s) case final facts
               when facts.isNotEmpty) ...[
             const SizedBox(height: VitalsSpacing.sm),

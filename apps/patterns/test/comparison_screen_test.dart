@@ -2,6 +2,7 @@ import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:patterns/data/patterns_controller.dart';
+import 'package:patterns/screens/comparison_chart.dart';
 import 'package:patterns/screens/report_builder_screen.dart';
 import 'package:patterns/screens/report_view_screen.dart';
 import 'package:patterns_core/patterns_core.dart';
@@ -106,6 +107,9 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('BLOATING BY CREATINE'), findsOneWidget);
+    // The dependency chart: one dot per day, nothing fitted through them.
+    expect(find.byType(ComparisonChart), findsOneWidget);
+    expect(find.textContaining('No line is fitted'), findsOneWidget);
     expect(find.text('yes'), findsOneWidget);
     expect(find.text('no'), findsOneWidget);
     // The two medians, and the days behind each.

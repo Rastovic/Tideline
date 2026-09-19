@@ -4,6 +4,7 @@ import 'package:vitals_ui/vitals_ui.dart';
 
 import '../l10n/app_language.dart';
 import '../l10n/app_strings.dart';
+import 'comparison_chart.dart';
 import 'metric_labels.dart';
 import 'panel.dart';
 
@@ -57,6 +58,17 @@ class ComparisonPanel extends StatelessWidget {
             ),
             const SizedBox(height: VitalsSpacing.sm),
           ],
+          // The chart first: one dot per day, the condition across, the
+          // outcome up. The rows under it are the same days, counted.
+          ComparisonChart(comparison: comparison, color: color),
+          const SizedBox(height: VitalsSpacing.xs),
+          Text(
+            comparison.condition.name,
+            textAlign: TextAlign.center,
+            style: theme.typography.caption
+                .copyWith(color: theme.colors.inkFaint),
+          ),
+          const SizedBox(height: VitalsSpacing.md),
           for (final bucket in comparison.buckets)
             _Bucket(
               bucket: bucket,
@@ -66,6 +78,11 @@ class ComparisonPanel extends StatelessWidget {
               kind: comparison.outcome.kind,
             ),
           const SizedBox(height: VitalsSpacing.sm),
+          Text(
+            s.compareChartHint,
+            style:
+                theme.typography.caption.copyWith(color: theme.colors.inkFaint),
+          ),
           Text(
             s.compareNoClaim,
             style:

@@ -596,4 +596,10 @@ final class AppStrings {
   String get compareNoClaim => _t(
       'Counted days, side by side. The app makes no claim about why.',
       'Prebrojani dani, jedno uz drugo. Aplikacija ne tvrdi zasto.');
+
+  // --- Dependency chart --------------------------------------------
+
+  String get compareChartHint => _t(
+      'One dot per day. No line is fitted through them.',
+      'Jedna tacka po danu. Kroz njih se ne provlaci nikakva linija.');
 }

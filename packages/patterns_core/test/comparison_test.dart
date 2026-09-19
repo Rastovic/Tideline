@@ -179,4 +179,81 @@ void main() {
       expect(lines, isEmpty, reason: banned.pattern);
     }
   });
+  group('the dependency chart gets one dot per day', () {
+    test('a number condition keeps both values on the dot', () {
+      final dose = marker('dose', MetricKind.amount);
+      final observations = <Observation>[];
+      for (var i = 0; i < 9; i++) {
+        final day = addDays('2026-09-01', i);
+        observations.add(
+            reading('dose', day, NumberValue(i + 1, kind: MetricKind.amount)));
+        observations.add(reading('bloating', day, scale(i + 1)));
+      }
+
+      final comparison = buildComparison(
+        condition: dose,
+        outcome: bloating,
+        observations: observations,
+        from: '2026-09-01',
+        to: '2026-09-10',
+      );
+
+      expect(comparison.points, hasLength(9));
+      expect(comparison.points.first.dayKey, '2026-09-01');
+      expect(comparison.points.first.condition, 1);
+      expect(comparison.points.first.outcome, 1);
+      expect(comparison.points.last.condition, 9);
+      // Oldest first, so the chart can fade the older dots.
+      expect(
+        comparison.points.map((p) => p.dayKey).toList(),
+        [for (var i = 0; i < 9; i++) addDays('2026-09-01', i)],
+      );
+    });
+
+    test('a yes/no condition puts each dot in its group', () {
+      final observations = <Observation>[];
+      for (var i = 0; i < 6; i++) {
+        final day = addDays('2026-09-01', i);
+        observations.add(reading('creatine', day, BooleanValue(i.isEven)));
+        observations.add(reading('bloating', day, scale(i.isEven ? 8 : 2)));
+      }
+
+      final comparison = buildComparison(
+        condition: creatine,
+        outcome: bloating,
+        observations: observations,
+        from: '2026-09-01',
+        to: '2026-09-10',
+      );
+
+      expect(comparison.points, hasLength(6));
+      expect(
+        comparison.points.where((p) => p.bucket == 'yes').map((p) => p.outcome),
+        everyElement(8),
+      );
+      expect(
+        comparison.points.where((p) => p.bucket == 'no').map((p) => p.outcome),
+        everyElement(2),
+      );
+      // A dot is a day, never an average of days.
+      expect(comparison.points.length, comparison.pairedDays);
+    });
+
+    test('the next-day pairing dates a dot by its condition day', () {
+      final observations = <Observation>[
+        reading('creatine', '2026-09-01', const BooleanValue(true)),
+        reading('bloating', '2026-09-02', scale(9)),
+      ];
+      final comparison = buildComparison(
+        condition: creatine,
+        outcome: bloating,
+        observations: observations,
+        from: '2026-09-01',
+        to: '2026-09-10',
+        pairing: ComparePairing.nextDay,
+      );
+      expect(comparison.points.single.dayKey, '2026-09-01');
+      expect(comparison.points.single.outcome, 9);
+    });
+  });
 }

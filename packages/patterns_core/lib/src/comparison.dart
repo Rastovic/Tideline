@@ -52,6 +52,33 @@ final class CompareBucket {
   final num? highest;
 }
 
+/// One day: what the condition was, and what the outcome did.
+///
+/// The dots of the dependency chart. Every one is a day that was logged for
+/// both; nothing here is filled in, averaged or smoothed.
+final class ComparePoint {
+  const ComparePoint({
+    required this.dayKey,
+    required this.outcome,
+    this.condition,
+    this.bucket,
+  });
+
+  /// The condition's day, not the outcome's, which is a day later under
+  /// [ComparePairing.nextDay].
+  final String dayKey;
+
+  /// The outcome's value that day. Null where the marker carries no number.
+  final num? outcome;
+
+  /// The condition's value, for a condition that carries a number.
+  final num? condition;
+
+  /// The group this day falls in, for a condition that does not: `yes`, `no`,
+  /// or an option's label.
+  final String? bucket;
+}
+
 /// Two markers read against each other, in counted groups.
 ///
 /// **It compares and never concludes.** There is no correlation coefficient,
@@ -64,6 +91,7 @@ final class Comparison {
     required this.condition,
     required this.outcome,
     required this.buckets,
+    required this.points,
     required this.pairedDays,
     required this.pairing,
   });
@@ -75,6 +103,9 @@ final class Comparison {
   final Metric outcome;
 
   final List<CompareBucket> buckets;
+
+  /// One per paired day, for the chart. Oldest first.
+  final List<ComparePoint> points;
 
   /// Days where both markers were logged (after the lag is applied).
   final int pairedDays;
@@ -136,6 +167,10 @@ Comparison buildComparison({
   }
 
   final buckets = <CompareBucket>[];
+  final points = <ComparePoint>[];
+  final numericCondition = condition.kind != MetricKind.boolean &&
+      condition.kind != MetricKind.tags &&
+      condition.kind != MetricKind.choice;
 
   switch (condition.kind) {
     case MetricKind.boolean:
@@ -149,6 +184,13 @@ Comparison buildComparison({
       ];
       if (bucket('yes', yes) case final b?) buckets.add(b);
       if (bucket('no', no) case final b?) buckets.add(b);
+      for (final (c, o) in pairs) {
+        points.add(ComparePoint(
+          dayKey: c.dayKey,
+          outcome: o.value,
+          bucket: (c.value ?? 0) > 0 ? 'yes' : 'no',
+        ));
+      }
 
     case MetricKind.tags || MetricKind.choice:
       final labels = {for (final o in condition.options) o.id: o.label};
@@ -161,9 +203,16 @@ Comparison buildComparison({
       final ordered = counts.entries.toList()
         ..sort((a, b) => b.value.length.compareTo(a.value.length));
       for (final entry in ordered.take(5)) {
-        if (bucket(labels[entry.key] ?? entry.key, entry.value)
-            case final b?) {
-          buckets.add(b);
+        final label = labels[entry.key] ?? entry.key;
+        if (bucket(label, entry.value) case final b?) buckets.add(b);
+        for (final (c, o) in pairs) {
+          if (c.optionIds.contains(entry.key)) {
+            points.add(ComparePoint(
+              dayKey: c.dayKey,
+              outcome: o.value,
+              bucket: label,
+            ));
+          }
         }
       }
 
@@ -188,10 +237,22 @@ Comparison buildComparison({
       }
   }
 
+  if (numericCondition) {
+    for (final (c, o) in pairs) {
+      points.add(ComparePoint(
+        dayKey: c.dayKey,
+        outcome: o.value,
+        condition: c.value,
+      ));
+    }
+  }
+  points.sort((a, b) => a.dayKey.compareTo(b.dayKey));
+
   return Comparison(
     condition: condition,
     outcome: outcome,
     buckets: buckets,
+    points: points,
     pairedDays: pairs.length,
     pairing: pairing,
   );

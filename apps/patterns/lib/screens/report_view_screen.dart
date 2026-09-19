@@ -3,6 +3,7 @@ import 'package:patterns_core/patterns_core.dart';
 import 'package:vitals_core/vitals_core.dart';
 import 'package:vitals_ui/vitals_ui.dart';
 
+import '../data/archive_transfer.dart';
 import '../data/patterns_controller.dart';
 import 'day_detail_screen.dart';
 import 'comparison_panel.dart';
@@ -11,6 +12,7 @@ import 'panel.dart';
 import 'metric_labels.dart';
 import 'report_builder_screen.dart';
 import 'report_chart.dart';
+import 'share_report.dart';
 import '../l10n/app_language.dart';
 import '../l10n/app_strings.dart';
 
@@ -29,8 +31,12 @@ class ReportViewScreen extends StatefulWidget {
     required this.controller,
     required this.definition,
     this.isSaved = true,
+    this.transfer = const PlatformArchiveTransfer(),
     super.key,
   });
+
+  /// Where a shared file goes. The same seam the backup uses.
+  final ArchiveTransfer transfer;
 
   /// One marker's last month, opened by a long-press on home.
   ///
@@ -131,6 +137,16 @@ class _ReportViewScreenState extends State<ReportViewScreen> {
       appBar: AppBar(
         title: Text(_definition.name),
         actions: [
+          IconButton(
+            tooltip: context.s.shareThisReport,
+            icon: const Icon(Icons.ios_share),
+            onPressed: () => shareReport(
+              context,
+              widget.controller,
+              _definition,
+              transfer: widget.transfer,
+            ),
+          ),
           IconButton(
             tooltip: _isSaved ? context.s.edit : context.s.saveAsReport,
             icon: const Icon(Icons.tune),

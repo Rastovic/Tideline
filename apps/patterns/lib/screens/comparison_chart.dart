@@ -140,9 +140,18 @@ class _ChartPainter extends CustomPainter {
         return plot.left + 6 + t.clamp(0.0, 1.0) * (plot.width - 12);
       }
 
+      // A little sideways jitter: a condition in whole numbers puts every
+      // day in five straight columns otherwise, and a column of dots hides
+      // how many are in it.
+      final jitterRandom = Random(5);
       for (final point in points) {
+        final jitter = (jitterRandom.nextDouble() - 0.5) * 22;
         canvas.drawCircle(
-          Offset(x(point.condition!), y(point.outcome!)),
+          Offset(
+            (x(point.condition!) + jitter)
+                .clamp(plot.left + 3, plot.right - 3),
+            y(point.outcome!),
+          ),
           3.5,
           dot,
         );

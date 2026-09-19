@@ -60,6 +60,11 @@ class ComparisonPanel extends StatelessWidget {
           ],
           // The chart first: one dot per day, the condition across, the
           // outcome up. The rows under it are the same days, counted.
+          Text(
+            comparison.outcome.name,
+            style: theme.typography.caption
+                .copyWith(color: theme.colors.inkFaint),
+          ),
           ComparisonChart(comparison: comparison, color: color),
           const SizedBox(height: VitalsSpacing.xs),
           Text(
@@ -104,7 +109,11 @@ class _Bucket extends StatelessWidget {
   });
 
   final CompareBucket bucket;
+
+  /// Unused now that the row carries no bar; kept so the caller reads the
+  /// same either way.
   final int widest;
+
   final Color color;
   final MetricKind kind;
   final String? unit;
@@ -115,53 +124,37 @@ class _Bucket extends StatelessWidget {
     final s = context.s;
     final typical = bucket.typical;
 
-    // The bar is how many days the group holds, never the value: a wide bar
-    // means "much of the record", not "a lot of bloating".
-    final share = widest == 0 ? 0.0 : bucket.days / widest;
-
+    // No bar. A bar under a number reads as that number's size, and the only
+    // thing there was to draw here is how many days the group holds - which
+    // the count already says, without pretending to be a measurement.
     return Padding(
-      padding: const EdgeInsets.only(bottom: VitalsSpacing.md),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      padding: const EdgeInsets.only(bottom: VitalsSpacing.sm),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.end,
         children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Expanded(
-                child: Text(
-                  _label(bucket.label, s),
-                  style: theme.typography.body,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              Text(
-                typical == null ? '—' : _value(typical),
-                style: theme.typography.title.copyWith(
-                  fontFeatures: const [FontFeature.tabularFigures()],
-                ),
-              ),
-              const SizedBox(width: VitalsSpacing.sm),
-              SizedBox(
-                width: 64,
-                child: Text(
-                  '${bucket.days} ${s.daysLoggedLabel.split(' ').first}',
-                  textAlign: TextAlign.right,
-                  style: theme.typography.caption.copyWith(
-                    color: theme.colors.inkMuted,
-                    fontFeatures: const [FontFeature.tabularFigures()],
-                  ),
-                ),
-              ),
-            ],
+          Expanded(
+            child: Text(
+              _label(bucket.label, s),
+              style: theme.typography.body,
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
-          const SizedBox(height: VitalsSpacing.xs),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(2),
-            child: LinearProgressIndicator(
-              value: share,
-              minHeight: 4,
-              backgroundColor: theme.colors.surfaceAlt,
-              valueColor: AlwaysStoppedAnimation(color.withValues(alpha: 0.7)),
+          Text(
+            typical == null ? '—' : _value(typical),
+            style: theme.typography.title.copyWith(
+              fontFeatures: const [FontFeature.tabularFigures()],
+            ),
+          ),
+          const SizedBox(width: VitalsSpacing.md),
+          SizedBox(
+            width: 64,
+            child: Text(
+              '${bucket.days} ${s.daysLoggedLabel.split(' ').first}',
+              textAlign: TextAlign.right,
+              style: theme.typography.caption.copyWith(
+                color: theme.colors.inkMuted,
+                fontFeatures: const [FontFeature.tabularFigures()],
+              ),
             ),
           ),
         ],

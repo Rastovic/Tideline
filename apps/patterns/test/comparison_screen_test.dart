@@ -1,6 +1,10 @@
+import 'dart:convert';
+import 'dart:typed_data';
+
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:patterns/data/archive_transfer.dart';
 import 'package:patterns/data/patterns_controller.dart';
 import 'package:patterns/screens/comparison_chart.dart';
 import 'package:patterns/screens/report_builder_screen.dart';
@@ -9,6 +13,20 @@ import 'package:patterns_core/patterns_core.dart';
 import 'package:patterns_data/patterns_data.dart';
 import 'package:vitals_core/vitals_core.dart';
 import 'package:vitals_ui/vitals_ui.dart';
+
+final class FakeTransfer implements ArchiveTransfer {
+  Uint8List? sent;
+  String? sentName;
+
+  @override
+  Future<Uint8List?> pick() async => null;
+
+  @override
+  Future<void> send(Uint8List bytes, String fileName) async {
+    sent = bytes;
+    sentName = fileName;
+  }
+}
 
 Future<PatternsController> freshController() async {
   final controller = PatternsController(
@@ -147,6 +165,50 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.textContaining('Not enough days'), findsOneWidget);
+    controller.dispose();
+  });
+  testWidgets('one report shares as text, on its own', (tester) async {
+    final controller = await freshController();
+    await seedPairs(controller);
+    await controller.log(seedIds['diary']!, const TextValue('private thought'));
+    final transfer = FakeTransfer();
+
+    final definition = ReportDefinition(
+      id: '018f2c00-cccc-7000-8000-000000000021',
+      name: 'Creatine and bloating',
+      series: [
+        ReportSeries(metricId: seedIds['creatine']!),
+        ReportSeries(metricId: seedIds['bloating']!),
+      ],
+      period: const LastDays(30),
+      compare: ComparePairing.sameDay,
+      createdAt: DateTime.utc(2026, 9, 1),
+    );
+    await controller.saveReport(definition);
+
+    await tester.pumpWidget(wrap(ReportViewScreen(
+      controller: controller,
+      definition: definition,
+      transfer: transfer,
+    )));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip('Share this report'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('For AI (text)'));
+    await tester.pumpAndSettle();
+
+    final text = utf8.decode(transfer.sent!);
+    // This report's markers, and nothing else's.
+    expect(text, contains('creatine'));
+    expect(text, contains('bloating'));
+    expect(text, isNot(contains('private thought')));
+    // The comparison travels as numbers with their counts.
+    expect(text, contains('bloating by creatine'));
+    expect(text, contains('10'));
+    expect(text, contains('makes no claim'));
+    expect(transfer.sentName, endsWith('.md'));
+    expect(transfer.sentName, startsWith('creatine-and-bloating'));
     controller.dispose();
   });
 }

@@ -602,4 +602,23 @@ final class AppStrings {
   String get compareChartHint => _t(
       'One dot per day. No line is fitted through them.',
       'Jedna tacka po danu. Kroz njih se ne provlaci nikakva linija.');
+
+  // --- Sharing one report ------------------------------------------
+
+  String get shareThisReport => _t('Share this report', 'Podijeli ovaj izvjestaj');
+  String get shareForAi => _t('For AI (text)', 'Za AI (tekst)');
+  String get shareForAiHint => _t(
+      'The markers of this report, its period, and the readings as JSON.',
+      'Markeri ovog izvjestaja, njegov period i unosi kao JSON.');
+  String get shareCsv => _t('Spreadsheet (CSV)', 'Tabela (CSV)');
+  String get shareCsvHint => _t(
+      'One row per reading, for a spreadsheet.',
+      'Jedan red po unosu, za tabelu.');
+  String get shareDoctor => _t('Doctor page (PDF)', 'Stranica za doktora (PDF)');
+  String get shareDoctorHint => _t(
+      'One printable page: numbers, ranges with dates, days logged.',
+      'Jedna stranica za stampu: brojevi, rasponi sa datumima, upisani dani.');
+  String get shareDiaryIncluded =>
+      _t('Include diary and notes', 'Ukljuci dnevnik i biljeske');
+  String get sharePreparing => _t('Preparing...', 'Pripremam...');
 }

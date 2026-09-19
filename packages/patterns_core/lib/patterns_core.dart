@@ -16,6 +16,7 @@
 library;
 
 export 'src/aggregation.dart';
+export 'src/comparison.dart';
 export 'src/cycle.dart';
 export 'src/day_summary.dart';
 export 'src/display.dart';

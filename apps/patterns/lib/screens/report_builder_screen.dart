@@ -44,6 +44,7 @@ class _ReportBuilderScreenState extends State<ReportBuilderScreen> {
   late List<ReportSeries> _series = [...?widget.definition?.series];
   late ReportPeriod _period = widget.definition?.period ?? const LastDays(30);
   late ReportAxis _axis = widget.definition?.axis ?? ReportAxis.date;
+  late ComparePairing? _compare = widget.definition?.compare;
 
   String? _problem;
 
@@ -142,6 +143,7 @@ class _ReportBuilderScreenState extends State<ReportBuilderScreen> {
       series: _series,
       period: _period,
       axis: _axis,
+      compare: _compare,
       createdAt: _createdAt,
     );
     await widget.controller.saveReport(definition);
@@ -184,10 +186,10 @@ class _ReportBuilderScreenState extends State<ReportBuilderScreen> {
               controller: _name,
               autofocus: _isNew,
               style: theme.typography.title,
-              decoration: InputDecoration(
-                labelText: context.s.name,
-                hintText: context.s.reportNameHint,
-              ),
+              // No hint text: a grey example inside the field reads as a
+              // name already typed, and then Save refuses an empty field the
+              // person believes they filled in.
+              decoration: InputDecoration(labelText: context.s.name),
             ),
             const SizedBox(height: VitalsSpacing.xl),
             _heading(theme, context.s.period),
@@ -250,6 +252,33 @@ class _ReportBuilderScreenState extends State<ReportBuilderScreen> {
                 onReorder: _reorder,
               ),
             ],
+            const SizedBox(height: VitalsSpacing.xl),
+            _heading(theme, context.s.compareHeading),
+            Text(
+              context.s.compareExplained,
+              style: theme.typography.caption
+                  .copyWith(color: theme.colors.inkMuted),
+            ),
+            const SizedBox(height: VitalsSpacing.sm),
+            Wrap(
+              spacing: VitalsSpacing.sm,
+              children: [
+                ChoiceChip(
+                  label: Text(context.s.compareOff),
+                  selected: _compare == null,
+                  onSelected: (_) => setState(() => _compare = null),
+                ),
+                for (final pairing in ComparePairing.values)
+                  ChoiceChip(
+                    label: Text(switch (pairing) {
+                      ComparePairing.sameDay => context.s.compareSameDay,
+                      ComparePairing.nextDay => context.s.compareNextDay,
+                    }),
+                    selected: _compare == pairing,
+                    onSelected: (_) => setState(() => _compare = pairing),
+                  ),
+              ],
+            ),
             const SizedBox(height: VitalsSpacing.xl),
             _heading(theme, context.s.markers),
             for (final metric in markers)

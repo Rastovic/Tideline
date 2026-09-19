@@ -5,6 +5,7 @@ import 'package:vitals_ui/vitals_ui.dart';
 
 import '../data/patterns_controller.dart';
 import 'day_detail_screen.dart';
+import 'comparison_panel.dart';
 import 'day_grid_chart.dart';
 import 'panel.dart';
 import 'metric_labels.dart';
@@ -68,6 +69,7 @@ class _ReportViewScreenState extends State<ReportViewScreen> {
   late ReportDefinition _definition = widget.definition;
   late bool _isSaved = widget.isSaved;
   Report? _report;
+  Comparison? _comparison;
 
   @override
   void initState() {
@@ -77,7 +79,13 @@ class _ReportViewScreenState extends State<ReportViewScreen> {
 
   Future<void> _rebuild() async {
     final report = await widget.controller.buildSavedReport(_definition);
-    if (mounted) setState(() => _report = report);
+    final comparison = await widget.controller.comparisonFor(_definition);
+    if (mounted) {
+      setState(() {
+        _report = report;
+        _comparison = comparison;
+      });
+    }
   }
 
   /// Re-sorting is a view of the same readings, not a different report.
@@ -150,6 +158,10 @@ class _ReportViewScreenState extends State<ReportViewScreen> {
                   const SizedBox(height: VitalsSpacing.md),
                   _axisPicker(theme),
                   const SizedBox(height: VitalsSpacing.xl),
+                  // Above the rows: it is the question the report was built
+                  // to ask, and the rows are the days behind it.
+                  if (_comparison case final comparison?)
+                    ComparisonPanel(comparison: comparison),
                   if (report.rows.isEmpty)
                     Text(
                       context.s.reportMarkersGone,

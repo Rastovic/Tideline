@@ -4101,6 +4101,17 @@ class $SavedReportsTable extends SavedReports
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _compareMeta = const VerificationMeta(
+    'compare',
+  );
+  @override
+  late final GeneratedColumn<String> compare = GeneratedColumn<String>(
+    'compare',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _sortOrderMeta = const VerificationMeta(
     'sortOrder',
   );
@@ -4135,6 +4146,7 @@ class $SavedReportsTable extends SavedReports
     seriesJson,
     period,
     axis,
+    compare,
     sortOrder,
     createdAt,
   ];
@@ -4215,6 +4227,12 @@ class $SavedReportsTable extends SavedReports
     } else if (isInserting) {
       context.missing(_axisMeta);
     }
+    if (data.containsKey('compare')) {
+      context.handle(
+        _compareMeta,
+        compare.isAcceptableOrUnknown(data['compare']!, _compareMeta),
+      );
+    }
     if (data.containsKey('sort_order')) {
       context.handle(
         _sortOrderMeta,
@@ -4274,6 +4292,10 @@ class $SavedReportsTable extends SavedReports
         DriftSqlType.string,
         data['${effectivePrefix}axis'],
       )!,
+      compare: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}compare'],
+      ),
       sortOrder: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}sort_order'],
@@ -4328,6 +4350,10 @@ class SavedReportRow extends DataClass implements Insertable<SavedReportRow> {
 
   /// `date` or `cycleDay`, as a string. Never an ordinal.
   final String axis;
+
+  /// `sameDay` or `nextDay` when the report also compares its first two
+  /// markers. Null is the ordinary stacked report.
+  final String? compare;
   final int sortOrder;
   final int createdAt;
   const SavedReportRow({
@@ -4340,6 +4366,7 @@ class SavedReportRow extends DataClass implements Insertable<SavedReportRow> {
     required this.seriesJson,
     required this.period,
     required this.axis,
+    this.compare,
     required this.sortOrder,
     required this.createdAt,
   });
@@ -4357,6 +4384,9 @@ class SavedReportRow extends DataClass implements Insertable<SavedReportRow> {
     map['series_json'] = Variable<String>(seriesJson);
     map['period'] = Variable<String>(period);
     map['axis'] = Variable<String>(axis);
+    if (!nullToAbsent || compare != null) {
+      map['compare'] = Variable<String>(compare);
+    }
     map['sort_order'] = Variable<int>(sortOrder);
     map['created_at'] = Variable<int>(createdAt);
     return map;
@@ -4375,6 +4405,9 @@ class SavedReportRow extends DataClass implements Insertable<SavedReportRow> {
       seriesJson: Value(seriesJson),
       period: Value(period),
       axis: Value(axis),
+      compare: compare == null && nullToAbsent
+          ? const Value.absent()
+          : Value(compare),
       sortOrder: Value(sortOrder),
       createdAt: Value(createdAt),
     );
@@ -4395,6 +4428,7 @@ class SavedReportRow extends DataClass implements Insertable<SavedReportRow> {
       seriesJson: serializer.fromJson<String>(json['seriesJson']),
       period: serializer.fromJson<String>(json['period']),
       axis: serializer.fromJson<String>(json['axis']),
+      compare: serializer.fromJson<String?>(json['compare']),
       sortOrder: serializer.fromJson<int>(json['sortOrder']),
       createdAt: serializer.fromJson<int>(json['createdAt']),
     );
@@ -4412,6 +4446,7 @@ class SavedReportRow extends DataClass implements Insertable<SavedReportRow> {
       'seriesJson': serializer.toJson<String>(seriesJson),
       'period': serializer.toJson<String>(period),
       'axis': serializer.toJson<String>(axis),
+      'compare': serializer.toJson<String?>(compare),
       'sortOrder': serializer.toJson<int>(sortOrder),
       'createdAt': serializer.toJson<int>(createdAt),
     };
@@ -4427,6 +4462,7 @@ class SavedReportRow extends DataClass implements Insertable<SavedReportRow> {
     String? seriesJson,
     String? period,
     String? axis,
+    Value<String?> compare = const Value.absent(),
     int? sortOrder,
     int? createdAt,
   }) => SavedReportRow(
@@ -4439,6 +4475,7 @@ class SavedReportRow extends DataClass implements Insertable<SavedReportRow> {
     seriesJson: seriesJson ?? this.seriesJson,
     period: period ?? this.period,
     axis: axis ?? this.axis,
+    compare: compare.present ? compare.value : this.compare,
     sortOrder: sortOrder ?? this.sortOrder,
     createdAt: createdAt ?? this.createdAt,
   );
@@ -4455,6 +4492,7 @@ class SavedReportRow extends DataClass implements Insertable<SavedReportRow> {
           : this.seriesJson,
       period: data.period.present ? data.period.value : this.period,
       axis: data.axis.present ? data.axis.value : this.axis,
+      compare: data.compare.present ? data.compare.value : this.compare,
       sortOrder: data.sortOrder.present ? data.sortOrder.value : this.sortOrder,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
     );
@@ -4472,6 +4510,7 @@ class SavedReportRow extends DataClass implements Insertable<SavedReportRow> {
           ..write('seriesJson: $seriesJson, ')
           ..write('period: $period, ')
           ..write('axis: $axis, ')
+          ..write('compare: $compare, ')
           ..write('sortOrder: $sortOrder, ')
           ..write('createdAt: $createdAt')
           ..write(')'))
@@ -4489,6 +4528,7 @@ class SavedReportRow extends DataClass implements Insertable<SavedReportRow> {
     seriesJson,
     period,
     axis,
+    compare,
     sortOrder,
     createdAt,
   );
@@ -4505,6 +4545,7 @@ class SavedReportRow extends DataClass implements Insertable<SavedReportRow> {
           other.seriesJson == this.seriesJson &&
           other.period == this.period &&
           other.axis == this.axis &&
+          other.compare == this.compare &&
           other.sortOrder == this.sortOrder &&
           other.createdAt == this.createdAt);
 }
@@ -4519,6 +4560,7 @@ class SavedReportsCompanion extends UpdateCompanion<SavedReportRow> {
   final Value<String> seriesJson;
   final Value<String> period;
   final Value<String> axis;
+  final Value<String?> compare;
   final Value<int> sortOrder;
   final Value<int> createdAt;
   final Value<int> rowid;
@@ -4532,6 +4574,7 @@ class SavedReportsCompanion extends UpdateCompanion<SavedReportRow> {
     this.seriesJson = const Value.absent(),
     this.period = const Value.absent(),
     this.axis = const Value.absent(),
+    this.compare = const Value.absent(),
     this.sortOrder = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -4546,6 +4589,7 @@ class SavedReportsCompanion extends UpdateCompanion<SavedReportRow> {
     required String seriesJson,
     required String period,
     required String axis,
+    this.compare = const Value.absent(),
     this.sortOrder = const Value.absent(),
     required int createdAt,
     this.rowid = const Value.absent(),
@@ -4567,6 +4611,7 @@ class SavedReportsCompanion extends UpdateCompanion<SavedReportRow> {
     Expression<String>? seriesJson,
     Expression<String>? period,
     Expression<String>? axis,
+    Expression<String>? compare,
     Expression<int>? sortOrder,
     Expression<int>? createdAt,
     Expression<int>? rowid,
@@ -4581,6 +4626,7 @@ class SavedReportsCompanion extends UpdateCompanion<SavedReportRow> {
       if (seriesJson != null) 'series_json': seriesJson,
       if (period != null) 'period': period,
       if (axis != null) 'axis': axis,
+      if (compare != null) 'compare': compare,
       if (sortOrder != null) 'sort_order': sortOrder,
       if (createdAt != null) 'created_at': createdAt,
       if (rowid != null) 'rowid': rowid,
@@ -4597,6 +4643,7 @@ class SavedReportsCompanion extends UpdateCompanion<SavedReportRow> {
     Value<String>? seriesJson,
     Value<String>? period,
     Value<String>? axis,
+    Value<String?>? compare,
     Value<int>? sortOrder,
     Value<int>? createdAt,
     Value<int>? rowid,
@@ -4611,6 +4658,7 @@ class SavedReportsCompanion extends UpdateCompanion<SavedReportRow> {
       seriesJson: seriesJson ?? this.seriesJson,
       period: period ?? this.period,
       axis: axis ?? this.axis,
+      compare: compare ?? this.compare,
       sortOrder: sortOrder ?? this.sortOrder,
       createdAt: createdAt ?? this.createdAt,
       rowid: rowid ?? this.rowid,
@@ -4647,6 +4695,9 @@ class SavedReportsCompanion extends UpdateCompanion<SavedReportRow> {
     if (axis.present) {
       map['axis'] = Variable<String>(axis.value);
     }
+    if (compare.present) {
+      map['compare'] = Variable<String>(compare.value);
+    }
     if (sortOrder.present) {
       map['sort_order'] = Variable<int>(sortOrder.value);
     }
@@ -4671,6 +4722,7 @@ class SavedReportsCompanion extends UpdateCompanion<SavedReportRow> {
           ..write('seriesJson: $seriesJson, ')
           ..write('period: $period, ')
           ..write('axis: $axis, ')
+          ..write('compare: $compare, ')
           ..write('sortOrder: $sortOrder, ')
           ..write('createdAt: $createdAt, ')
           ..write('rowid: $rowid')
@@ -7376,6 +7428,7 @@ typedef $$SavedReportsTableCreateCompanionBuilder =
       required String seriesJson,
       required String period,
       required String axis,
+      Value<String?> compare,
       Value<int> sortOrder,
       required int createdAt,
       Value<int> rowid,
@@ -7391,6 +7444,7 @@ typedef $$SavedReportsTableUpdateCompanionBuilder =
       Value<String> seriesJson,
       Value<String> period,
       Value<String> axis,
+      Value<String?> compare,
       Value<int> sortOrder,
       Value<int> createdAt,
       Value<int> rowid,
@@ -7447,6 +7501,11 @@ class $$SavedReportsTableFilterComposer
 
   ColumnFilters<String> get axis => $composableBuilder(
     column: $table.axis,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get compare => $composableBuilder(
+    column: $table.compare,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -7515,6 +7574,11 @@ class $$SavedReportsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get compare => $composableBuilder(
+    column: $table.compare,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<int> get sortOrder => $composableBuilder(
     column: $table.sortOrder,
     builder: (column) => ColumnOrderings(column),
@@ -7563,6 +7627,9 @@ class $$SavedReportsTableAnnotationComposer
 
   GeneratedColumn<String> get axis =>
       $composableBuilder(column: $table.axis, builder: (column) => column);
+
+  GeneratedColumn<String> get compare =>
+      $composableBuilder(column: $table.compare, builder: (column) => column);
 
   GeneratedColumn<int> get sortOrder =>
       $composableBuilder(column: $table.sortOrder, builder: (column) => column);
@@ -7617,6 +7684,7 @@ class $$SavedReportsTableTableManager
                 Value<String> seriesJson = const Value.absent(),
                 Value<String> period = const Value.absent(),
                 Value<String> axis = const Value.absent(),
+                Value<String?> compare = const Value.absent(),
                 Value<int> sortOrder = const Value.absent(),
                 Value<int> createdAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
@@ -7630,6 +7698,7 @@ class $$SavedReportsTableTableManager
                 seriesJson: seriesJson,
                 period: period,
                 axis: axis,
+                compare: compare,
                 sortOrder: sortOrder,
                 createdAt: createdAt,
                 rowid: rowid,
@@ -7645,6 +7714,7 @@ class $$SavedReportsTableTableManager
                 required String seriesJson,
                 required String period,
                 required String axis,
+                Value<String?> compare = const Value.absent(),
                 Value<int> sortOrder = const Value.absent(),
                 required int createdAt,
                 Value<int> rowid = const Value.absent(),
@@ -7658,6 +7728,7 @@ class $$SavedReportsTableTableManager
                 seriesJson: seriesJson,
                 period: period,
                 axis: axis,
+                compare: compare,
                 sortOrder: sortOrder,
                 createdAt: createdAt,
                 rowid: rowid,

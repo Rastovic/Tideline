@@ -32,7 +32,7 @@ class PatternsDatabase extends _$PatternsDatabase {
   PatternsDatabase(super.e);
 
   /// Bumped for every schema change, and written into every archive manifest.
-  static const currentSchemaVersion = 4;
+  static const currentSchemaVersion = 5;
 
   @override
   int get schemaVersion => currentSchemaVersion;
@@ -64,6 +64,11 @@ class PatternsDatabase extends _$PatternsDatabase {
             await m.addColumn(metrics, metrics.profileId);
             await m.addColumn(photos, photos.profileId);
             await m.addColumn(savedReports, savedReports.profileId);
+          }
+          // v4 -> v5: a report can compare its first two markers. Additive:
+          // every existing report has none, which is what it always was.
+          if (from < 5) {
+            await m.addColumn(savedReports, savedReports.compare);
           }
           await _createIndexes();
         },

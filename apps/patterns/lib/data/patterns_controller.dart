@@ -322,6 +322,40 @@ final class PatternsController extends ChangeNotifier {
     );
   }
 
+  /// The comparison a report asks for, or null when it asks for none.
+  ///
+  /// The first two rows, in the order they were picked: the first splits the
+  /// days, the second is read on them.
+  Future<Comparison?> comparisonFor(ReportDefinition definition) async {
+    final pairing = definition.compare;
+    if (pairing == null) return null;
+    final rows = [
+      for (final s in definition.series)
+        if (!s.isBand) s.metricId,
+    ];
+    if (rows.length < 2) return null;
+    final condition = byId(rows[0]);
+    final outcome = byId(rows[1]);
+    if (condition == null || outcome == null) return null;
+
+    final (from, to) = definition.period.resolve(_today);
+    return buildComparison(
+      condition: condition,
+      outcome: outcome,
+      observations: await observations.range(
+        metricIds: [condition.id, outcome.id],
+        from: from,
+        // The lag reads the day after the condition, so the window has to
+        // reach one day further than the report draws.
+        to: addDays(to, pairing.lagDays),
+        kinds: kinds,
+      ),
+      from: from,
+      to: to,
+      pairing: pairing,
+    );
+  }
+
   /// Readings of [metricIds] from [from] to [to], flattened for a file.
   Future<ExportData> exportData(
     List<String> metricIds, {

@@ -569,4 +569,31 @@ final class AppStrings {
   // --- Report cards 2 ----------------------------------------------
 
   String get rangeLower => _t('range', 'raspon');
+
+  // --- Comparing two markers ---------------------------------------
+
+  String get compareHeading => _t('Compare', 'Poredjenje');
+  String get compareOff => _t('Off', 'Iskljuceno');
+  String get compareSameDay => _t('Same day', 'Isti dan');
+  String get compareNextDay => _t('Next day', 'Sljedeci dan');
+  String get compareExplained => _t(
+      'Splits the days by the first marker and reads the second on them. Pick '
+          'the condition first.',
+      'Dijeli dane po prvom markeru i cita drugi na njima. Prvo izaberi uslov.');
+  String compareTitle(String outcome, String condition) =>
+      _t('$outcome by $condition', '$outcome po: $condition');
+  String get compareNextDayNote => _t(
+      'Read on the day after.', 'Cita se dan poslije.');
+  String comparePairedDays(int days) =>
+      _t('$days days with both', '$days dana sa oba');
+  String get compareYes => _t('yes', 'da');
+  String get compareNo => _t('no', 'ne');
+  String get compareHigh => _t('highest third', 'najvisa trecina');
+  String get compareLow => _t('lowest third', 'najniza trecina');
+  String get compareTooLittle => _t(
+      'Not enough days where both were logged.',
+      'Premalo dana gdje su oba upisana.');
+  String get compareNoClaim => _t(
+      'Counted days, side by side. The app makes no claim about why.',
+      'Prebrojani dani, jedno uz drugo. Aplikacija ne tvrdi zasto.');
 }

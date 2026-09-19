@@ -1,6 +1,7 @@
 import 'package:vitals_core/vitals_core.dart';
 
 import 'aggregation.dart';
+import 'comparison.dart';
 import 'cycle.dart';
 import 'day_summary.dart';
 import 'display.dart';
@@ -131,6 +132,7 @@ final class ReportDefinition {
     required this.period,
     required this.createdAt,
     this.axis = ReportAxis.date,
+    this.compare,
     this.updatedAt,
     this.deletedAt,
   });
@@ -140,6 +142,11 @@ final class ReportDefinition {
   final List<ReportSeries> series;
   final ReportPeriod period;
   final ReportAxis axis;
+
+  /// Set when the report also reads its first two markers against each other:
+  /// the first splits the days, the second is read on them. Null is the
+  /// ordinary stacked report.
+  final ComparePairing? compare;
   final DateTime createdAt;
   final DateTime? updatedAt;
   final DateTime? deletedAt;
@@ -152,6 +159,8 @@ final class ReportDefinition {
     List<ReportSeries>? series,
     ReportPeriod? period,
     ReportAxis? axis,
+    ComparePairing? compare,
+    bool clearCompare = false,
     DateTime? updatedAt,
     DateTime? deletedAt,
   }) =>
@@ -161,6 +170,7 @@ final class ReportDefinition {
         series: series ?? this.series,
         period: period ?? this.period,
         axis: axis ?? this.axis,
+        compare: clearCompare ? null : (compare ?? this.compare),
         createdAt: createdAt,
         updatedAt: updatedAt ?? this.updatedAt,
         deletedAt: deletedAt ?? this.deletedAt,

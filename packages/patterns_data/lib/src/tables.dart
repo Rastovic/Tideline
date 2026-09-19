@@ -240,6 +240,10 @@ class SavedReports extends Table with PortableTable {
   /// `date` or `cycleDay`, as a string. Never an ordinal.
   TextColumn get axis => text()();
 
+  /// `sameDay` or `nextDay` when the report also compares its first two
+  /// markers. Null is the ordinary stacked report.
+  TextColumn get compare => text().nullable()();
+
   IntColumn get sortOrder => integer().withDefault(const Constant(0))();
 
   IntColumn get createdAt => integer()();

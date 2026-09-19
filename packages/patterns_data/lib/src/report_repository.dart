@@ -64,6 +64,7 @@ final class ReportRepository {
             ]),
             period: definition.period.wire,
             axis: definition.axis.wireName,
+            compare: Value(definition.compare?.wireName),
             createdAt: definition.createdAt.toUtc().millisecondsSinceEpoch,
             deletedAt: Value(
               definition.deletedAt?.toUtc().millisecondsSinceEpoch,
@@ -120,6 +121,9 @@ final class ReportRepository {
       series: series,
       period: period,
       axis: axis,
+      compare: row.compare == null
+          ? null
+          : ComparePairing.fromWire(row.compare!),
       createdAt:
           DateTime.fromMillisecondsSinceEpoch(row.createdAt, isUtc: true),
       updatedAt:

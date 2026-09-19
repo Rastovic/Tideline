@@ -198,7 +198,7 @@ class _LogSheetState extends State<_LogSheet> {
       return const [];
     }
     return [
-      const SizedBox(height: VitalsSpacing.lg),
+      const SizedBox(height: VitalsSpacing.xxl),
       Row(
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
@@ -215,7 +215,7 @@ class _LogSheetState extends State<_LogSheet> {
             ),
           ),
           if (widget.pickPhoto != null) ...[
-            const SizedBox(width: VitalsSpacing.sm),
+            const SizedBox(width: VitalsSpacing.lg),
             IconButton(
               tooltip: context.s.addPhoto,
               onPressed: _attachPhoto,
@@ -229,6 +229,9 @@ class _LogSheetState extends State<_LogSheet> {
           ],
         ],
       ),
+      // Room before the button. A field that ends where the button starts
+      // gets tapped by the thumb aiming for the other one.
+      const SizedBox(height: VitalsSpacing.xxxl),
     ];
   }
 

@@ -42,8 +42,7 @@ class _DayDetailScreenState extends State<DayDetailScreen> {
   late Future<List<StoredPhoto>> _photos = _loadPhotos();
   late Future<int?> _cycleDay = widget.controller.cycleDayOn(_dayKey);
 
-  Future<List<Observation>> _load() =>
-      widget.controller.readingsOn(_dayKey);
+  Future<List<Observation>> _load() => widget.controller.readingsOn(_dayKey);
 
   Future<List<StoredPhoto>> _loadPhotos() =>
       widget.controller.photosOn(_dayKey);
@@ -157,8 +156,12 @@ class _DayDetailScreenState extends State<DayDetailScreen> {
           : null,
     );
     if (entry == null) return;
-    await widget.controller
-        .logOn(_dayKey, metric.id, entry.value, note: entry.note);
+    await widget.controller.logOn(
+      _dayKey,
+      metric.id,
+      entry.value,
+      note: entry.note,
+    );
     if (entry.photo case final bytes?) {
       await widget.controller.attachPhoto(
         bytes,
@@ -208,18 +211,33 @@ class _DayDetailScreenState extends State<DayDetailScreen> {
   Future<void> _edit(Observation observation) async {
     final metric = widget.controller.byId(observation.metricId);
     if (metric == null) return;
+    final photos = [
+      for (final photo in await widget.controller.photosOn(_dayKey))
+        if (photo.metricId == metric.id) photo,
+    ];
+    if (!mounted) return;
     final entry = await showLogSheet(
       context,
       metric: metric,
       initial: observation.value,
       initialNote: observation.note,
+      photos: photos.isEmpty
+          ? null
+          : DayPhotoStrip(
+              controller: widget.controller,
+              photos: photos,
+              onChanged: _reload,
+            ),
       pickPhoto: metric.kind == MetricKind.photo
           ? null
           : (source) => widget.picker.pick(source, context: context),
     );
     if (entry == null) return;
-    await widget.controller
-        .updateValue(observation.id, entry.value, note: entry.note);
+    await widget.controller.updateValue(
+      observation.id,
+      entry.value,
+      note: entry.note,
+    );
     if (entry.photo case final bytes?) {
       await widget.controller.attachPhoto(
         bytes,
@@ -277,8 +295,9 @@ class _DayDetailScreenState extends State<DayDetailScreen> {
                     ? const SizedBox.shrink()
                     : Text(
                         context.s.cycleDay(snapshot.data!),
-                        style: theme.typography.caption
-                            .copyWith(color: theme.colors.inkMuted),
+                        style: theme.typography.caption.copyWith(
+                          color: theme.colors.inkMuted,
+                        ),
                       ),
               ),
             ],
@@ -386,7 +405,8 @@ class _ReadingCard extends StatelessWidget {
     final theme = VitalsTheme.of(context);
     final colors = theme.colors;
     final minute = observation.localMinuteOfDay;
-    final clock = '${(minute ~/ 60).toString().padLeft(2, '0')}:'
+    final clock =
+        '${(minute ~/ 60).toString().padLeft(2, '0')}:'
         '${(minute % 60).toString().padLeft(2, '0')}';
 
     return InkWell(
@@ -430,8 +450,9 @@ class _ReadingCard extends StatelessWidget {
                       padding: const EdgeInsets.only(top: VitalsSpacing.xs),
                       child: Text(
                         note,
-                        style: theme.typography.caption
-                            .copyWith(color: colors.inkMuted),
+                        style: theme.typography.caption.copyWith(
+                          color: colors.inkMuted,
+                        ),
                       ),
                     ),
                   if (observation.value case TextValue(isPrivate: true))
@@ -468,22 +489,26 @@ class _ReadingCard extends StatelessWidget {
 ///
 /// Tags are named rather than counted, because "tuga, overthink" is the thing
 /// worth reading back and "2 tags" is not.
-String describeValue(MetricValue value, Metric? metric, AppStrings s) =>
-    switch (value) {
-      NumberValue(:final number) =>
-        '$number${metric?.unit == null ? '' : ' ${metric!.unit}'}',
-      BooleanValue(value: final flag) => flag ? s.yes : s.no,
-      TextValue(:final text) => text,
-      TimeOfDayValue() => value.toString().replaceAll('TimeOfDayValue(', '')
-          .replaceAll(')', ''),
-      ChoiceValue(:final optionId) => _labelFor(metric, optionId),
-      TagsValue(:final optionIds) => optionIds.isEmpty
-          // The recorded answer, spelled out. An empty line here would read as
-          // a bug, and worse, as a day that was never filled in.
-          ? s.noneOfThese
-          : optionIds.map((id) => _labelFor(metric, id)).join(', '),
-      PhotoValue(:final caption) => caption ?? s.photoLower,
-    };
+String describeValue(
+  MetricValue value,
+  Metric? metric,
+  AppStrings s,
+) => switch (value) {
+  NumberValue(:final number) =>
+    '$number${metric?.unit == null ? '' : ' ${metric!.unit}'}',
+  BooleanValue(value: final flag) => flag ? s.yes : s.no,
+  TextValue(:final text) => text,
+  TimeOfDayValue() =>
+    value.toString().replaceAll('TimeOfDayValue(', '').replaceAll(')', ''),
+  ChoiceValue(:final optionId) => _labelFor(metric, optionId),
+  TagsValue(:final optionIds) =>
+    optionIds.isEmpty
+        // The recorded answer, spelled out. An empty line here would read as
+        // a bug, and worse, as a day that was never filled in.
+        ? s.noneOfThese
+        : optionIds.map((id) => _labelFor(metric, id)).join(', '),
+  PhotoValue(:final caption) => caption ?? s.photoLower,
+};
 
 String _labelFor(Metric? metric, String optionId) {
   for (final option in metric?.options ?? const []) {

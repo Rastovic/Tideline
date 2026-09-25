@@ -485,10 +485,20 @@ final class PatternsController extends ChangeNotifier {
   /// Also makes sure the first profile exists. An install from before
   /// profiles, and a restore of a backup made before them, both have markers
   /// that already belong to it but no profile row to show for it.
-  Future<void> seedIfNeeded({String defaultProfileName = 'Me'}) async {
+  ///
+  /// [markers] false skips the starting set: a first run that goes through
+  /// the welcome picks its own markers instead of inheriting eighteen.
+  Future<void> seedIfNeeded({
+    String defaultProfileName = 'Me',
+    bool markers = true,
+  }) async {
     final now = DateTime.now().toUtc();
-    await metrics.seedIfEmpty(now: now);
-    await profiles.ensureDefault(name: defaultProfileName, now: now);
+    if (markers) await metrics.seedIfEmpty(now: now);
+    await profiles.ensureDefault(
+      name: defaultProfileName,
+      now: now,
+      seededCycle: markers,
+    );
     await refresh();
   }
 
@@ -561,17 +571,22 @@ final class PatternsController extends ChangeNotifier {
     required String name,
     required ({
       String moodAndTiredness,
-      String creatineAndBloating,
+      String trainingAndMood,
       String byCycleDay,
       String weeklyRhythm,
     })
     reportNames,
     int days = 120,
   }) async {
-    final profile = await createProfile(
-      name: name,
-      start: ProfileStart.starter,
-    );
+    final profile = await createProfile(name: name, start: ProfileStart.empty);
+    final created = DateTime.now().toUtc();
+    for (final marker in demoMarkers(
+      profileId: profile.id,
+      createdAt: created,
+      newId: Ids.newId,
+    )) {
+      await metrics.save(marker, now: created);
+    }
     await setCycleEnabled(true);
     final withCycle = activeProfile;
 
@@ -632,23 +647,15 @@ final class PatternsController extends ChangeNotifier {
       ),
       ReportDefinition(
         id: Ids.newId(),
-        name: reportNames.creatineAndBloating,
-        series: [
-          ?series('bloating'),
-          ?series('creatine dose', DisplayStyle.bars),
-          ?series('creatine', null, 'bloating'),
-        ],
+        name: reportNames.trainingAndMood,
+        series: [?series('mood'), ?series('training', null, 'mood')],
         period: const LastDays(90),
         createdAt: now,
       ),
       ReportDefinition(
         id: Ids.newId(),
         name: reportNames.byCycleDay,
-        series: [
-          ?series('bloating'),
-          ?series('irritability'),
-          ?series('appetite'),
-        ],
+        series: [?series('bloating'), ?series('mood'), ?series('tiredness')],
         period: LastDays(days),
         axis: ReportAxis.cycleDay,
         createdAt: now,
@@ -656,7 +663,7 @@ final class PatternsController extends ChangeNotifier {
       ReportDefinition(
         id: Ids.newId(),
         name: reportNames.weeklyRhythm,
-        series: [?series('mood'), ?series('urge to overeat')],
+        series: [?series('mood'), ?series('tiredness')],
         period: const LastDays(90),
         axis: ReportAxis.grid,
         createdAt: now,
@@ -906,19 +913,14 @@ final class PatternsController extends ChangeNotifier {
     String metricId, {
     required String from,
     required String to,
-  }) async =>
-      (
-        notes: await observations.daysWithNote(
-          metricId: metricId,
-          from: from,
-          to: to,
-        ),
-        photos: await photos.daysWithPhoto(
-          metricId: metricId,
-          from: from,
-          to: to,
-        ),
-      );
+  }) async => (
+    notes: await observations.daysWithNote(
+      metricId: metricId,
+      from: from,
+      to: to,
+    ),
+    photos: await photos.daysWithPhoto(metricId: metricId, from: from, to: to),
+  );
 
   /// What every photo occupies on disk, for the size shown in Settings.
   Future<int> photoBytes() => photos.totalBytes();

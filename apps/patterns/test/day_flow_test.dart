@@ -118,10 +118,16 @@ void main() {
       final results =
           await openSheet(tester, controller.byId(seedIds['feelings']!)!);
       expect(primary(tester, 'Log').onPressed, isNull);
-      // The explicit answer is still one tap away.
+      // The explicit answer is chosen, then logged, so it can carry a note.
       await tester.tap(find.text('None of these'));
       await tester.pumpAndSettle();
+      expect(results, isEmpty);
+      await tester.enterText(find.byType(TextField), 'calm day');
+      await tester.ensureVisible(find.text('Log'));
+      await tester.tap(find.text('Log'));
+      await tester.pumpAndSettle();
       expect((results.single!.value as TagsValue).isExplicitNone, isTrue);
+      expect(results.single!.note, 'calm day');
       controller.dispose();
     });
   });
@@ -217,9 +223,38 @@ void main() {
     });
   });
 
-  testWidgets('a square in a report opens its day', (tester) async {
+  testWidgets('ninety days fold into three lines, notes one tap away',
+      (tester) async {
     final controller = await freshController();
     final mood = controller.byId(seedIds['mood']!)!;
+    await controller.log(mood.id, NumberValue(6, kind: mood.kind),
+        note: 'slept badly');
+    await tester.pumpWidget(wrap(ReportViewScreen(
+      controller: controller,
+      isSaved: false,
+      definition: ReportDefinition(
+        id: 'r90',
+        name: 'quarter',
+        series: [ReportSeries(metricId: mood.id)],
+        period: const LastDays(90),
+        createdAt: DateTime.utc(2026),
+      ),
+    )));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(ReportRowChart), findsNWidgets(3));
+    // The day with a note is listed under the row and opens read-only.
+    await tester.tap(find.byType(ActionChip));
+    await tester.pumpAndSettle();
+    expect(find.text('slept badly'), findsOneWidget);
+    controller.dispose();
+  });
+
+  testWidgets('a square in a report shows that day read-only', (tester) async {
+    final controller = await freshController();
+    final mood = controller.byId(seedIds['mood']!)!;
+    await controller.log(mood.id, NumberValue(7, kind: mood.kind),
+        note: 'after the pizza');
     await tester.pumpWidget(wrap(ReportViewScreen.forMarker(
       controller: controller,
       metric: mood,
@@ -231,9 +266,13 @@ void main() {
     await tester.tapAt(Offset(row.right - 1, row.center.dy));
     await tester.pumpAndSettle();
 
-    expect(find.byType(DayDetailScreen), findsOneWidget);
+    // The reading and its note, to look at. No editor, no day screen:
+    // changing a past day happens from the calendar.
+    expect(find.byType(DayDetailScreen), findsNothing);
+    expect(find.text('after the pizza'), findsOneWidget);
     expect(find.textContaining(humanDateFor(controller.today)),
         findsOneWidget);
+    expect(find.text('Log'), findsNothing);
     controller.dispose();
   });
 

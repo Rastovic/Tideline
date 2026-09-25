@@ -108,11 +108,61 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('None of these'));
     await tester.pumpAndSettle();
+    // Chosen, not saved: the sheet stays open for a note or a photo.
+    expect(await controller.readingsOn(controller.today), isEmpty);
+    await tester.ensureVisible(find.text('Log'));
+    await tester.tap(find.text('Log'));
+    await tester.pumpAndSettle();
 
     final readings = await controller.readingsOn(controller.today);
     expect(readings, hasLength(1));
     expect((readings.single.value as TagsValue).isExplicitNone, isTrue);
     controller.dispose();
+  });
+
+  group('tapping a marker already logged today', () {
+    testWidgets('edits the latest reading instead of adding one',
+        (tester) async {
+      final controller = await freshController();
+      await controller.log(seedIds['feelings']!, TagsValue(const []));
+      await tester.pumpWidget(wrap(controller));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('feelings'));
+      await tester.pumpAndSettle();
+      expect(find.text("Editing today's entry"), findsOneWidget);
+      await tester.enterText(find.byType(TextField), 'fine after all');
+      await tester.ensureVisible(find.text('Log'));
+      await tester.tap(find.text('Log'));
+      await tester.pumpAndSettle();
+
+      final readings = await controller.readingsOn(controller.today);
+      expect(readings, hasLength(1));
+      expect(readings.single.note, 'fine after all');
+      controller.dispose();
+    });
+
+    testWidgets('"New entry" records a second reading next to it',
+        (tester) async {
+      final controller = await freshController();
+      await controller.log(seedIds['feelings']!, TagsValue(const []));
+      await tester.pumpWidget(wrap(controller));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('feelings'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('New entry'));
+      await tester.pumpAndSettle();
+      expect(find.text('Another entry for today'), findsOneWidget);
+      await tester.tap(find.text('None of these'));
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(find.text('Log'));
+      await tester.tap(find.text('Log'));
+      await tester.pumpAndSettle();
+
+      expect(await controller.readingsOn(controller.today), hasLength(2));
+      controller.dispose();
+    });
   });
 
   testWidgets('the day detail screen shows the readings with their times',

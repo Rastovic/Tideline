@@ -47,9 +47,13 @@ final class ProfileRepository {
   /// already belong to [defaultProfileId] through the column default, but no
   /// profile row to show for it. The cycle is on for it, and pointed at the
   /// seeded period markers, because that is how the app behaved until now.
+  ///
+  /// [seededCycle] false leaves it without a period pair: an install that
+  /// skipped the seed has no seeded markers for it to point at.
   Future<void> ensureDefault({
     required String name,
     required DateTime now,
+    bool seededCycle = true,
   }) async {
     final existing = await (_db.select(_db.profiles)
           ..where((p) => p.id.equals(defaultProfileId)))
@@ -60,9 +64,9 @@ final class ProfileRepository {
         id: defaultProfileId,
         name: name,
         createdAt: now.toUtc(),
-        cycleEnabled: true,
-        periodStartMetricId: seedIds['period-start'],
-        periodEndMetricId: seedIds['period-end'],
+        cycleEnabled: seededCycle,
+        periodStartMetricId: seededCycle ? seedIds['period-start'] : null,
+        periodEndMetricId: seededCycle ? seedIds['period-end'] : null,
       ),
       now: now,
     );

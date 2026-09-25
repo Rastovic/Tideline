@@ -29,9 +29,19 @@ Widget gated(AppLock lock) => MaterialApp(
     );
 
 void main() {
-  setUp(() => SharedPreferences.setMockInitialValues({}));
+  // Switched on, as after turning it on in Settings. Off is the default.
+  setUp(() => SharedPreferences.setMockInitialValues(
+      {'patterns.appLock.enabled': true}));
 
-  test('on by default, and locked from the start', () async {
+  test('off by default: a fresh install opens without asking', () async {
+    SharedPreferences.setMockInitialValues({});
+    final lock = AppLock(unlocker: FakeUnlocker());
+    await lock.load();
+    expect(lock.enabled, isFalse);
+    expect(lock.locked, isFalse);
+  });
+
+  test('switched on, it is locked from the start', () async {
     final lock = AppLock(unlocker: FakeUnlocker());
     await lock.load();
     expect(lock.enabled, isTrue);

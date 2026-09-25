@@ -102,7 +102,7 @@ Future<void> makeDemoProfile(
       name: s.demoProfileName,
       reportNames: (
         moodAndTiredness: s.demoMoodAndTiredness,
-        creatineAndBloating: s.demoCreatineAndBloating,
+        trainingAndMood: s.demoTrainingAndMood,
         byCycleDay: s.demoByCycleDay,
         weeklyRhythm: s.demoWeeklyRhythm,
       ),
@@ -164,8 +164,9 @@ class _NewProfileScreenState extends State<NewProfileScreen> {
           title: Text(title, style: theme.typography.body),
           subtitle: Text(
             hint,
-            style: theme.typography.caption
-                .copyWith(color: theme.colors.inkMuted),
+            style: theme.typography.caption.copyWith(
+              color: theme.colors.inkMuted,
+            ),
           ),
         );
 
@@ -299,8 +300,9 @@ class _ProfileSettingsSectionState extends State<ProfileSettingsSection> {
           title: Text(s.trackCycle, style: theme.typography.body),
           subtitle: Text(
             s.trackCycleHint,
-            style: theme.typography.caption
-                .copyWith(color: theme.colors.inkFaint),
+            style: theme.typography.caption.copyWith(
+              color: theme.colors.inkFaint,
+            ),
           ),
         ),
       ],

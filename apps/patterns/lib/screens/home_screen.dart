@@ -11,6 +11,7 @@ import '../data/patterns_controller.dart';
 import '../data/photo_picker.dart';
 import '../data/quick_log_widget.dart';
 import 'day_detail_screen.dart';
+import 'day_photos.dart';
 import 'log_sheet.dart';
 import 'metric_labels.dart';
 import 'cycle_card.dart';
@@ -145,11 +146,29 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
   late ReminderSettings _settings = widget.initialSettings;
 
-
+  /// A marker already logged today opens on its latest reading to edit.
+  ///
+  /// Most markers are answered once a day, and a second tap is far more often
+  /// "I got that wrong" than a new reading. A second reading is still one tap
+  /// away, behind "New entry" in the sheet.
   Future<void> _log(Metric metric) async {
+    Observation? latest;
+    if (metric.kind != MetricKind.photo) {
+      final today = [
+        for (final reading in await controller.readingsOn(controller.today))
+          if (reading.metricId == metric.id && !reading.isDeleted) reading,
+      ]..sort((a, b) => a.recordedAt.compareTo(b.recordedAt));
+      latest = today.isEmpty ? null : today.last;
+    }
+    final photos = await _photosFor(metric.id, controller.today);
+    if (!mounted) return;
     final entry = await showLogSheet(
       context,
       metric: metric,
+      initial: latest?.value,
+      initialNote: latest?.note,
+      offerNew: latest != null,
+      photos: photos,
       onCapture: metric.kind == MetricKind.photo
           ? (source) => _capture(metric.id, source)
           : null,
@@ -160,7 +179,11 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           : (source) => widget.picker.pick(source, context: context),
     );
     if (entry == null) return;
-    await controller.log(metric.id, entry.value, note: entry.note);
+    if (latest != null && !entry.asNew) {
+      await controller.updateValue(latest.id, entry.value, note: entry.note);
+    } else {
+      await controller.log(metric.id, entry.value, note: entry.note);
+    }
     if (entry.photo case final bytes?) {
       await controller.attachPhoto(
         bytes,
@@ -182,17 +205,31 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   void _openReport(Metric metric) {
     Navigator.of(context).push(
       MaterialPageRoute<void>(
-        builder: (_) => ReportViewScreen.forMarker(
-          controller: controller,
-          metric: metric,
-        ),
+        builder: (_) =>
+            ReportViewScreen.forMarker(controller: controller, metric: metric),
       ),
     );
   }
 
+  /// The marker's photos from [dayKey], as a strip for the log sheet, or null
+  /// when there are none.
+  Future<Widget?> _photosFor(String metricId, String dayKey) async {
+    final photos = [
+      for (final photo in await controller.photosOn(dayKey))
+        if (photo.metricId == metricId) photo,
+    ];
+    if (photos.isEmpty) return null;
+    return DayPhotoStrip(
+      controller: controller,
+      photos: photos,
+      onChanged: () {},
+    );
+  }
+
   Future<void> _capture(String? metricId, PhotoSource source) async {
-    final ghost =
-        metricId == null ? null : await controller.ghostPathFor(metricId);
+    final ghost = metricId == null
+        ? null
+        : await controller.ghostPathFor(metricId);
     if (!mounted) return;
     final bytes = await widget.picker.pick(
       source,
@@ -328,8 +365,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                             const SizedBox(width: VitalsSpacing.xs),
                             Text(
                               controller.activeProfile.name,
-                              style: theme.typography.body
-                                  .copyWith(color: colors.inkMuted),
+                              style: theme.typography.body.copyWith(
+                                color: colors.inkMuted,
+                              ),
                             ),
                             Icon(
                               Icons.expand_more,
@@ -384,8 +422,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                                     // diary has nothing to chart, so holding
                                     // it does nothing.
                                     onLongPress: switch (status.metric) {
-                                      Metric(kind: MetricKind.photo) => () =>
-                                          _openTimeline(status.metric),
+                                      Metric(kind: MetricKind.photo) =>
+                                        () => _openTimeline(status.metric),
                                       Metric(displayStyle: null) => null,
                                       _ => () => _openReport(status.metric),
                                     },
@@ -400,7 +438,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       ),
     );
   }
-
 }
 
 class _MarkerRow extends StatelessWidget {
@@ -434,7 +471,10 @@ class _MarkerRow extends StatelessWidget {
             Container(
               width: 10,
               height: 10,
-              decoration: BoxDecoration(color: dotColor, shape: BoxShape.circle),
+              decoration: BoxDecoration(
+                color: dotColor,
+                shape: BoxShape.circle,
+              ),
             ),
             const SizedBox(width: VitalsSpacing.md),
             Expanded(

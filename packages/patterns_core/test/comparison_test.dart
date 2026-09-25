@@ -256,4 +256,29 @@ void main() {
       expect(comparison.points.single.outcome, 9);
     });
   });
+
+  test('the timeline holds every day of the window, gaps included', () {
+    final comparison = buildComparison(
+      condition: creatine,
+      outcome: bloating,
+      observations: [
+        reading('creatine', '2026-03-01', const BooleanValue(true)),
+        reading('bloating', '2026-03-01', scale(7)),
+        reading('creatine', '2026-03-03', const BooleanValue(false)),
+        reading('bloating', '2026-03-03', scale(3)),
+      ],
+      from: '2026-03-01',
+      to: '2026-03-03',
+    );
+    final days = comparison.timeline;
+    expect(days.map((d) => d.dayKey),
+        ['2026-03-01', '2026-03-02', '2026-03-03']);
+    expect(days[0].conditionOn, isTrue);
+    expect(days[0].outcome, 7);
+    // Not logged: a gap, never a guess.
+    expect(days[1].conditionOn, isNull);
+    expect(days[1].outcome, isNull);
+    expect(days[2].conditionOn, isFalse);
+    expect(days[2].outcome, 3);
+  });
 }

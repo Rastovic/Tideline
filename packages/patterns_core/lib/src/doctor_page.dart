@@ -37,6 +37,7 @@ final class DoctorEntry {
     this.optionCounts = const [],
     this.explicitNoneDays = 0,
     this.typicalMinute,
+    this.dayMinutes = const {},
   });
 
   final Metric metric;
@@ -65,13 +66,17 @@ final class DoctorEntry {
   /// A time marker: the circular mean of every recorded time.
   final int? typicalMinute;
 
+  /// A time marker: the last time recorded on each day, by day key. What the
+  /// chart plots, since a day summary carries no single number for a clock.
+  final Map<String, int> dayMinutes;
+
   /// The range the grid shades against. A rating uses its declared bounds, so
   /// a month that never went below 4 does not redraw 4 as the floor.
   (num, num) get bounds => switch (metric.kind) {
-        MetricKind.scale => (metric.scaleMin, metric.scaleMax),
-        MetricKind.percent => (0, 100),
-        _ => (0, (stats.highest ?? 1) == 0 ? 1 : stats.highest ?? 1),
-      };
+    MetricKind.scale => (metric.scaleMin, metric.scaleMax),
+    MetricKind.percent => (0, 100),
+    _ => (0, (stats.highest ?? 1) == 0 ? 1 : stats.highest ?? 1),
+  };
 }
 
 /// Everything one doctor page prints.
@@ -192,12 +197,15 @@ DoctorEntry _entryFor(
         }
       }
       final labels = {for (final o in metric.options) o.id: o.label};
-      final ordered = [
-        for (final MapEntry(:key, :value) in counts.entries)
-          (label: labels[key] ?? key, days: value),
-      ]..sort((a, b) => b.days != a.days
-          ? b.days.compareTo(a.days)
-          : a.label.compareTo(b.label));
+      final ordered =
+          [
+            for (final MapEntry(:key, :value) in counts.entries)
+              (label: labels[key] ?? key, days: value),
+          ]..sort(
+            (a, b) => b.days != a.days
+                ? b.days.compareTo(a.days)
+                : a.label.compareTo(b.label),
+          );
       return DoctorEntry(
         metric: metric,
         days: days,
@@ -207,20 +215,25 @@ DoctorEntry _entryFor(
       );
 
     case MetricKind.timeOfDay:
-      final minutes = [
+      final readings = [
         for (final o in observations)
           if (!o.isDeleted &&
               o.metricId == metric.id &&
               o.dayKey.compareTo(from) >= 0 &&
-              o.dayKey.compareTo(to) <= 0)
-            if (o.value case TimeOfDayValue(:final minutesFromMidnight))
-              minutesFromMidnight,
-      ];
+              o.dayKey.compareTo(to) <= 0 &&
+              o.value is TimeOfDayValue)
+            o,
+      ]..sort((a, b) => a.recordedAt.compareTo(b.recordedAt));
+      int minuteOf(Observation o) =>
+          (o.value as TimeOfDayValue).minutesFromMidnight;
       return DoctorEntry(
         metric: metric,
         days: days,
         stats: stats,
-        typicalMinute: circularMeanMinutes(minutes),
+        typicalMinute: circularMeanMinutes([
+          for (final o in readings) minuteOf(o),
+        ]),
+        dayMinutes: {for (final o in readings) o.dayKey: minuteOf(o)},
       );
 
     default:
@@ -242,8 +255,7 @@ DatedValue? _extreme(List<DaySummary> days, {required bool highest}) {
   for (final day in days) {
     final value = day.value;
     if (value == null) continue;
-    if (best == null ||
-        (highest ? value > best.value : value < best.value)) {
+    if (best == null || (highest ? value > best.value : value < best.value)) {
       best = (value: value, dayKey: day.dayKey);
     }
   }

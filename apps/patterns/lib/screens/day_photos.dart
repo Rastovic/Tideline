@@ -18,12 +18,16 @@ class DayPhotoStrip extends StatelessWidget {
     required this.controller,
     required this.photos,
     required this.onChanged,
+    this.readOnly = false,
     super.key,
   });
 
   final PatternsController controller;
   final List<StoredPhoto> photos;
   final VoidCallback onChanged;
+
+  /// Opens photos to look at only: no delete, no caption edit.
+  final bool readOnly;
 
   @override
   Widget build(BuildContext context) {
@@ -46,6 +50,7 @@ class DayPhotoStrip extends StatelessWidget {
                   builder: (_) => PhotoViewerScreen(
                     controller: controller,
                     photo: photo,
+                    readOnly: readOnly,
                   ),
                 ),
               );
@@ -97,19 +102,22 @@ class PhotoViewerScreen extends StatefulWidget {
   const PhotoViewerScreen({
     required this.controller,
     required this.photo,
+    this.readOnly = false,
     super.key,
   });
 
   final PatternsController controller;
   final StoredPhoto photo;
+  final bool readOnly;
 
   @override
   State<PhotoViewerScreen> createState() => _PhotoViewerScreenState();
 }
 
 class _PhotoViewerScreenState extends State<PhotoViewerScreen> {
-  late final TextEditingController _caption =
-      TextEditingController(text: widget.photo.caption ?? '');
+  late final TextEditingController _caption = TextEditingController(
+    text: widget.photo.caption ?? '',
+  );
 
   @override
   void dispose() {
@@ -149,11 +157,12 @@ class _PhotoViewerScreenState extends State<PhotoViewerScreen> {
       appBar: AppBar(
         title: Text(widget.photo.dayKey),
         actions: [
-          IconButton(
-            tooltip: context.s.delete,
-            icon: const Icon(Icons.delete_outline),
-            onPressed: _confirmDelete,
-          ),
+          if (!widget.readOnly)
+            IconButton(
+              tooltip: context.s.delete,
+              icon: const Icon(Icons.delete_outline),
+              onPressed: _confirmDelete,
+            ),
         ],
       ),
       body: ListView(
@@ -167,18 +176,21 @@ class _PhotoViewerScreenState extends State<PhotoViewerScreen> {
           else
             _Missing(caption: widget.photo.caption),
           const SizedBox(height: VitalsSpacing.lg),
-          TextField(
-            controller: _caption,
-            style: theme.typography.body,
-            decoration: InputDecoration(
-              labelText: context.s.caption,
-              hintText: context.s.captionHint,
+          if (widget.readOnly)
+            Text(widget.photo.caption ?? '', style: theme.typography.body)
+          else
+            TextField(
+              controller: _caption,
+              style: theme.typography.body,
+              decoration: InputDecoration(
+                labelText: context.s.caption,
+                hintText: context.s.captionHint,
+              ),
+              onSubmitted: (text) => widget.controller.photos.setCaption(
+                widget.photo.id,
+                text.trim().isEmpty ? null : text.trim(),
+              ),
             ),
-            onSubmitted: (text) => widget.controller.photos.setCaption(
-              widget.photo.id,
-              text.trim().isEmpty ? null : text.trim(),
-            ),
-          ),
           const SizedBox(height: VitalsSpacing.md),
           Text(
             '${(widget.photo.byteSize / 1024).round()} KB',

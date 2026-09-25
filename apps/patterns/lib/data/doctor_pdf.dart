@@ -50,8 +50,8 @@ Future<({pw.Font regular, pw.Font bold})?> loadSystemFonts() async {
 ///
 /// **Facts only.** Counts, ranges with their dates, coverage. No word anywhere
 /// that means better, worse, normal or concerning, and no colour that does
-/// either: a square is darker because the number is higher, and that is all a
-/// darker square means.
+/// either: a point sits higher because the number is higher, and that is all
+/// its height means.
 Future<Uint8List> renderDoctorPdf(
   DoctorPage page, {
   required DateTime generatedAt,
@@ -76,71 +76,96 @@ Future<Uint8List> renderDoctorPdf(
   final small = pw.TextStyle(fontSize: 7.5, color: muted);
   final body = const pw.TextStyle(fontSize: 9, color: ink);
 
+  // A MultiPage rather than one fixed page: eight markers with a comparison
+  // and the reading guide do not fit on one sheet, and a single page clips
+  // what overflows without a word. Whatever does not fit moves to a second
+  // page; eight markers alone still print on one.
   doc.addPage(
-    pw.Page(
+    pw.MultiPage(
       pageFormat: paper.format,
       theme: theme,
       margin: const pw.EdgeInsets.fromLTRB(36, 32, 36, 28),
-      build: (context) => pw.Column(
-        crossAxisAlignment: pw.CrossAxisAlignment.start,
-        children: [
-          pw.Row(
-            mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: pw.CrossAxisAlignment.end,
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      build: (context) => [
+        pw.Row(
+          mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+          crossAxisAlignment: pw.CrossAxisAlignment.end,
+          children: [
+            pw.Text(
+              t(s.pdfTitle),
+              style: pw.TextStyle(
+                fontSize: 16,
+                fontWeight: pw.FontWeight.bold,
+                color: ink,
+              ),
+            ),
+            pw.Text(s.pdfMade(_date(_dayKeyOf(generatedAt))), style: small),
+          ],
+        ),
+        pw.SizedBox(height: 4),
+        pw.Text(
+          t(
+            '${_date(page.from)} - ${_date(page.to)}  ·  '
+            '${s.pdfDays(page.daysInPeriod)}  ·  '
+            '${s.pdfAnyEntry(page.daysWithAnyEntry)}',
+          ),
+          style: body,
+        ),
+        if (page.periodStarts.isNotEmpty) ...[
+          pw.SizedBox(height: 2),
+          pw.Text(
+            t(
+              '${s.pdfPeriodStarts}: '
+              '${page.periodStarts.map(_date).join(', ')}',
+            ),
+            style: body,
+          ),
+        ],
+        pw.SizedBox(height: 6),
+        pw.Divider(color: stroke, thickness: 0.5),
+        pw.SizedBox(height: 4),
+        for (final entry in page.entries) ...[
+          _entry(entry, page, s, t: t, body: body, small: small),
+          pw.SizedBox(height: 4),
+        ],
+        // The one place on the page where two markers are read against
+        // each other rather than side by side. A clinician reading a
+        // printed page should not have to hold two grids in their head.
+        if (page.comparison case final comparison?) ...[
+          pw.SizedBox(height: 4),
+          pw.Divider(color: stroke, thickness: 0.5),
+          pw.SizedBox(height: 4),
+          _comparison(comparison, s, t: t, body: body, small: small),
+        ],
+        pw.SizedBox(height: 10),
+        // For whoever holds the paper: a clinician seeing this layout for
+        // the first time should not need the phone to read it.
+        pw.Container(
+          padding: const pw.EdgeInsets.all(6),
+          decoration: pw.BoxDecoration(
+            border: pw.Border.all(color: stroke, width: 0.5),
+            borderRadius: pw.BorderRadius.circular(3),
+          ),
+          child: pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
             children: [
               pw.Text(
-                t(s.pdfTitle),
-                style: pw.TextStyle(
-                  fontSize: 16,
+                t(s.pdfHowToReadTitle),
+                style: small.copyWith(
                   fontWeight: pw.FontWeight.bold,
                   color: ink,
                 ),
               ),
-              pw.Text(
-                s.pdfMade(_date(_dayKeyOf(generatedAt))),
-                style: small,
-              ),
+              pw.SizedBox(height: 2),
+              for (final line in s.pdfHowToRead)
+                pw.Text(t('- $line'), style: small),
             ],
           ),
-          pw.SizedBox(height: 4),
-          pw.Text(
-            t('${_date(page.from)} - ${_date(page.to)}  ·  '
-                '${s.pdfDays(page.daysInPeriod)}  ·  '
-                '${s.pdfAnyEntry(page.daysWithAnyEntry)}'),
-            style: body,
-          ),
-          if (page.periodStarts.isNotEmpty) ...[
-            pw.SizedBox(height: 2),
-            pw.Text(
-              t('${s.pdfPeriodStarts}: '
-                  '${page.periodStarts.map(_date).join(', ')}'),
-              style: body,
-            ),
-          ],
-          pw.SizedBox(height: 6),
-          pw.Divider(color: stroke, thickness: 0.5),
-          pw.SizedBox(height: 4),
-          for (final entry in page.entries) ...[
-            _entry(entry, page, s, t: t, body: body, small: small),
-            pw.SizedBox(height: 8),
-          ],
-          // The one place on the page where two markers are read against
-          // each other rather than side by side. A clinician reading a
-          // printed page should not have to hold two grids in their head.
-          if (page.comparison case final comparison?) ...[
-            pw.SizedBox(height: 4),
-            pw.Divider(color: stroke, thickness: 0.5),
-            pw.SizedBox(height: 4),
-            _comparison(comparison, s, t: t, body: body, small: small),
-          ],
-          pw.Spacer(),
-          pw.Divider(color: stroke, thickness: 0.5),
-          pw.Text(
-            t(s.pdfFooter),
-            style: small,
-          ),
-        ],
-      ),
+        ),
+        pw.SizedBox(height: 4),
+        pw.Divider(color: stroke, thickness: 0.5),
+        pw.Text(t(s.pdfFooter), style: small),
+      ],
     ),
   );
 
@@ -192,7 +217,7 @@ pw.Widget _entry(
         ),
       ),
       pw.SizedBox(width: 10),
-      pw.Expanded(child: _grid(entry, color, s.weekdays)),
+      pw.Expanded(child: _chart(entry, color)),
     ],
   );
 }
@@ -217,15 +242,17 @@ pw.Widget _comparison(
   final values = [for (final p in points) p.outcome!]..sort();
   final (low, high) = switch (comparison.outcome.kind) {
     MetricKind.scale => (
-        comparison.outcome.scaleMin as num,
-        comparison.outcome.scaleMax as num,
-      ),
+      comparison.outcome.scaleMin as num,
+      comparison.outcome.scaleMax as num,
+    ),
     MetricKind.percent => (0 as num, 100 as num),
-    _ => values.isEmpty
-        ? (0 as num, 1 as num)
-        : (values.first, values.last == values.first
-            ? values.first + 1
-            : values.last),
+    _ =>
+      values.isEmpty
+          ? (0 as num, 1 as num)
+          : (
+              values.first,
+              values.last == values.first ? values.first + 1 : values.last,
+            ),
   };
   final groups = comparison.buckets.map((b) => b.label).toList();
   final scatter = points.isNotEmpty && points.first.condition != null;
@@ -243,8 +270,10 @@ pw.Widget _comparison(
       ),
       pw.SizedBox(height: 2),
       pw.Text(
-        t('${s.comparePairedDays(comparison.pairedDays)}'
-            '${comparison.pairing == ComparePairing.nextDay ? ' · ${s.compareNextDayNote}' : ''}'),
+        t(
+          '${s.comparePairedDays(comparison.pairedDays)}'
+          '${comparison.pairing == ComparePairing.nextDay ? ' · ${s.compareNextDayNote}' : ''}',
+        ),
         style: small,
       ),
       pw.SizedBox(height: 4),
@@ -311,12 +340,12 @@ pw.Widget _comparison(
 }
 
 String _bucketLabel(String raw, AppStrings s) => switch (raw) {
-      'yes' => s.compareYes,
-      'no' => s.compareNo,
-      'high' => s.compareHigh,
-      'low' => s.compareLow,
-      _ => raw,
-    };
+  'yes' => s.compareYes,
+  'no' => s.compareNo,
+  'high' => s.compareHigh,
+  'low' => s.compareLow,
+  _ => raw,
+};
 
 /// One dot per day, in PDF coordinates - which run from the bottom up, unlike
 /// the screen's.
@@ -353,9 +382,7 @@ void _paintComparison(
     final random = Random(5);
     for (final point in points) {
       final span = conditionHigh - conditionLow;
-      final t = span == 0
-          ? 0.5
-          : (point.condition! - conditionLow) / span;
+      final t = span == 0 ? 0.5 : (point.condition! - conditionLow) / span;
       final jitter = (random.nextDouble() - 0.5) * 8;
       final x = (inset + t.clamp(0.0, 1.0) * (size.x - inset * 2) + jitter)
           .clamp(inset, size.x - inset);
@@ -406,10 +433,7 @@ List<String> doctorFacts(
 
   switch (entry.metric.kind) {
     case MetricKind.boolean:
-      return [
-        s.pdfYesDays(entry.daysOn ?? 0, stats.daysLogged),
-        coverage,
-      ];
+      return [s.pdfYesDays(entry.daysOn ?? 0, stats.daysLogged), coverage];
     case MetricKind.tags || MetricKind.choice:
       final shown = entry.optionCounts.take(6).toList();
       return [
@@ -443,133 +467,213 @@ List<String> doctorFacts(
   }
 }
 
-/// Seven rows, Monday at the top, one column per week.
+/// One marker across the period as a chart: days left to right, oldest first.
 ///
-/// The same layout as the grid report, for the same reason: a weekly rhythm
-/// is a visible stripe here and invisible in a single row of ninety days.
-pw.Widget _grid(DoctorEntry entry, PdfColor color, List<String> weekdays) {
+/// A number is a line through the days it was logged, broken where a day was
+/// not, so a gap never reads as a drop to zero. A yes/no is a bar on each yes
+/// day and a tick on each no; a tags or choice marker is a bar per logged day,
+/// as tall as the options picked. A clock time is a dot at its time.
+pw.Widget _chart(DoctorEntry entry, PdfColor color) {
   final days = entry.days;
   if (days.isEmpty) return pw.SizedBox();
 
-  final first = parseDayKey(days.first.dayKey)!;
-  final lead = first.weekday - 1;
-  final columns = ((lead + days.length) / 7).ceil();
-  final (low, high) = entry.bounds;
+  final kind = entry.metric.kind;
+  final values = kind == MetricKind.timeOfDay
+      ? _unwrappedMinutes(entry)
+      : [for (final d in days) d.value];
+  final (low, high) = switch (kind) {
+    MetricKind.timeOfDay => _clockBounds(values),
+    MetricKind.boolean => (0 as num, 1 as num),
+    MetricKind.tags || MetricKind.choice => (
+      0 as num,
+      [for (final d in days) d.optionIds.length].fold(1, max) as num,
+    ),
+    _ => entry.bounds,
+  };
+  final quantity =
+      kind != MetricKind.boolean &&
+      kind != MetricKind.tags &&
+      kind != MetricKind.choice;
+  String axis(num value) => kind == MetricKind.timeOfDay
+      ? _clock(value.round() % 1440)
+      : _number(value);
 
-  return pw.LayoutBuilder(
-    builder: (context, constraints) {
-      const labelWidth = 14.0;
-      final width = (constraints?.maxWidth ?? 300) - labelWidth;
-      final cell = (width / columns).clamp(2.0, 9.0);
-      final gap = cell > 5 ? 1.0 : 0.4;
+  const label = pw.TextStyle(fontSize: 5, color: PdfColor.fromInt(0xFF5C6370));
+  const labelWidth = 22.0;
+  final middle = days[days.length ~/ 2].dayKey;
 
-      PdfColor? fill(DaySummary day) {
-        if (!day.isLogged) return null;
-        switch (entry.metric.kind) {
-          case MetricKind.boolean:
-            return (day.value ?? 0) > 0 ? color : _tint(color, 0.15);
-          case MetricKind.tags || MetricKind.choice:
-            return day.explicitNone ? _tint(color, 0.15) : _tint(color, 0.8);
-          case MetricKind.timeOfDay:
-            return _tint(color, 0.6);
-          default:
-            final value = day.value;
-            if (value == null) return _tint(color, 0.15);
-            final span = high - low;
-            final fraction = span == 0
-                ? 1.0
-                : ((value - low) / span).clamp(0.0, 1.0);
-            return _tint(color, 0.25 + 0.75 * fraction);
-        }
-      }
-
-      const label = pw.TextStyle(
-        fontSize: 4.5,
-        color: PdfColor.fromInt(0xFF5C6370),
-      );
-      return pw.Column(
+  return pw.Column(
+    crossAxisAlignment: pw.CrossAxisAlignment.start,
+    children: [
+      pw.Row(
         crossAxisAlignment: pw.CrossAxisAlignment.start,
         children: [
-          pw.Row(
-            crossAxisAlignment: pw.CrossAxisAlignment.start,
-            children: [
-              // The grid report's labels: two weekdays share a first letter.
-              pw.SizedBox(
-                width: labelWidth,
-                child: pw.Column(
-                  crossAxisAlignment: pw.CrossAxisAlignment.start,
-                  children: [
-                    for (final day in weekdays)
-                      pw.SizedBox(
-                        height: cell,
-                        child: pw.Align(
-                          alignment: pw.Alignment.centerLeft,
-                          child: pw.Text(day, style: label),
-                        ),
-                      ),
-                  ],
+          pw.SizedBox(
+            width: labelWidth,
+            height: 48,
+            child: quantity
+                ? pw.Column(
+                    mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: pw.CrossAxisAlignment.end,
+                    children: [
+                      pw.Text(axis(high), style: label),
+                      pw.Text(axis(low), style: label),
+                    ],
+                  )
+                : null,
+          ),
+          pw.SizedBox(width: 3),
+          pw.Expanded(
+            child: pw.SizedBox(
+              height: 48,
+              child: pw.CustomPaint(
+                painter: (canvas, size) => _paintChart(
+                  canvas,
+                  size,
+                  days: days,
+                  values: values,
+                  kind: kind,
+                  low: low,
+                  high: high,
+                  color: color,
                 ),
               ),
-              for (var col = 0; col < columns; col++)
-                pw.Column(
-                  children: [
-                    for (var row = 0; row < 7; row++)
-                      () {
-                        final index = col * 7 + row - lead;
-                        final inside = index >= 0 && index < days.length;
-                        final colour = inside ? fill(days[index]) : null;
-                        return pw.Container(
-                          width: cell - gap,
-                          height: cell - gap,
-                          margin: pw.EdgeInsets.only(right: gap, bottom: gap),
-                          decoration: !inside
-                              ? null
-                              : pw.BoxDecoration(
-                                  color: colour,
-                                  // An unlogged day is an outline, never a pale fill:
-                                  // a pale square reads as a low value.
-                                  border: colour == null
-                                      ? pw.Border.all(
-                                          color: const PdfColor.fromInt(
-                                            0xFFC9CED6,
-                                          ),
-                                          width: 0.4,
-                                        )
-                                      : null,
-                                ),
-                        );
-                      }(),
-                  ],
-                ),
-            ],
-          ),
-          pw.SizedBox(height: 1),
-          pw.SizedBox(
-            width: labelWidth + columns * cell,
-            child: pw.Row(
-              mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-              children: [
-                pw.Padding(
-                  padding: const pw.EdgeInsets.only(left: labelWidth),
-                  child: pw.Text(_shortDate(days.first.dayKey), style: label),
-                ),
-                pw.Text(_shortDate(days.last.dayKey), style: label),
-              ],
             ),
           ),
         ],
-      );
-    },
+      ),
+      pw.SizedBox(height: 1),
+      pw.Padding(
+        padding: const pw.EdgeInsets.only(left: labelWidth + 3),
+        child: pw.Row(
+          mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+          children: [
+            pw.Text(_shortDate(days.first.dayKey), style: label),
+            if (days.length > 2) pw.Text(_shortDate(middle), style: label),
+            pw.Text(_shortDate(days.last.dayKey), style: label),
+          ],
+        ),
+      ),
+    ],
   );
 }
 
-/// [color] laid over white at [alpha]. Blended here rather than using PDF
-/// transparency, which some print drivers flatten badly.
-PdfColor _tint(PdfColor color, double alpha) => PdfColor(
-  1 - (1 - color.red) * alpha,
-  1 - (1 - color.green) * alpha,
-  1 - (1 - color.blue) * alpha,
-);
+/// Each day's time, moved by a whole day where needed so it sits within
+/// twelve hours of the typical time. A bedtime of 00:30 then plots just after
+/// 23:30 rather than at the bottom of the chart.
+List<num?> _unwrappedMinutes(DoctorEntry entry) {
+  final centre = entry.typicalMinute ?? 720;
+  return [
+    for (final day in entry.days)
+      switch (entry.dayMinutes[day.dayKey]) {
+        null => null,
+        final m when m < centre - 720 => m + 1440,
+        final m when m >= centre + 720 => m - 1440,
+        final m => m,
+      },
+  ];
+}
+
+/// The earliest and latest recorded time, widened to whole hours.
+(num, num) _clockBounds(List<num?> values) {
+  final minutes = [
+    for (final v in values)
+      if (v != null) v,
+  ];
+  if (minutes.isEmpty) return (0, 1440);
+  final low = (minutes.reduce(min) / 60).floor() * 60;
+  final high = (minutes.reduce(max) / 60).ceil() * 60;
+  return (low, high == low ? low + 60 : high);
+}
+
+/// In PDF coordinates, which run from the bottom up.
+void _paintChart(
+  PdfGraphics canvas,
+  PdfPoint size, {
+  required List<DaySummary> days,
+  required List<num?> values,
+  required MetricKind kind,
+  required num low,
+  required num high,
+  required PdfColor color,
+}) {
+  const inset = 2.0;
+  const faint = PdfColor.fromInt(0xFFE3E6EB);
+  const axis = PdfColor.fromInt(0xFFC9CED6);
+  final step = size.x / days.length;
+  double x(int i) => step * (i + 0.5);
+  double y(num value) {
+    final span = high - low;
+    final t = span == 0 ? 0.5 : (value - low) / span;
+    return inset + t.clamp(0.0, 1.0) * (size.y - inset * 2);
+  }
+
+  canvas
+    ..setStrokeColor(faint)
+    ..setLineWidth(0.3)
+    ..drawLine(0, y(high), size.x, y(high))
+    ..drawLine(0, y((low + high) / 2), size.x, y((low + high) / 2))
+    ..strokePath()
+    ..setStrokeColor(axis)
+    ..setLineWidth(0.5)
+    ..drawLine(0, 0, size.x, 0)
+    ..strokePath();
+
+  final barWidth = (step * 0.7).clamp(0.6, 6.0);
+  switch (kind) {
+    case MetricKind.boolean:
+      canvas.setFillColor(color);
+      for (var i = 0; i < days.length; i++) {
+        final day = days[i];
+        if (!day.isLogged) continue;
+        final yes = (day.value ?? 0) > 0;
+        final top = yes ? size.y - inset : 2.0;
+        canvas.drawRect(x(i) - barWidth / 2, 0, barWidth, top);
+      }
+      canvas.fillPath();
+    case MetricKind.tags || MetricKind.choice:
+      canvas.setFillColor(color);
+      for (var i = 0; i < days.length; i++) {
+        final day = days[i];
+        if (!day.isLogged) continue;
+        final top = day.explicitNone || day.optionIds.isEmpty
+            ? 2.0
+            : y(day.optionIds.length);
+        canvas.drawRect(x(i) - barWidth / 2, 0, barWidth, top);
+      }
+      canvas.fillPath();
+    default:
+      // The line, broken at every day without a value.
+      if (kind != MetricKind.timeOfDay) {
+        canvas
+          ..setStrokeColor(color)
+          ..setLineWidth(0.9);
+        var drawing = false;
+        for (var i = 0; i < days.length; i++) {
+          final value = values[i];
+          if (value == null) {
+            drawing = false;
+            continue;
+          }
+          if (drawing) {
+            canvas.lineTo(x(i), y(value));
+          } else {
+            canvas.moveTo(x(i), y(value));
+            drawing = true;
+          }
+        }
+        canvas.strokePath();
+      }
+      final radius = days.length > 120 ? 0.8 : 1.3;
+      canvas.setFillColor(color);
+      for (var i = 0; i < days.length; i++) {
+        if (values[i] case final value?) {
+          canvas.drawEllipse(x(i), y(value), radius, radius);
+        }
+      }
+      canvas.fillPath();
+  }
+}
 
 PdfColor _color(String? hex) {
   final value = hex != null && hex.length == 7 && hex.startsWith('#')

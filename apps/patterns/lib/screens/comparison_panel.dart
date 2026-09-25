@@ -5,6 +5,7 @@ import 'package:vitals_ui/vitals_ui.dart';
 import '../l10n/app_language.dart';
 import '../l10n/app_strings.dart';
 import 'comparison_chart.dart';
+import 'comparison_timeline.dart';
 import 'metric_labels.dart';
 import 'panel.dart';
 
@@ -14,16 +15,29 @@ import 'panel.dart';
 /// and the card says in words that the app claims nothing about why - because
 /// the difference between "this is what the days look like" and "this caused
 /// that" is the whole boundary this app is built on.
-class ComparisonPanel extends StatelessWidget {
+class ComparisonPanel extends StatefulWidget {
   const ComparisonPanel({required this.comparison, super.key});
 
   final Comparison comparison;
 
   @override
+  State<ComparisonPanel> createState() => _ComparisonPanelState();
+}
+
+class _ComparisonPanelState extends State<ComparisonPanel> {
+  /// Over time first: "how did bloating move while creatine did" is the
+  /// question most people bring, and the dependency view answers a narrower
+  /// one.
+  bool _overTime = true;
+
+  Comparison get comparison => widget.comparison;
+
+  @override
   Widget build(BuildContext context) {
     final theme = VitalsTheme.of(context);
     final s = context.s;
-    final color = markerColor(comparison.outcome.colorHex) ?? theme.colors.accent;
+    final color =
+        markerColor(comparison.outcome.colorHex) ?? theme.colors.accent;
 
     if (comparison.isEmpty) {
       return Panel(
@@ -53,26 +67,64 @@ class ComparisonPanel extends StatelessWidget {
           if (comparison.pairing == ComparePairing.nextDay) ...[
             Text(
               s.compareNextDayNote,
-              style: theme.typography.caption
-                  .copyWith(color: theme.colors.inkMuted),
+              style: theme.typography.caption.copyWith(
+                color: theme.colors.inkMuted,
+              ),
             ),
             const SizedBox(height: VitalsSpacing.sm),
           ],
-          // The chart first: one dot per day, the condition across, the
-          // outcome up. The rows under it are the same days, counted.
-          Text(
-            comparison.outcome.name,
-            style: theme.typography.caption
-                .copyWith(color: theme.colors.inkFaint),
+          Wrap(
+            spacing: VitalsSpacing.sm,
+            children: [
+              ChoiceChip(
+                label: Text(s.compareOverTime),
+                selected: _overTime,
+                onSelected: (_) => setState(() => _overTime = true),
+              ),
+              ChoiceChip(
+                label: Text(s.compareDependency),
+                selected: !_overTime,
+                onSelected: (_) => setState(() => _overTime = false),
+              ),
+            ],
           ),
-          ComparisonChart(comparison: comparison, color: color),
-          const SizedBox(height: VitalsSpacing.xs),
-          Text(
-            comparison.condition.name,
-            textAlign: TextAlign.center,
-            style: theme.typography.caption
-                .copyWith(color: theme.colors.inkFaint),
-          ),
+          const SizedBox(height: VitalsSpacing.md),
+          if (_overTime) ...[
+            ComparisonTimeline(comparison: comparison),
+            const SizedBox(height: VitalsSpacing.xs),
+            Text(
+              s.compareTimelineHint,
+              style: theme.typography.caption.copyWith(
+                color: theme.colors.inkFaint,
+              ),
+            ),
+          ] else ...[
+            // One dot per day, the condition across, the outcome up. The
+            // rows under it are the same days, counted.
+            Text(
+              comparison.outcome.name,
+              style: theme.typography.caption.copyWith(
+                color: theme.colors.inkFaint,
+              ),
+            ),
+            ComparisonChart(comparison: comparison, color: color),
+            const SizedBox(height: VitalsSpacing.xs),
+            Text(
+              comparison.condition.name,
+              textAlign: TextAlign.center,
+              style: theme.typography.caption.copyWith(
+                color: theme.colors.inkFaint,
+              ),
+            ),
+            const SizedBox(height: VitalsSpacing.sm),
+            Text(
+              s.compareChartHint,
+              style: theme.typography.caption.copyWith(
+                color: theme.colors.inkFaint,
+              ),
+            ),
+          ],
+          _HowToRead(text: _howToRead(s), title: s.compareHowToRead),
           const SizedBox(height: VitalsSpacing.md),
           for (final bucket in comparison.buckets)
             _Bucket(
@@ -84,14 +136,63 @@ class ComparisonPanel extends StatelessWidget {
             ),
           const SizedBox(height: VitalsSpacing.sm),
           Text(
-            s.compareChartHint,
-            style:
-                theme.typography.caption.copyWith(color: theme.colors.inkFaint),
-          ),
-          Text(
             s.compareNoClaim,
-            style:
-                theme.typography.caption.copyWith(color: theme.colors.inkFaint),
+            style: theme.typography.caption.copyWith(
+              color: theme.colors.inkFaint,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+extension on _ComparisonPanelState {
+  /// The explanation for the view on screen, in her marker names.
+  String _howToRead(AppStrings s) {
+    final c = comparison.condition.name;
+    final o = comparison.outcome.name;
+    if (_overTime) return s.compareReadTimeline(c, o);
+    final grouped = switch (comparison.condition.kind) {
+      MetricKind.boolean || MetricKind.tags || MetricKind.choice => true,
+      _ => false,
+    };
+    return grouped ? s.compareReadGroups(c, o) : s.compareReadScatter(c, o);
+  }
+}
+
+/// Folded by default: read once, then out of the way of the chart.
+class _HowToRead extends StatelessWidget {
+  const _HowToRead({required this.title, required this.text});
+
+  final String title;
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = VitalsTheme.of(context);
+    return Theme(
+      // No divider lines above and below when it opens.
+      data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+      child: ExpansionTile(
+        tilePadding: EdgeInsets.zero,
+        childrenPadding: const EdgeInsets.only(bottom: VitalsSpacing.sm),
+        dense: true,
+        leading: Icon(
+          Icons.help_outline,
+          size: 18,
+          color: theme.colors.inkMuted,
+        ),
+        title: Text(
+          title,
+          style: theme.typography.caption.copyWith(
+            color: theme.colors.inkMuted,
+          ),
+        ),
+        children: [
+          Text(
+            text,
+            style: theme.typography.caption.copyWith(color: theme.colors.ink),
           ),
         ],
       ),
@@ -163,12 +264,12 @@ class _Bucket extends StatelessWidget {
   }
 
   String _label(String raw, AppStrings s) => switch (raw) {
-        'yes' => s.compareYes,
-        'no' => s.compareNo,
-        'high' => s.compareHigh,
-        'low' => s.compareLow,
-        _ => raw,
-      };
+    'yes' => s.compareYes,
+    'no' => s.compareNo,
+    'high' => s.compareHigh,
+    'low' => s.compareLow,
+    _ => raw,
+  };
 
   String _value(num typical) {
     if (kind == MetricKind.timeOfDay) {

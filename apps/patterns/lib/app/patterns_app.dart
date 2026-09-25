@@ -7,6 +7,8 @@ import '../data/app_lock.dart';
 import '../data/evening_reminder.dart';
 import '../data/patterns_controller.dart';
 import '../data/quick_log_widget.dart';
+import '../onboarding/onboarding.dart';
+import '../onboarding/tour_banner.dart';
 import '../screens/app_lock_gate.dart';
 import 'tideline_themes.dart';
 import '../screens/home_screen.dart';
@@ -21,8 +23,12 @@ class PatternsApp extends StatelessWidget {
     this.quickLog,
     required this.language,
     this.theme,
+    this.onboarding,
     super.key,
   });
+
+  /// The first-run welcome and tour. Null skips it, as in most tests.
+  final Onboarding? onboarding;
 
   /// Null uses Tide, following the system for light and dark.
   final ValueNotifier<ThemeChoice>? theme;
@@ -59,25 +65,32 @@ class PatternsApp extends StatelessWidget {
   }
 
   Widget _app(AppLanguage current, ThemeChoice choice) => MaterialApp(
-        title: 'Patterns',
-        debugShowCheckedModeBanner: false,
-        // The pickers and the system widgets follow the same choice.
-        locale: Locale(current.code),
-        supportedLocales: const [Locale('en'), Locale('sr')],
-        localizationsDelegates: GlobalMaterialLocalizations.delegates,
-        theme: choice.theme.data(Brightness.light),
-        darkTheme: choice.theme.data(Brightness.dark),
-        themeMode: choice.mode,
-        builder: (context, child) => switch (lock) {
-          final lock? => AppLockGate(lock: lock, child: child!),
-          null => child!,
-        },
-        home: HomeScreen(
-          controller: controller,
-          reminder: reminder,
-          initialSettings: settings,
-          lock: lock,
-          quickLog: quickLog,
-        ),
-      );
+    title: 'Patterns',
+    debugShowCheckedModeBanner: false,
+    // The pickers and the system widgets follow the same choice.
+    locale: Locale(current.code),
+    supportedLocales: const [Locale('en'), Locale('sr')],
+    localizationsDelegates: GlobalMaterialLocalizations.delegates,
+    theme: choice.theme.data(Brightness.light),
+    darkTheme: choice.theme.data(Brightness.dark),
+    themeMode: choice.mode,
+    navigatorKey: onboarding?.navigatorKey,
+    builder: (context, child) {
+      final framed = switch (onboarding) {
+        final onboarding? => TourFrame(onboarding: onboarding, child: child!),
+        null => child!,
+      };
+      return switch (lock) {
+        final lock? => AppLockGate(lock: lock, child: framed),
+        null => framed,
+      };
+    },
+    home: HomeScreen(
+      controller: controller,
+      reminder: reminder,
+      initialSettings: settings,
+      lock: lock,
+      quickLog: quickLog,
+    ),
+  );
 }

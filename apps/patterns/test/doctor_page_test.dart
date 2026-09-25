@@ -48,37 +48,46 @@ int pageCount(Uint8List bytes) =>
 
 void main() {
   group('the rendered file', () {
-    test('is one page, whatever eight markers hold, on both papers',
-        () async {
-      final controller = await freshController();
-      final charted = controller.allMarkers
-          .where((m) => m.displayStyle != null)
-          .take(doctorPageMaxMarkers)
-          .toList();
-      for (final m in charted) {
-        if (m.kind == MetricKind.scale) {
-          await controller.log(
-              m.id, const NumberValue(7, kind: MetricKind.scale));
+    test(
+      'eight markers fit one A4 page, and nothing is ever cut off',
+      () async {
+        final controller = await freshController();
+        final charted = controller.allMarkers
+            .where((m) => m.displayStyle != null)
+            .take(doctorPageMaxMarkers)
+            .toList();
+        for (final m in charted) {
+          if (m.kind == MetricKind.scale) {
+            await controller.log(
+              m.id,
+              const NumberValue(7, kind: MetricKind.scale),
+            );
+          }
         }
-      }
-      final page = await controller.doctorPage(
-        [for (final m in charted) m.id],
-        const LastDays(180),
-      );
-      expect(page.entries, hasLength(charted.length));
+        final page = await controller.doctorPage([
+          for (final m in charted) m.id,
+        ], const LastDays(180));
+        expect(page.entries, hasLength(charted.length));
 
-      for (final paper in DoctorPaper.values) {
-        final bytes = await renderDoctorPdf(
-          page,
-          generatedAt: DateTime(2026, 9, 17),
-          paper: paper,
-          compress: false,
-        );
-        expect(latin1.decode(bytes.sublist(0, 5)), '%PDF-');
-        expect(pageCount(bytes), 1, reason: paper.label);
-      }
-      controller.dispose();
-    });
+        for (final paper in DoctorPaper.values) {
+          final bytes = await renderDoctorPdf(
+            page,
+            generatedAt: DateTime(2026, 9, 17),
+            paper: paper,
+            compress: false,
+          );
+          expect(latin1.decode(bytes.sublist(0, 5)), '%PDF-');
+          // A4 holds all eight and the reading guide. Letter is shorter, so
+          // the guide may go over, onto a second page rather than being cut.
+          expect(
+            pageCount(bytes),
+            paper == DoctorPaper.a4 ? 1 : lessThanOrEqualTo(2),
+            reason: paper.label,
+          );
+        }
+        controller.dispose();
+      },
+    );
 
     test('the facts are counts and ranges, never a verdict', () {
       final mood = Metric.create(
@@ -109,7 +118,13 @@ void main() {
       expect(lines, contains('highest 9 (3.9.)'));
       expect(lines, contains('2/30 days logged'));
       for (final banned in [
-        'bolje', 'gore', 'normal', 'zabrinj', 'poboljs', 'pogors', 'trend',
+        'bolje',
+        'gore',
+        'normal',
+        'zabrinj',
+        'poboljs',
+        'pogors',
+        'trend',
       ]) {
         expect(lines, isNot(contains(banned)), reason: banned);
       }
@@ -118,18 +133,22 @@ void main() {
 
   group('the screen', () {
     Widget wrap(Widget child) => MaterialApp(
-          theme: VitalsTheme.light(accent: AppAccent.patternsCobalt),
-          home: child,
-        );
+      theme: VitalsTheme.light(accent: AppAccent.patternsCobalt),
+      home: child,
+    );
 
     testWidgets('picks markers and shares one PDF', (tester) async {
       final controller = await freshController();
       final transfer = FakeTransfer();
-      await tester.pumpWidget(wrap(DoctorPageScreen(
-        controller: controller,
-        transfer: transfer,
-        fonts: noFonts,
-      )));
+      await tester.pumpWidget(
+        wrap(
+          DoctorPageScreen(
+            controller: controller,
+            transfer: transfer,
+            fonts: noFonts,
+          ),
+        ),
+      );
       await tester.pumpAndSettle();
 
       await tester.tap(find.text('tiredness'));
@@ -152,11 +171,15 @@ void main() {
     testWidgets('nothing picked is refused, and says why', (tester) async {
       final controller = await freshController();
       final transfer = FakeTransfer();
-      await tester.pumpWidget(wrap(DoctorPageScreen(
-        controller: controller,
-        transfer: transfer,
-        fonts: noFonts,
-      )));
+      await tester.pumpWidget(
+        wrap(
+          DoctorPageScreen(
+            controller: controller,
+            transfer: transfer,
+            fonts: noFonts,
+          ),
+        ),
+      );
       await tester.pumpAndSettle();
 
       await tester.scrollUntilVisible(find.text('Make PDF'), 200);
@@ -165,18 +188,24 @@ void main() {
 
       expect(transfer.sent, isNull);
       await tester.scrollUntilVisible(
-          find.text('Pick at least one marker.'), -200);
+        find.text('Pick at least one marker.'),
+        -200,
+      );
       expect(find.text('Pick at least one marker.'), findsOneWidget);
       controller.dispose();
     });
 
     testWidgets('a diary is never offered', (tester) async {
       final controller = await freshController();
-      await tester.pumpWidget(wrap(DoctorPageScreen(
-        controller: controller,
-        transfer: FakeTransfer(),
-        fonts: noFonts,
-      )));
+      await tester.pumpWidget(
+        wrap(
+          DoctorPageScreen(
+            controller: controller,
+            transfer: FakeTransfer(),
+            fonts: noFonts,
+          ),
+        ),
+      );
       await tester.pumpAndSettle();
       expect(find.text('diary'), findsNothing);
       controller.dispose();
@@ -184,23 +213,28 @@ void main() {
   });
   group('the export screen', () {
     Widget wrap(Widget child) => MaterialApp(
-          theme: VitalsTheme.light(accent: AppAccent.patternsCobalt),
-          home: child,
-        );
+      theme: VitalsTheme.light(accent: AppAccent.patternsCobalt),
+      home: child,
+    );
 
-    testWidgets('says what is held back, then shares text without it',
-        (tester) async {
+    testWidgets('says what is held back, then shares text without it', (
+      tester,
+    ) async {
       final controller = await freshController();
       await controller.log(
-          seedIds['mood']!, const NumberValue(6, kind: MetricKind.scale));
+        seedIds['mood']!,
+        const NumberValue(6, kind: MetricKind.scale),
+      );
       await controller.log(
-          seedIds['diary']!, const TextValue('tajna', isPrivate: true));
+        seedIds['diary']!,
+        const TextValue('tajna', isPrivate: true),
+      );
       await controller.log(seedIds['diary']!, const TextValue('obicno'));
       final transfer = FakeTransfer();
 
-      await tester.pumpWidget(wrap(
-        ExportScreen(controller: controller, transfer: transfer),
-      ));
+      await tester.pumpWidget(
+        wrap(ExportScreen(controller: controller, transfer: transfer)),
+      );
       await tester.pumpAndSettle();
 
       // Lazily built, so scroll it into existence, then fully on screen.
@@ -211,10 +245,14 @@ void main() {
       );
       await tester.ensureVisible(find.text('Share file'));
       await tester.pumpAndSettle();
-      expect(find.textContaining('Private diary entries left out: 1.'),
-          findsOneWidget);
-      expect(find.textContaining('Diary not ticked, left out: 1.'),
-          findsOneWidget);
+      expect(
+        find.textContaining('Private diary entries left out: 1.'),
+        findsOneWidget,
+      );
+      expect(
+        find.textContaining('Diary not ticked, left out: 1.'),
+        findsOneWidget,
+      );
 
       await tester.tap(find.text('Share file'));
       await tester.pumpAndSettle();
@@ -230,11 +268,13 @@ void main() {
     testWidgets('CSV is one tap away and is plain CSV', (tester) async {
       final controller = await freshController();
       await controller.log(
-          seedIds['mood']!, const NumberValue(6, kind: MetricKind.scale));
+        seedIds['mood']!,
+        const NumberValue(6, kind: MetricKind.scale),
+      );
       final transfer = FakeTransfer();
-      await tester.pumpWidget(wrap(
-        ExportScreen(controller: controller, transfer: transfer),
-      ));
+      await tester.pumpWidget(
+        wrap(ExportScreen(controller: controller, transfer: transfer)),
+      );
       await tester.pumpAndSettle();
 
       await tester.tap(find.text('Spreadsheet (CSV)'));
@@ -251,8 +291,10 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(transfer.sentName, endsWith('.csv'));
-      expect(utf8.decode(transfer.sent!),
-          startsWith('date,time,marker,kind,value,unit,note,entered_late'));
+      expect(
+        utf8.decode(transfer.sent!),
+        startsWith('date,time,marker,kind,value,unit,note,entered_late'),
+      );
       controller.dispose();
     });
   });

@@ -103,3 +103,35 @@ List<Metric> starterMarkers({
 
   return (take('period-start', sortOrder), take('period-end', sortOrder + 1));
 }
+
+/// The seeded markers the demo profile shows, by slug.
+///
+/// **A handful, not the whole seed.** The demo is a first look at the app, and
+/// eighteen rows of someone else's life read as homework. These seven cover
+/// every kind of answer - a rating, tags, yes or no, a time, text - and are
+/// enough for each saved report to show something.
+const Set<String> demoMarkerSlugs = {
+  'mood',
+  'tiredness',
+  'feelings',
+  'bloating',
+  'training',
+  'bedtime',
+  'diary',
+};
+
+/// The demo profile's markers: [demoMarkerSlugs] from the seed, without the
+/// cycle, under fresh ids.
+List<Metric> demoMarkers({
+  required String profileId,
+  required DateTime createdAt,
+  required String Function() newId,
+}) {
+  final ids = {for (final slug in demoMarkerSlugs) seedIds[slug]!};
+  return copyMarkers(
+    seedMetrics(createdAt: createdAt).where((m) => ids.contains(m.id)),
+    profileId: profileId,
+    createdAt: createdAt,
+    newId: newId,
+  );
+}

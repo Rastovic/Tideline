@@ -17,15 +17,26 @@ import '../l10n/app_language.dart';
 /// called: capture is its own flow, and a sheet waiting behind a camera is a
 /// sheet the user comes back to and cannot remember the purpose of.
 /// What the sheet hands back: the reading, and the sentence about it.
-typedef LoggedEntry = ({MetricValue value, String? note, Uint8List? photo});
+///
+/// [asNew] is true when the sheet opened on a reading to edit and the user
+/// asked for a fresh one instead: the caller records it next to the old one
+/// rather than over it.
+typedef LoggedEntry = ({
+  MetricValue value,
+  String? note,
+  Uint8List? photo,
+  bool asNew,
+});
 
 Future<LoggedEntry?> showLogSheet(
   BuildContext context, {
   required Metric metric,
   MetricValue? initial,
   String? initialNote,
+  bool offerNew = false,
   Future<void> Function(PhotoSource source)? onCapture,
   Future<Uint8List?> Function(PhotoSource source)? pickPhoto,
+  Widget? photos,
 }) => showModalBottomSheet<LoggedEntry>(
   context: context,
   isScrollControlled: true,
@@ -34,8 +45,10 @@ Future<LoggedEntry?> showLogSheet(
     metric: metric,
     initial: initial,
     initialNote: initialNote,
+    offerNew: offerNew,
     onCapture: onCapture,
     pickPhoto: pickPhoto,
+    photos: photos,
   ),
 );
 
@@ -44,18 +57,28 @@ class _LogSheet extends StatefulWidget {
     required this.metric,
     this.initial,
     this.initialNote,
+    this.offerNew = false,
     this.onCapture,
     this.pickPhoto,
+    this.photos,
   });
 
   final Metric metric;
   final MetricValue? initial;
   final String? initialNote;
+
+  /// Shows "New entry" while editing, for a second reading on the same day.
+  final bool offerNew;
+
   final Future<void> Function(PhotoSource source)? onCapture;
 
   /// Hands back bytes for a photo attached to this reading. Null on a surface
   /// with no camera wired, where the button is simply not offered.
   final Future<Uint8List?> Function(PhotoSource source)? pickPhoto;
+
+  /// The photos already on this marker that day, shown under the title so
+  /// opening a marker shows what was attached to it, not only the number.
+  final Widget? photos;
 
   @override
   State<_LogSheet> createState() => _LogSheetState();
@@ -64,6 +87,16 @@ class _LogSheet extends StatefulWidget {
 class _LogSheetState extends State<_LogSheet> {
   late num _number = _initialNumber();
   late final Set<String> _picked = _initialTags();
+
+  /// "None of these" chosen. Kept apart from an empty [_picked], which is
+  /// only "nothing chosen yet".
+  late bool _none = switch (widget.initial) {
+    TagsValue(:final optionIds) => optionIds.isEmpty,
+    _ => false,
+  };
+
+  /// True while the sheet holds an existing reading that saving will change.
+  late bool _editing = widget.initial != null;
   late final TextEditingController _text = TextEditingController(
     text: _initialText(),
   );
@@ -91,6 +124,10 @@ class _LogSheetState extends State<_LogSheet> {
   num _initialNumber() {
     final value = widget.initial;
     if (value is NumberValue) return value.number;
+    return _defaultNumber();
+  }
+
+  num _defaultNumber() {
     return switch (metric.kind) {
       // Starting in the middle of the scale rather than at the bottom: a
       // slider parked on 1 quietly suggests that 1 is the answer, and the
@@ -151,7 +188,22 @@ class _LogSheetState extends State<_LogSheet> {
     value: value,
     note: _note.text.trim().isEmpty ? null : _note.text.trim(),
     photo: _attachedPhoto,
+    asNew: widget.offerNew && !_editing,
   ));
+
+  /// Drops the reading being edited and starts a blank one for the same day.
+  void _startNew() => setState(() {
+    _editing = false;
+    _number = _defaultNumber();
+    _picked.clear();
+    _none = false;
+    _text.clear();
+    _note.clear();
+    _amountText.clear();
+    _time = TimeOfDay.now();
+    _private = false;
+    _attachedPhoto = null;
+  });
 
   /// A photo on any reading, not only a photo marker's: "this is what it
   /// looked like at 4" belongs next to the 4, not in a marker of its own.
@@ -276,7 +328,30 @@ class _LogSheetState extends State<_LogSheet> {
                   ),
                 ),
                 const SizedBox(height: VitalsSpacing.lg),
-                Text(metric.name, style: theme.typography.title),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(metric.name, style: theme.typography.title),
+                    ),
+                    if (widget.offerNew && _editing)
+                      TextButton.icon(
+                        onPressed: _startNew,
+                        icon: const Icon(Icons.add, size: 18),
+                        label: Text(context.s.newEntry),
+                      ),
+                  ],
+                ),
+                if (widget.offerNew)
+                  Text(
+                    _editing ? context.s.editingToday : context.s.addingToday,
+                    style: theme.typography.caption.copyWith(
+                      color: colors.inkMuted,
+                    ),
+                  ),
+                if (widget.photos case final photos?) ...[
+                  const SizedBox(height: VitalsSpacing.md),
+                  photos,
+                ],
                 const SizedBox(height: VitalsSpacing.lg),
                 // The note sits above the action, never below it: a field
                 // under the button is a field nobody sees before tapping it.
@@ -434,6 +509,7 @@ class _LogSheetState extends State<_LogSheet> {
               label: Text(option.label),
               selected: _picked.contains(option.id),
               onSelected: (on) => setState(() {
+                _none = false;
                 if (!multiple) _picked.clear();
                 if (on) {
                   _picked.add(option.id);
@@ -442,25 +518,31 @@ class _LogSheetState extends State<_LogSheet> {
                 }
               }),
             ),
+          // "None of these" is a recorded answer, not an empty form. Without
+          // it there is no difference between a day with no sadness and a day
+          // never filled in, and every later number is computed over the
+          // second kind. Chosen like any option rather than saved on tap, so
+          // it can carry a note and a photo like any other answer.
+          if (multiple)
+            FilterChip(
+              label: Text(context.s.noneOfTheseButton),
+              selected: _none,
+              onSelected: (on) => setState(() {
+                _none = on;
+                if (on) _picked.clear();
+              }),
+            ),
         ],
       ),
       const SizedBox(height: VitalsSpacing.xl),
-      if (multiple) ...[
-        // "None of these" is a recorded answer, not an empty form. Without it
-        // there is no difference between a day with no sadness and a day never
-        // filled in, and every later number is computed over the second kind.
-        _secondary(
-          context.s.noneOfTheseButton,
-          () => _submit(TagsValue(const [])),
-        ),
-        const SizedBox(height: VitalsSpacing.md),
-      ],
-      // Nothing picked is not an answer here. "None of these" has its own
-      // button, and letting an empty tap record it would put that answer on
+      // Nothing picked is not an answer here. "None of these" has to be
+      // chosen, and letting an empty tap record it would put that answer on
       // days nobody gave it.
       _primary(
         context.s.log,
-        _picked.isEmpty
+        _none
+            ? () => _submit(TagsValue(const []))
+            : _picked.isEmpty
             ? null
             : () => _submit(
                 multiple ? TagsValue(_picked) : ChoiceValue(_picked.first),

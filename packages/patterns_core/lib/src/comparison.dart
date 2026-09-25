@@ -79,6 +79,34 @@ final class ComparePoint {
   final String? bucket;
 }
 
+/// One day of the window, both markers side by side, for the chart over time.
+///
+/// **Every day of the window is here**, logged or not, so the chart can leave
+/// a gap where nothing was recorded instead of drawing a line across it as if
+/// something had been.
+final class TimelineDay {
+  const TimelineDay({
+    required this.dayKey,
+    this.condition,
+    this.conditionOn,
+    this.outcome,
+  });
+
+  /// The condition's day. The outcome beside it is read [ComparePairing]
+  /// days later, so "creatine today, bloating tomorrow" sits in one column.
+  final String dayKey;
+
+  /// The condition's number, for a condition that carries one.
+  final num? condition;
+
+  /// For a yes/no or tags condition: whether it happened (yes, or any option
+  /// picked). Null when the condition was not logged that day.
+  final bool? conditionOn;
+
+  /// The outcome's number, or null when it was not logged.
+  final num? outcome;
+}
+
 /// Two markers read against each other, in counted groups.
 ///
 /// **It compares and never concludes.** There is no correlation coefficient,
@@ -94,6 +122,7 @@ final class Comparison {
     required this.points,
     required this.pairedDays,
     required this.pairing,
+    this.timeline = const [],
   });
 
   /// The marker the days are split by - "on the days creatine was taken".
@@ -111,6 +140,9 @@ final class Comparison {
   final int pairedDays;
 
   final ComparePairing pairing;
+
+  /// Every day of the window, oldest first, for the chart over time.
+  final List<TimelineDay> timeline;
 
   /// Nothing to show: one of the two was barely logged, or the condition
   /// never varied. Two groups are the minimum a comparison can be made of.
@@ -248,6 +280,23 @@ Comparison buildComparison({
   }
   points.sort((a, b) => a.dayKey.compareTo(b.dayKey));
 
+  final timeline = [
+    for (final c in conditionDays.values)
+      TimelineDay(
+        dayKey: c.dayKey,
+        condition: numericCondition && c.isLogged ? c.value : null,
+        conditionOn: numericCondition || !c.isLogged
+            ? null
+            : condition.kind == MetricKind.boolean
+            ? (c.value ?? 0) > 0
+            : c.optionIds.isNotEmpty,
+        outcome: switch (outcomeDays[addDays(c.dayKey, pairing.lagDays)]) {
+          final o? when o.isLogged => o.value,
+          _ => null,
+        },
+      ),
+  ]..sort((a, b) => a.dayKey.compareTo(b.dayKey));
+
   return Comparison(
     condition: condition,
     outcome: outcome,
@@ -255,5 +304,6 @@ Comparison buildComparison({
     points: points,
     pairedDays: pairs.length,
     pairing: pairing,
+    timeline: timeline,
   );
 }

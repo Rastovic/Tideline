@@ -14,6 +14,7 @@ import 'panel.dart';
 import 'profile_screens.dart';
 import 'theme_picker.dart';
 import '../l10n/app_language.dart';
+import '../onboarding/onboarding.dart';
 
 /// Settings, which for now is the one reminder.
 ///
@@ -216,6 +217,27 @@ class _SettingsScreenState extends State<SettingsScreen> {
               label: context.s.languageHeading,
               child: _column(_appearance(theme)),
             ),
+            if (Onboarding.of(context) case final onboarding?)
+              Panel(
+                label: context.s.helpHeading,
+                child: _column([
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: const Icon(Icons.play_circle_outline),
+                    title: Text(
+                      context.s.replayTour,
+                      style: theme.typography.body,
+                    ),
+                    subtitle: Text(
+                      context.s.replayTourHint,
+                      style: theme.typography.caption.copyWith(
+                        color: theme.colors.inkFaint,
+                      ),
+                    ),
+                    onTap: _replaying ? null : () => _replay(onboarding),
+                  ),
+                ]),
+              ),
             if (widget.controller case final controller?) ...[
               Panel(
                 label: context.s.archiveHeading,
@@ -229,6 +251,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ),
       ),
     );
+  }
+
+  bool _replaying = false;
+
+  /// Builds the demo, then the tour takes over the navigator, this screen
+  /// included.
+  Future<void> _replay(Onboarding onboarding) async {
+    setState(() => _replaying = true);
+    try {
+      await onboarding.replay();
+    } finally {
+      if (mounted) setState(() => _replaying = false);
+    }
   }
 
   Widget _column(List<Widget> children) => Column(

@@ -18,7 +18,7 @@ Future<PatternsController> freshController() async {
 
 const names = (
   moodAndTiredness: 'Mood and tiredness',
-  creatineAndBloating: 'Creatine and bloating',
+  trainingAndMood: 'Training and mood',
   byCycleDay: 'Through the cycle',
   weeklyRhythm: 'Weekly rhythm',
 );
@@ -58,7 +58,7 @@ void main() {
     final reports = await controller.savedReports();
     expect(reports.map((r) => r.name), [
       'Mood and tiredness',
-      'Creatine and bloating',
+      'Training and mood',
       'Through the cycle',
       'Weekly rhythm',
     ]);

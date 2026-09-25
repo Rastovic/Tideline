@@ -53,11 +53,15 @@ final class PlatformUnlocker implements Unlocker {
 
 /// Whether the app is locked, and whether it should be.
 ///
-/// **On by default**, because this app holds a diary, a cycle and a body, and
-/// a phone handed over to show a photo should not open onto any of that.
+/// **Off by default**, switched on in Settings. A fingerprint asked for on
+/// the very first open, before anything is in the app, is a wall rather than
+/// a protection; once there is a diary, a cycle and a body to keep from a
+/// phone handed over to show a photo, it is one switch away.
 final class AppLock extends ChangeNotifier {
-  AppLock({this.unlocker = const PlatformUnlocker(), DateTime Function()? clock})
-      : _clock = clock ?? DateTime.now;
+  AppLock({
+    this.unlocker = const PlatformUnlocker(),
+    DateTime Function()? clock,
+  }) : _clock = clock ?? DateTime.now;
 
   final Unlocker unlocker;
   final DateTime Function() _clock;
@@ -68,7 +72,7 @@ final class AppLock extends ChangeNotifier {
 
   static const _key = 'patterns.appLock.enabled';
 
-  bool _enabled = true;
+  bool _enabled = false;
   bool _available = false;
   bool _locked = false;
   DateTime? _leftAt;
@@ -82,7 +86,7 @@ final class AppLock extends ChangeNotifier {
 
   Future<void> load() async {
     final prefs = await SharedPreferences.getInstance();
-    _enabled = prefs.getBool(_key) ?? true;
+    _enabled = prefs.getBool(_key) ?? false;
     _available = await unlocker.isAvailable();
     _locked = _enabled && _available;
     notifyListeners();

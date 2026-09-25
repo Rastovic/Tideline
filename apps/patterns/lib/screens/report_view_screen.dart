@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:patterns_core/patterns_core.dart';
 import 'package:vitals_core/vitals_core.dart';
@@ -5,7 +7,7 @@ import 'package:vitals_ui/vitals_ui.dart';
 
 import '../data/archive_transfer.dart';
 import '../data/patterns_controller.dart';
-import 'day_detail_screen.dart';
+import 'marker_day_sheet.dart';
 import 'comparison_panel.dart';
 import 'day_grid_chart.dart';
 import 'marked_days_strip.dart';
@@ -186,6 +188,27 @@ class _ReportViewScreenState extends State<ReportViewScreen> {
                   ),
                   const SizedBox(height: VitalsSpacing.md),
                   _axisPicker(theme),
+                  if (report.definition.axis != ReportAxis.cycleDay) ...[
+                    const SizedBox(height: VitalsSpacing.sm),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.touch_app_outlined,
+                          size: 16,
+                          color: theme.colors.inkFaint,
+                        ),
+                        const SizedBox(width: VitalsSpacing.xs),
+                        Expanded(
+                          child: Text(
+                            context.s.reportTapHint,
+                            style: theme.typography.caption.copyWith(
+                              color: theme.colors.inkFaint,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                   const SizedBox(height: VitalsSpacing.xl),
                   // Above the rows: it is the question the report was built
                   // to ask, and the rows are the days behind it.
@@ -203,15 +226,15 @@ class _ReportViewScreenState extends State<ReportViewScreen> {
                       row: row,
                       report: report,
                       marked: _marked[row.metric.id],
+                      // Read-only: what that marker held that day, with its
+                      // notes and photos. Editing lives on the day screen.
                       onDayTap: report.definition.axis == ReportAxis.cycleDay
                           ? null
-                          : (dayKey) => Navigator.of(context).push(
-                              MaterialPageRoute<void>(
-                                builder: (_) => DayDetailScreen(
-                                  controller: widget.controller,
-                                  dayKey: dayKey,
-                                ),
-                              ),
+                          : (dayKey) => showMarkerDaySheet(
+                              context,
+                              controller: widget.controller,
+                              metric: row.metric,
+                              dayKey: dayKey,
                             ),
                     ),
                   ],
@@ -300,15 +323,19 @@ class _RowBlock extends StatelessWidget {
                   padding: const EdgeInsets.only(bottom: 4),
                   child: Text(
                     headlineLabel,
-                    style: theme.typography.caption
-                        .copyWith(color: theme.colors.inkMuted),
+                    style: theme.typography.caption.copyWith(
+                      color: theme.colors.inkMuted,
+                    ),
                   ),
                 ),
               ),
               Padding(
                 padding: const EdgeInsets.only(bottom: 4),
                 child: Text(
-                  context.s.daysOf(row.stats.daysLogged, row.stats.daysInPeriod),
+                  context.s.daysOf(
+                    row.stats.daysLogged,
+                    row.stats.daysInPeriod,
+                  ),
                   style: theme.typography.caption.copyWith(
                     color: theme.colors.inkMuted,
                     fontFeatures: const [FontFeature.tabularFigures()],
@@ -327,28 +354,43 @@ class _RowBlock extends StatelessWidget {
               color: color,
               onDayTap: onDayTap,
             )
+          else if (report.definition.axis == ReportAxis.date &&
+              row.cells.length > _wrapAfter)
+            _WrappedRow(
+              row: row,
+              color: color,
+              marked: marked,
+              onDayTap: onDayTap,
+            )
           else
             ReportRowChart(row: row, color: color, onDayTap: onDayTap),
           if (marked case final marked?
               when report.definition.axis != ReportAxis.cycleDay &&
                   report.definition.axis != ReportAxis.grid) ...[
-            const SizedBox(height: VitalsSpacing.xs),
-            MarkedDaysStrip(
-              cells: row.cells,
-              notes: marked.notes,
-              photos: marked.photos,
-              onDayTap: onDayTap,
-            ),
+            if (row.cells.length <= _wrapAfter) ...[
+              const SizedBox(height: VitalsSpacing.xs),
+              MarkedDaysStrip(
+                cells: row.cells,
+                notes: marked.notes,
+                photos: marked.photos,
+                onDayTap: onDayTap,
+              ),
+            ],
             if (marked.notes.isNotEmpty || marked.photos.isNotEmpty)
               Padding(
                 padding: const EdgeInsets.only(top: VitalsSpacing.xs),
                 child: Text(
-                  context.s
-                      .markedDaysLine(marked.notes.length, marked.photos.length),
-                  style: theme.typography.caption
-                      .copyWith(color: theme.colors.inkFaint),
+                  context.s.markedDaysLine(
+                    marked.notes.length,
+                    marked.photos.length,
+                  ),
+                  style: theme.typography.caption.copyWith(
+                    color: theme.colors.inkFaint,
+                  ),
                 ),
               ),
+            if (onDayTap case final open?)
+              _MarkedDayChips(marked: marked, onDayTap: open),
           ],
           if (_facts(row, context.s) case final facts
               when facts.isNotEmpty) ...[
@@ -393,7 +435,8 @@ class _RowBlock extends StatelessWidget {
     // Typical and days logged are the card's headline, so this line carries
     // what is left: the spread and the typical week.
     final parts = <String>[];
-    if (stats.lowest case final low? when row.metric.kind != MetricKind.timeOfDay) {
+    if (stats.lowest case final low?
+        when row.metric.kind != MetricKind.timeOfDay) {
       final high = stats.highest ?? low;
       if (high != low) {
         parts.add('${s.rangeLower} ${_number(low)}-${_number(high)}');
@@ -408,4 +451,144 @@ class _RowBlock extends StatelessWidget {
   static String _number(num value) => value == value.roundToDouble()
       ? '${value.round()}'
       : value.toStringAsFixed(1);
+}
+
+/// Past this many days a date row is folded into lines of [_lineDays], so a
+/// quarter reads as three months of dots instead of ninety specks.
+const _wrapAfter = 35;
+const _lineDays = 30;
+
+/// A long date row, folded into lines of 30 days, each with its first date.
+///
+/// Every line keeps the same column width, so a short last line stays left
+/// and the same day of each line sits in the same place. The scale is the
+/// whole row's, never a line's own, or a quiet month would redraw itself as
+/// loud as a bad one.
+class _WrappedRow extends StatelessWidget {
+  const _WrappedRow({
+    required this.row,
+    required this.color,
+    this.marked,
+    this.onDayTap,
+  });
+
+  final ReportRow row;
+  final Color color;
+  final ({Set<String> notes, Set<String> photos})? marked;
+  final ValueChanged<String>? onDayTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = VitalsTheme.of(context);
+    final lines = <ReportRow>[
+      for (var start = 0; start < row.cells.length; start += _lineDays)
+        _slice(start, min(start + _lineDays, row.cells.length)),
+    ];
+    return Column(
+      children: [
+        for (final line in lines)
+          Padding(
+            padding: const EdgeInsets.only(bottom: VitalsSpacing.sm),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SizedBox(
+                  width: 36,
+                  child: Text(
+                    _date(context, line.cells.first.dayKey),
+                    style: theme.typography.caption.copyWith(
+                      color: theme.colors.inkFaint,
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: FractionallySizedBox(
+                    alignment: Alignment.centerLeft,
+                    widthFactor: line.cells.length / _lineDays,
+                    child: Column(
+                      children: [
+                        ReportRowChart(
+                          row: line,
+                          color: color,
+                          onDayTap: onDayTap,
+                        ),
+                        if (marked case final marked?) ...[
+                          const SizedBox(height: 2),
+                          MarkedDaysStrip(
+                            cells: line.cells,
+                            notes: marked.notes,
+                            photos: marked.photos,
+                            onDayTap: onDayTap,
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+      ],
+    );
+  }
+
+  ReportRow _slice(int from, int to) => ReportRow(
+    metric: row.metric,
+    cells: row.cells.sublist(from, to),
+    stats: row.stats,
+    displayStyle: row.displayStyle,
+    weeklyTypical: row.weeklyTypical,
+    bandMetric: row.bandMetric,
+    bandOn: row.bandOn.length >= to ? row.bandOn.sublist(from, to) : const [],
+  );
+
+  static String _date(BuildContext context, String dayKey) {
+    final date = parseDayKey(dayKey);
+    return date == null ? dayKey : context.s.shortDate(date.day, date.month);
+  }
+}
+
+/// The days of this row that carry a note or a photo, newest first, each one
+/// tap from what was written and taken that day. The strip under the chart
+/// marks them; this is the way in that does not need aiming at a speck.
+class _MarkedDayChips extends StatelessWidget {
+  const _MarkedDayChips({required this.marked, required this.onDayTap});
+
+  final ({Set<String> notes, Set<String> photos}) marked;
+  final ValueChanged<String> onDayTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final days = {...marked.notes, ...marked.photos}.toList()
+      ..sort((a, b) => b.compareTo(a));
+    if (days.isEmpty) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(top: VitalsSpacing.xs),
+      child: SizedBox(
+        height: 36,
+        child: ListView.separated(
+          scrollDirection: Axis.horizontal,
+          itemCount: days.length,
+          separatorBuilder: (_, __) => const SizedBox(width: VitalsSpacing.xs),
+          itemBuilder: (context, index) {
+            final day = days[index];
+            final date = parseDayKey(day);
+            return ActionChip(
+              visualDensity: VisualDensity.compact,
+              avatar: Icon(
+                marked.photos.contains(day)
+                    ? Icons.photo_outlined
+                    : Icons.notes_outlined,
+                size: 16,
+              ),
+              label: Text(
+                date == null ? day : context.s.shortDate(date.day, date.month),
+              ),
+              onPressed: () => onDayTap(day),
+            );
+          },
+        ),
+      ),
+    );
+  }
 }

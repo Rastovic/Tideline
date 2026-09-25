@@ -49,16 +49,21 @@ class ComparisonChart extends StatelessWidget {
           points: points,
           buckets: comparison.buckets,
           scatter: scatter,
-          outcomeBounds: _bounds(comparison.outcome, points.map((p) => p.outcome!)),
+          outcomeBounds: bounds(
+            comparison.outcome,
+            points.map((p) => p.outcome!),
+          ),
           conditionBounds: scatter
-              ? _bounds(
+              ? bounds(
                   comparison.condition,
                   points.map((p) => p.condition ?? 0),
                 )
               : null,
           color: color,
           axis: theme.colors.stroke,
-          label: theme.typography.caption.copyWith(color: theme.colors.inkMuted),
+          label: theme.typography.caption.copyWith(
+            color: theme.colors.inkMuted,
+          ),
           median: theme.colors.ink,
         ),
       ),
@@ -68,7 +73,7 @@ class ComparisonChart extends StatelessWidget {
   /// A rating draws against its declared ends, so a month that never went
   /// below four does not redraw four as the floor. Everything else uses what
   /// is there, padded a little so dots are not on the frame.
-  static (num, num) _bounds(Metric metric, Iterable<num> values) {
+  static (num, num) bounds(Metric metric, Iterable<num> values) {
     if (metric.kind == MetricKind.scale) {
       return (metric.scaleMin, metric.scaleMax);
     }
@@ -148,8 +153,7 @@ class _ChartPainter extends CustomPainter {
         final jitter = (jitterRandom.nextDouble() - 0.5) * 22;
         canvas.drawCircle(
           Offset(
-            (x(point.condition!) + jitter)
-                .clamp(plot.left + 3, plot.right - 3),
+            (x(point.condition!) + jitter).clamp(plot.left + 3, plot.right - 3),
             y(point.outcome!),
           ),
           3.5,
@@ -157,11 +161,7 @@ class _ChartPainter extends CustomPainter {
         );
       }
       _text(canvas, _number(cLow), Offset(plot.left, plot.bottom + 3));
-      _text(
-        canvas,
-        _number(cHigh),
-        Offset(size.width - 28, plot.bottom + 3),
-      );
+      _text(canvas, _number(cHigh), Offset(size.width - 28, plot.bottom + 3));
       return;
     }
 
@@ -177,11 +177,7 @@ class _ChartPainter extends CustomPainter {
       final mine = points.where((p) => p.bucket == groups[i]);
       for (final point in mine) {
         final jitter = (random.nextDouble() - 0.5) * min(step * 0.6, 40);
-        canvas.drawCircle(
-          Offset(centre + jitter, y(point.outcome!)),
-          3.5,
-          dot,
-        );
+        canvas.drawCircle(Offset(centre + jitter, y(point.outcome!)), 3.5, dot);
       }
       if (buckets[i].typical case final typical?) {
         canvas.drawLine(

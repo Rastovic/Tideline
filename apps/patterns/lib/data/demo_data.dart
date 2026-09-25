@@ -21,8 +21,10 @@ typedef DemoReading = ({
 ///
 /// The patterns are deliberate and easy to spot, because the point is to show
 /// what a report can reveal: lower mood on Sundays (a stripe in the grid),
-/// bloating and irritability late in the cycle (a hump on the cycle axis), and
-/// creatine starting part-way through (a band that begins).
+/// bloating and irritability late in the cycle (a hump on the cycle axis),
+/// better mood on training days (a band that lines up), and creatine starting
+/// part-way through (a band that begins). Markers missing from [markers] are
+/// skipped, so the compact demo set gets only its own share of these.
 List<DemoReading> demoReadings({
   required List<Metric> markers,
   required String today,
@@ -45,8 +47,13 @@ List<DemoReading> demoReadings({
   int clamp10(double v) => v.round().clamp(1, 10);
 
   final readings = <DemoReading>[];
-  void add(Metric? metric, MetricValue value, String day, int minute,
-      [String? note]) {
+  void add(
+    Metric? metric,
+    MetricValue value,
+    String day,
+    int minute, [
+    String? note,
+  ]) {
     if (metric == null) return;
     readings.add((
       metricId: metric.id,
@@ -126,20 +133,31 @@ List<DemoReading> demoReadings({
     final late = cycleDay != null && cycleDay >= 23;
     final sunday = weekday == DateTime.sunday;
 
+    final trains =
+        (weekday == DateTime.monday ||
+            weekday == DateTime.wednesday ||
+            weekday == DateTime.friday) &&
+        random.nextDouble() < 0.82;
+
     final bed = 22 * 60 + 50 + noise(55).round() + (weekday >= 5 ? 35 : 0);
     final sleptBadly = bed > 23 * 60 + 40;
 
-    final mood = clamp10(6.6 +
-        noise(1.2) -
-        (sunday ? 1.6 : 0) -
-        (late ? 1.3 : 0) -
-        (sleptBadly ? 0.8 : 0));
+    final mood = clamp10(
+      6.6 +
+          noise(1.2) +
+          (trains ? 0.9 : 0) -
+          (sunday ? 1.6 : 0) -
+          (late ? 1.3 : 0) -
+          (sleptBadly ? 0.8 : 0),
+    );
     add(m('mood'), NumberValue(mood, kind: MetricKind.scale), day, 21 * 60);
 
     add(
       m('tiredness'),
-      NumberValue(clamp10(6.2 + noise(1.3) - (sleptBadly ? 2 : 0)),
-          kind: MetricKind.scale),
+      NumberValue(
+        clamp10(6.2 + noise(1.3) - (sleptBadly ? 2 : 0)),
+        kind: MetricKind.scale,
+      ),
       day,
       21 * 60 + 2,
       sleptBadly && random.nextDouble() < 0.3 ? 'went to bed late' : null,
@@ -152,8 +170,10 @@ List<DemoReading> demoReadings({
     );
     add(
       m('irritability'),
-      NumberValue(clamp10(3.2 + noise(1.2) + (late ? 3.2 : 0)),
-          kind: MetricKind.scale),
+      NumberValue(
+        clamp10(3.2 + noise(1.2) + (late ? 3.2 : 0)),
+        kind: MetricKind.scale,
+      ),
       day,
       21 * 60 + 4,
     );
@@ -171,8 +191,7 @@ List<DemoReading> demoReadings({
     add(
       context,
       TagsValue([
-        if (weekday <= 5 && random.nextDouble() < 0.6)
-          ?option(context, 'work'),
+        if (weekday <= 5 && random.nextDouble() < 0.6) ?option(context, 'work'),
         if (sleptBadly) ?option(context, 'bad sleep'),
         if (random.nextDouble() < 0.07) ?option(context, 'conflict'),
       ]),
@@ -203,11 +222,13 @@ List<DemoReading> demoReadings({
       }
     }
 
-    final bloating = clamp10(2.4 +
-        noise(1.1) +
-        (late ? 3.6 : 0) +
-        (cycleDay != null && cycleDay <= 2 ? 2 : 0) +
-        (onCreatine ? 0.6 : 0));
+    final bloating = clamp10(
+      2.4 +
+          noise(1.1) +
+          (late ? 3.6 : 0) +
+          (cycleDay != null && cycleDay <= 2 ? 2 : 0) +
+          (onCreatine ? 0.6 : 0),
+    );
     add(
       m('bloating'),
       NumberValue(bloating, kind: MetricKind.scale),
@@ -218,16 +239,14 @@ List<DemoReading> demoReadings({
           : null,
     );
 
-    final trains = (weekday == DateTime.monday ||
-            weekday == DateTime.wednesday ||
-            weekday == DateTime.friday) &&
-        random.nextDouble() < 0.82;
     add(m('training'), BooleanValue(trains), day, 19 * 60);
     if (trains) {
       add(
         m('training quality'),
-        NumberValue(clamp10(6.8 + noise(1.5) - (late ? 1 : 0)),
-            kind: MetricKind.scale),
+        NumberValue(
+          clamp10(6.8 + noise(1.5) - (late ? 1 : 0)),
+          kind: MetricKind.scale,
+        ),
         day,
         19 * 60 + 1,
       );
@@ -235,15 +254,19 @@ List<DemoReading> demoReadings({
 
     add(
       m('appetite'),
-      NumberValue(clamp10(5.5 + noise(1.2) + (late ? 2 : 0)),
-          kind: MetricKind.scale),
+      NumberValue(
+        clamp10(5.5 + noise(1.2) + (late ? 2 : 0)),
+        kind: MetricKind.scale,
+      ),
       day,
       20 * 60 + 1,
     );
     add(
       m('urge to overeat'),
-      NumberValue(clamp10(2.5 + noise(1.3) + (late ? 3 : 0) + (sunday ? 1 : 0)),
-          kind: MetricKind.scale),
+      NumberValue(
+        clamp10(2.5 + noise(1.3) + (late ? 3 : 0) + (sunday ? 1 : 0)),
+        kind: MetricKind.scale,
+      ),
       day,
       20 * 60 + 2,
     );
@@ -251,8 +274,12 @@ List<DemoReading> demoReadings({
     add(m('bedtime'), TimeOfDayValue(bed % 1440), day, 21 * 60 + 10);
     add(
       m('wake-up'),
-      TimeOfDayValue((6 * 60 + 55 + noise(30).round() + (weekday >= 6 ? 60 : 0))
-          .clamp(0, 1439)),
+      TimeOfDayValue(
+        (6 * 60 + 55 + noise(30).round() + (weekday >= 6 ? 60 : 0)).clamp(
+          0,
+          1439,
+        ),
+      ),
       day,
       9 * 60 + 2,
     );

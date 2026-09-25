@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:patterns_core/patterns_core.dart';
 import 'package:vitals_ui/vitals_ui.dart';
 
+import '../data/ads.dart';
 import '../data/patterns_controller.dart';
 import 'metric_editor_screen.dart';
 import 'metric_labels.dart';
@@ -39,6 +40,9 @@ class MetricsScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(title: Text(context.s.markers)),
+      // A catalogue screen with no entry on it: one of the two places a
+      // banner is allowed.
+      bottomNavigationBar: const ScreenBanner(),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _open(context),
         icon: const Icon(Icons.add),

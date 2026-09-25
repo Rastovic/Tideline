@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:patterns_core/patterns_core.dart';
 import 'package:vitals_ui/vitals_ui.dart';
 
+import '../data/ads.dart';
 import '../data/app_database.dart';
 import '../data/app_lock.dart';
 import '../data/evening_reminder.dart';
@@ -184,6 +185,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     } else {
       await controller.log(metric.id, entry.value, note: entry.note);
     }
+    // The first reading she logs is the point after which a banner may show.
+    if (mounted) unawaited(AdsScope.of(context)?.markCoreAction());
     if (entry.photo case final bytes?) {
       await controller.attachPhoto(
         bytes,

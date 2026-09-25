@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
+import '../data/ads.dart';
 import '../data/app_database.dart';
 import '../l10n/app_language.dart';
 import '../data/app_lock.dart';
@@ -24,8 +25,12 @@ class PatternsApp extends StatelessWidget {
     required this.language,
     this.theme,
     this.onboarding,
+    this.ads,
     super.key,
   });
+
+  /// Banners under Settings and the marker list. Null shows none, as in tests.
+  final AdsController? ads;
 
   /// The first-run welcome and tour. Null skips it, as in most tests.
   final Onboarding? onboarding;
@@ -80,9 +85,13 @@ class PatternsApp extends StatelessWidget {
         final onboarding? => TourFrame(onboarding: onboarding, child: child!),
         null => child!,
       };
-      return switch (lock) {
+      final locked = switch (lock) {
         final lock? => AppLockGate(lock: lock, child: framed),
         null => framed,
+      };
+      return switch (ads) {
+        final ads? => AdsScope(ads: ads, child: locked),
+        null => locked,
       };
     },
     home: HomeScreen(

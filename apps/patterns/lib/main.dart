@@ -1,8 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:vitals_ads/vitals_ads.dart';
 import 'package:vitals_notify/vitals_notify.dart';
 
 import 'app/patterns_app.dart';
 import 'app/tideline_themes.dart';
+import 'data/ads.dart';
 import 'data/app_database.dart';
 import 'data/app_lock.dart';
 import 'data/evening_reminder.dart';
@@ -58,6 +62,11 @@ Future<void> main() async {
   final lock = AppLock();
   await lock.load();
 
+  // Not awaited: the first frame must not wait on an ad, and everything the
+  // ads layer is asked before it finishes answers "no ad" anyway.
+  final ads = AdsController(gateway: AdMobGateway());
+  unawaited(ads.start());
+
   runApp(
     PatternsApp(
       controller: controller,
@@ -68,6 +77,7 @@ Future<void> main() async {
       reminder: reminder,
       settings: settings,
       onboarding: onboarding,
+      ads: ads,
     ),
   );
   WidgetsBinding.instance.addPostFrameCallback(

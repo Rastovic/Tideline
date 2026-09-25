@@ -6,6 +6,7 @@ import '../data/app_database.dart';
 import '../data/app_lock.dart';
 import '../data/archive_transfer.dart';
 import '../data/evening_reminder.dart';
+import '../data/ads.dart';
 import '../data/patterns_controller.dart';
 import '../data/quick_log_widget.dart';
 import '../app/tideline_themes.dart';
@@ -168,6 +169,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     return Scaffold(
       appBar: AppBar(title: Text(context.s.settings)),
+      // A catalogue screen with no entry on it: one of the two places a
+      // banner is allowed.
+      bottomNavigationBar: const ScreenBanner(),
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.fromLTRB(
@@ -217,27 +221,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
               label: context.s.languageHeading,
               child: _column(_appearance(theme)),
             ),
-            if (Onboarding.of(context) case final onboarding?)
-              Panel(
-                label: context.s.helpHeading,
-                child: _column([
-                  ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    leading: const Icon(Icons.play_circle_outline),
-                    title: Text(
-                      context.s.replayTour,
-                      style: theme.typography.body,
-                    ),
-                    subtitle: Text(
-                      context.s.replayTourHint,
-                      style: theme.typography.caption.copyWith(
-                        color: theme.colors.inkFaint,
-                      ),
-                    ),
-                    onTap: _replaying ? null : () => _replay(onboarding),
-                  ),
-                ]),
-              ),
+            if (_helpRows(theme) case final rows when rows.isNotEmpty)
+              Panel(label: context.s.helpHeading, child: _column(rows)),
             if (widget.controller case final controller?) ...[
               Panel(
                 label: context.s.archiveHeading,
@@ -254,6 +239,45 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   bool _replaying = false;
+
+  /// The tour, where there is one, and the consent form, where the law says
+  /// it has to be reachable again.
+  List<Widget> _helpRows(VitalsThemeData theme) {
+    final onboarding = Onboarding.of(context);
+    final ads = AdsScope.of(context);
+    Widget row(IconData icon, String title, String hint, VoidCallback? onTap) =>
+        ListTile(
+          contentPadding: EdgeInsets.zero,
+          leading: Icon(icon),
+          title: Text(title, style: theme.typography.body),
+          subtitle: Text(
+            hint,
+            style: theme.typography.caption.copyWith(
+              color: theme.colors.inkFaint,
+            ),
+          ),
+          onTap: onTap,
+        );
+    return [
+      if (onboarding != null)
+        row(
+          Icons.play_circle_outline,
+          context.s.replayTour,
+          context.s.replayTourHint,
+          _replaying ? null : () => _replay(onboarding),
+        ),
+      if (ads != null && ads.gateway.privacyOptionsRequired)
+        row(
+          Icons.privacy_tip_outlined,
+          context.s.privacyChoices,
+          context.s.privacyChoicesHint,
+          () async {
+            await ads.gateway.showPrivacyOptions();
+            if (mounted) setState(() {});
+          },
+        ),
+    ];
+  }
 
   /// Builds the demo, then the tour takes over the navigator, this screen
   /// included.

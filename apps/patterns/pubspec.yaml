@@ -24,6 +24,7 @@ dependencies:
   patterns_data: ^0.1.0
   share_plus: ^12.0.0
   shared_preferences: ^2.3.3
+  vitals_ads: ^0.1.0
   vitals_archive: ^0.1.0
   vitals_core: ^0.1.0
   vitals_notify: ^0.1.0

@@ -831,6 +831,12 @@ final class AppStrings {
           'demo.',
       'Izlaskom iz obilaska vracas se na svoj profil, a demo se brise.');
   String get helpHeading => _t('HELP', 'POMOC');
+  String get privacyChoices => _t('Privacy choices', 'Izbori privatnosti');
+  String get privacyChoicesHint => _t(
+      'Change your consent for ads. Nothing you log ever reaches an ad '
+          'network.',
+      'Promijeni pristanak za reklame. Nista sto upises nikad ne ide mrezi '
+          'za reklame.');
   String get replayTour => _t('Take the tour again', 'Ponovi obilazak');
   String get replayTourHint => _t(
       'A walk through the app on a demo profile. Your own record is not '
